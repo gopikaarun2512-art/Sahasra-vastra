@@ -26,9 +26,11 @@ With the Shopify CLI: `shopify theme dev --store sahasravastra.myshopify.com`.
   * the main menu item that links to `/pages/products`, or is titled *Products*, *Shop by Type* or *Shop by Category*.
 * **Category icons** come from the collection metafield `custom.category_icon` (a file). Otherwise the collection image is used, then the first product photo.
 
-### One-time setup in Admin
-1. **Online Store → Pages → Add page** "Products" (handle `products`) with the template **products**.
-2. **Online Store → Navigation → Main menu**: rename *Shop by Type* to **Products** and link it to the Products page. Its children stay the categories. To add sub-categories, nest collection links under a category.
+### Store setup (done 24 Sep 2026)
+* The **Products** page exists (handle `products`, template **products**).
+* In the main menu, *Shop by Type* is renamed **Products**. It still links to All products, so the old theme keeps working. This theme opens the popup from any top-level menu item titled "Products", whatever its link.
+* Products are tagged `gender-girl` / `gender-boy`; unisex designs have both.
+* The preview theme **"Sahasra — Products finder (preview)"** (unpublished) holds this branch's changes.
 
 ## Collection page
 
