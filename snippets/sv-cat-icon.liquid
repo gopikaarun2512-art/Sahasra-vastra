@@ -1,0 +1,40 @@
+{% doc %}
+  A category's thumbnail icon — the picture on a "Shop by category" tile
+  and in the Products finder. One source per category so the two can
+  never show different pictures:
+
+  1. the collection metafield custom.category_icon (a file — upload a
+     flat garment icon there, lemoon style), else
+  2. the collection's own image (Admin → Collections → Collection image),
+     else
+  3. the first product photograph in the collection, else
+  4. a plain ivory field, never a broken image.
+
+  @param {object} collection
+  @param {string} [sizes] - The image `sizes` attribute
+  @param {string} [class]
+{% enddoc %}
+
+{%- liquid
+  assign pic = collection.metafields.custom.category_icon.value
+  if pic == blank
+    assign pic = collection.image
+  endif
+  if pic == blank
+    assign pic = collection.products.first.featured_image
+  endif
+-%}
+{%- if pic != blank -%}
+  {{
+    pic
+    | image_url: width: 480
+    | image_tag:
+      widths: '160, 240, 320, 480',
+      sizes: sizes | default: '160px',
+      loading: 'lazy',
+      alt: '',
+      class: class
+  }}
+{%- else -%}
+  <span class="{{ class }} sv-caticon--empty" aria-hidden="true"></span>
+{%- endif -%}

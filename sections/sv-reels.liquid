@@ -95,6 +95,14 @@
     });
   })();
 </script>
+{%- elsif request.design_mode -%}
+  <section class="sv-reels" data-sv>
+    <div class="w">
+      <p class="sv-reels__sub" style="padding: var(--b); border: 1px dashed var(--tan); border-radius: var(--r-card); text-align: center;">
+        Reels: add a “Reel” block and upload a short vertical video (only visible here in the editor).
+      </p>
+    </div>
+  </section>
 {%- endif -%}
 
 {% stylesheet %}

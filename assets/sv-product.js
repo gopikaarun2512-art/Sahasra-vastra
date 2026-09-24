@@ -51,7 +51,9 @@
     const addButton = root.querySelector('[data-sv-add]');
     const addLabel = root.querySelector('[data-sv-add-label]');
     const priceEl = root.querySelector('[data-sv-price]');
-    const mrpEl = root.querySelector('[data-sv-mrp]');
+    /* The MRP line now lives in its own section below the shelves
+       (sv-product-record), outside this root — look for it page-wide. */
+    const mrpEl = root.querySelector('[data-sv-mrp]') || document.querySelector('[data-sv-mrp]');
     const waLink = root.querySelector('[data-sv-wa]');
     const errorEl = root.querySelector('[data-sv-error]');
     const bar = root.querySelector('[data-sv-bar]');
@@ -419,6 +421,15 @@
       if (match) select(match);
     });
 
+    /* Product & manufacturer information: the filed record's popup. */
+    const legal = root.querySelector('[data-sv-legal]');
+    if (legal) {
+      root.querySelectorAll('[data-sv-legal-open]').forEach((b) =>
+        b.addEventListener('click', () => legal.showModal())
+      );
+      legal.addEventListener('click', (e) => { if (e.target === legal) legal.close(); });
+    }
+
     /* Size chart: every [data-sv-chart-open] opens the one dialog. */
     const chart = root.querySelector('[data-sv-chart]');
     if (chart) {
@@ -428,6 +439,22 @@
       chart.addEventListener('click', (e) => { if (e.target === chart) chart.close(); });
     }
 
+    /* The Size guide is a closed <details> in the column now. Any link
+       to it — the sizing note under the gallery — opens it before the
+       browser scrolls there, so the jump lands on the table, not on a
+       shut bar. */
+    const measure = root.querySelector('[data-sv-measure]');
+    if (measure) {
+      const openMeasure = () => {
+        measure.open = true;
+      };
+      root.querySelectorAll(`a[href="#${CSS.escape(measure.id)}"]`).forEach((a) =>
+        a.addEventListener('click', openMeasure)
+      );
+      if (window.location.hash === `#${measure.id}`) openMeasure();
+    }
+
+    matchColumns(root);
     setupGallery(root);
     setupShare(root);
     setupSave(root);
@@ -473,6 +500,46 @@
     }
   }
 
+  /* ── the two columns end together ─────────────────────────────────
+     On desktop the promise tiles are spaced out so the last one ends
+     level with the bottom of the Details bar under the photographs
+     (owner's direction). Measured with Details closed, as the page
+     loads; opening it later does not re-stretch the tiles. Skipped on
+     phones (one column) and when the tiles are already the longer side. */
+  function matchColumns(root) {
+    const tiles = root.querySelector('[data-sv-tiles]');
+    const acc = root.querySelector('.sv-gal > .sv-pdp__acc');
+    if (!tiles || !acc) return;
+    const wide = window.matchMedia('(min-width: 881px)');
+
+    const measure = () => {
+      tiles.style.minHeight = '';
+      tiles.classList.remove('is-matched');
+      if (!wide.matches || acc.querySelector('details[open]')) return;
+      const top = tiles.getBoundingClientRect().top + window.scrollY;
+      const end = acc.getBoundingClientRect().bottom + window.scrollY;
+      const need = end - top;
+      if (need > tiles.offsetHeight && need - tiles.offsetHeight < 480) {
+        tiles.style.minHeight = `${need}px`;
+        tiles.classList.add('is-matched');
+      }
+    };
+
+    /* Measure only while the column is not stuck, or positions lie. */
+    const run = () => {
+      if (window.scrollY > 0) return;
+      measure();
+    };
+    if (document.readyState === 'complete') run();
+    else window.addEventListener('load', run, { once: true });
+    let t;
+    window.addEventListener('resize', () => {
+      clearTimeout(t);
+      t = setTimeout(run, 150);
+    });
+    wide.addEventListener?.('change', measure);
+  }
+
   /* ── gallery ──────────────────────────────────────────────────────
      The track is a native scroll-snap row; everything here only moves
      it. Active index comes from an IntersectionObserver over the
@@ -492,8 +559,21 @@
       track.scrollTo({ left: slides[next].offsetLeft - track.offsetLeft, behavior: 'smooth' });
     };
 
+    /* A product video plays only while its slide is the one on screen,
+       and never under reduced motion (its controls are still there). */
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const playOnly = (i) => {
+      slides.forEach((slide, n) => {
+        const video = slide.querySelector('video');
+        if (!video) return;
+        if (n === i && !still) video.play().catch(() => {});
+        else video.pause();
+      });
+    };
+
     const mark = (i) => {
       current = i;
+      playOnly(i);
       thumbs.forEach((t, n) => {
         const on = n === i;
         t.classList.toggle('is-on', on);

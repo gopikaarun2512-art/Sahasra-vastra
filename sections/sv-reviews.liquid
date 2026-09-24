@@ -1,38 +1,143 @@
 {%- comment -%}
-  Customer reviews — a host for a reviews app's theme block (Judge.me,
-  Loox and the like all ship an "@app" block). The theme holds no review
-  data of its own and never invents any: with no app block added, this
-  section renders nothing — ARCHITECTURE §27.2, no heading, no empty
-  state, no placeholder stars.
+  Customer reviews — Judge.me (owner's choice, Sep 2026; free plan).
 
-  Setup: install the reviews app → Online Store → Customize → Product
-  page → this section → Add block → the app's "Reviews widget".
+  Judge.me owns everything here: collecting reviews (its emails ask
+  buyers after delivery, and its widget has a "Write a review" form with
+  photo and video upload), moderation, and display. The theme only gives
+  the widget its place on the page — after "You may also like" and
+  "Recently viewed" — and a heading in the site's own type.
+
+  Two ways the widget can arrive, either is fine:
+  · Judge.me's app block, added to this section in the theme editor
+    (Customize → Product page → SV Reviews → Add block → Judge.me). When
+    one is present it is used and nothing else renders.
+  · Otherwise the classic Judge.me widget element below, which Judge.me
+    fills in on every product page once the app is installed and its
+    "Judge.me Core" app embed is on (Customize → App embeds).
+
+  With Judge.me not installed, the section renders nothing on the live
+  site — no placeholder stars, no sample reviews (ARCHITECTURE §27.2);
+  the theme editor shows a one-line hint instead.
 {%- endcomment -%}
 
-{%- if section.blocks.size > 0 -%}
-  <section class="sv-reviews" data-sv>
+{%- liquid
+  assign app_block = false
+  for block in section.blocks
+    if block.type == '@app'
+      assign app_block = true
+      break
+    endif
+  endfor
+  assign jm_installed = false
+  if product.metafields.judgeme != blank or shop.metafields.judgeme != blank
+    assign jm_installed = true
+  endif
+-%}
+
+{%- if app_block or jm_installed or request.design_mode -%}
+  <section class="sv-reviews{% unless request.design_mode %} sv-reviews--live{% endunless %}" id="reviews" data-sv>
     <div class="w">
       {%- if section.settings.heading != blank -%}
         <h2 class="sv-reviews__h">{{ section.settings.heading }}</h2>
       {%- endif -%}
-      {%- for block in section.blocks -%}
-        {% render block %}
-      {%- endfor -%}
+
+      {%- if app_block -%}
+        {%- for block in section.blocks -%}
+          {% render block %}
+        {%- endfor -%}
+      {%- else -%}
+        <div id="judgeme_product_reviews" class="jdgm-widget jdgm-review-widget jdgm-outside-widget" data-id="{{ product.id }}">
+          {{- product.metafields.judgeme.widget -}}
+        </div>
+        {%- if request.design_mode and jm_installed == false -%}
+          <p class="sv-reviews__hint">Install Judge.me Product Reviews (free plan) and turn on its app embed — the reviews widget appears here.</p>
+        {%- endif -%}
+      {%- endif -%}
     </div>
   </section>
 {%- endif -%}
 
+{%- if app_block or jm_installed -%}
+  {%- comment -%}
+    Judge.me's review form takes a video file or a YouTube link — it
+    rejects any other URL ("Not a YouTube video URL"), and that check is
+    Judge.me's own. Parents who post on Instagram are told how to bring
+    the reel anyway: save it and upload the file. The note is placed
+    under Judge.me's YouTube field whenever its form opens; nothing else
+    in the form is touched.
+  {%- endcomment -%}
+  <script>
+    (() => {
+      const NOTE = {{ section.settings.video_note | default: 'Instagram reel? Save it to your phone from Instagram and upload the video file in the box above — links only work from YouTube.' | json }};
+      const place = () => {
+        document.querySelectorAll('input[placeholder*="Youtube" i], input[placeholder*="YouTube" i]').forEach((input) => {
+          if (input.dataset.svNote) return;
+          input.dataset.svNote = '1';
+          const p = document.createElement('p');
+          p.className = 'sv-reviews__vidnote';
+          p.textContent = NOTE;
+          input.insertAdjacentElement('afterend', p);
+        });
+      };
+      new MutationObserver(place).observe(document.body, { childList: true, subtree: true });
+      place();
+    })();
+  </script>
+{%- endif -%}
+
 {% stylesheet %}
   section[data-sv].sv-reviews {
-    padding: var(--d) 0 0;
+    padding: var(--c) 0 0;
   }
 
   [data-sv] .sv-reviews__h {
-    margin: 0 0 var(--c);
+    margin: 0 0 var(--b);
     text-align: center;
     font-family: var(--serif);
     font-size: clamp(1.8rem, 3.4vw, 2.6rem);
     font-weight: 500;
+  }
+
+  /* No heading over an empty space: until Judge.me's script has filled
+     its widget, the section stays out of the page. */
+  .sv-reviews--live:has(.jdgm-review-widget:empty) {
+    display: none;
+  }
+
+  /* The Instagram note sits inside Judge.me's popup, outside [data-sv]. */
+  .sv-reviews__vidnote {
+    margin: 8px 0 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: #6b665d;
+  }
+
+  [data-sv] .sv-reviews__hint {
+    padding: var(--b);
+    border: 1px dashed var(--tan);
+    border-radius: var(--r-card);
+    text-align: center;
+    color: var(--grey);
+  }
+
+  /* Judge.me in the site's palette: gold stars, emerald actions. Only
+     colour — its layout is left alone. */
+  .sv-reviews .jdgm-star,
+  .sv-pdp__rating .jdgm-star {
+    color: var(--tan) !important;
+  }
+
+  .sv-reviews .jdgm-write-rev-link,
+  .sv-reviews .jdgm-submit-rev,
+  .sv-reviews .jdgm-ask-question-btn {
+    border-color: var(--emerald) !important;
+    background: var(--emerald) !important;
+    color: var(--cream) !important;
+  }
+
+  /* The section already has its heading. */
+  .sv-reviews .jdgm-rev-widg__title {
+    display: none;
   }
 {% endstylesheet %}
 
@@ -41,7 +146,9 @@
   "name": "SV Reviews",
   "tag": "div",
   "settings": [
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Customer reviews" }
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Customer reviews" },
+    { "type": "textarea", "id": "video_note", "label": "Note under Judge.me's YouTube field", "info": "Judge.me only accepts YouTube links; this tells Instagram users to upload the video file instead.", "default": "Instagram reel? Save it to your phone from Instagram and upload the video file in the box above — links only work from YouTube." },
+    { "type": "paragraph", "content": "Reviews come from Judge.me. Install 'Judge.me Product Reviews' (free plan) and switch on its 'Judge.me Core' app embed; the widget then shows here automatically. You can also add Judge.me's review widget block to this section instead." }
   ],
   "blocks": [{ "type": "@app" }],
   "presets": [{ "name": "SV Reviews" }]

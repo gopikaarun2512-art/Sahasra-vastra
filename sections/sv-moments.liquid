@@ -1,0 +1,270 @@
+{%- comment -%}
+  Sahasra Vastra Moments — photographs parents send of their children in
+  our clothes (the Le'Moon Moments band).
+
+  One block per photograph, added by hand in the theme editor from the
+  pictures customers share — so every picture here is one a parent chose
+  to send, and each can say whose little one it is and link to the
+  garment they are wearing. Nothing is pulled from Instagram (no embed
+  script, no login wall) and nothing is stock: this band is presented as
+  real, so only real customer photos belong in it — ideally with the
+  parent's permission to post noted when they send it.
+
+  A row that scrolls sideways on every width, snap-aligned, so it takes
+  one screen of height however many moments are added. With no photos
+  added it renders nothing on the live site (a hint shows in the editor).
+{%- endcomment -%}
+
+{%- liquid
+  assign moments = section.blocks | where: 'type', 'moment'
+  assign has = false
+  for b in moments
+    if b.settings.image != blank
+      assign has = true
+      break
+    endif
+  endfor
+-%}
+
+{%- if has or request.design_mode -%}
+  <section class="sv-moments" data-sv>
+    <div class="w w--wide">
+      <header class="sv-moments__head">
+        {%- if section.settings.eyebrow != blank -%}<p class="lab lab--grey">{{ section.settings.eyebrow }}</p>{%- endif -%}
+        {%- if section.settings.heading != blank -%}<h2 class="sv-moments__h">{{ section.settings.heading }}</h2>{%- endif -%}
+        {%- if section.settings.sub != blank -%}<p class="sv-moments__sub">{{ section.settings.sub }}</p>{%- endif -%}
+      </header>
+
+      {%- if has -%}
+        <ul class="sv-moments__row" role="list" tabindex="0" aria-label="{{ section.settings.heading | default: 'Customer photos' | escape }}">
+          {%- for block in moments -%}
+            {%- if block.settings.image == blank -%}{%- continue -%}{%- endif -%}
+            {%- liquid
+              assign who = block.settings.name
+              assign alt = block.settings.image.alt
+              if alt == blank
+                if who != blank
+                  assign alt = who | prepend: 'Photo from '
+                else
+                  assign alt = 'A customer’s photo'
+                endif
+              endif
+            -%}
+            <li class="sv-moment" {{ block.shopify_attributes }}>
+              <figure class="sv-moment__fig">
+                <div class="sv-moment__img">
+                  {{
+                    block.settings.image
+                    | image_url: width: 900
+                    | image_tag:
+                      widths: '300, 450, 600, 900',
+                      sizes: '(max-width: 749px) 70vw, 300px',
+                      loading: 'lazy',
+                      alt: alt
+                  }}
+                  {%- if block.settings.product != blank -%}
+                    <a class="sv-moment__tag" href="{{ block.settings.product.url }}">
+                      {%- if block.settings.product.featured_image -%}
+                        {{ block.settings.product.featured_image | image_url: width: 96 | image_tag: loading: 'lazy', alt: '', widths: '48, 96', sizes: '40px' }}
+                      {%- endif -%}
+                      <span>
+                        <span class="sv-moment__tagname">{{ block.settings.product.title }}</span>
+                        <span class="sv-moment__tagprice">{{ block.settings.product.price | money }}</span>
+                      </span>
+                    </a>
+                  {%- endif -%}
+                </div>
+                {%- if who != blank or block.settings.caption != blank -%}
+                  <figcaption class="sv-moment__cap">
+                    {%- if block.settings.caption != blank -%}<span class="sv-moment__quote">{{ block.settings.caption }}</span>{%- endif -%}
+                    {%- if who != blank -%}<span class="sv-moment__who">{{ who }}</span>{%- endif -%}
+                  </figcaption>
+                {%- endif -%}
+              </figure>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- else -%}
+        <p class="sv-moments__hint">Add a “Moment” block for each photo a customer sends (only visible here in the editor).</p>
+      {%- endif -%}
+
+      {%- if section.settings.cta_label != blank and section.settings.cta_url != blank -%}
+        <p class="sv-moments__cta"><a class="btn btn--ghost" href="{{ section.settings.cta_url }}" {% if section.settings.cta_url contains 'http' %}target="_blank" rel="noopener"{% endif %}>{{ section.settings.cta_label }}</a></p>
+      {%- endif -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  section[data-sv].sv-moments {
+    padding: var(--d) 0 0;
+  }
+
+  .sv-moments__head {
+    margin-bottom: var(--c);
+    text-align: center;
+  }
+
+  [data-sv] .sv-moments__h {
+    margin: 8px 0 0;
+    font-family: var(--serif);
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+    font-weight: 500;
+  }
+
+  [data-sv] .sv-moments__sub {
+    max-width: 56ch;
+    margin: 10px auto 0;
+    color: var(--grey);
+  }
+
+  [data-sv] .sv-moments__row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(240px, 300px);
+    gap: var(--a);
+    margin: 0;
+    padding: 0 0 8px;
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  .sv-moment {
+    scroll-snap-align: start;
+  }
+
+  .sv-moment__fig {
+    margin: 0;
+  }
+
+  .sv-moment__img {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--cream-2);
+  }
+
+  .sv-moment__img > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--slow) var(--e);
+  }
+
+  .sv-moment:hover .sv-moment__img > img {
+    transform: scale(1.03);
+  }
+
+  .sv-moment__tag {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(255, 253, 248, 0.94);
+    color: var(--ink);
+    font-size: 0.82rem;
+    text-decoration: none;
+    box-shadow: var(--sh-s);
+  }
+
+  .sv-moment__tag img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .sv-moment__tag > span {
+    display: grid;
+    min-width: 0;
+  }
+
+  .sv-moment__tagname {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .sv-moment__tagprice {
+    color: var(--emerald);
+    font-weight: 600;
+  }
+
+  .sv-moment__cap {
+    display: grid;
+    gap: 4px;
+    margin: 12px 4px 0;
+    font-size: 0.9rem;
+  }
+
+  .sv-moment__quote {
+    font-family: var(--serif);
+    font-style: italic;
+  }
+
+  .sv-moment__who {
+    color: var(--grey);
+    font-size: 0.82rem;
+  }
+
+  [data-sv] .sv-moments__hint {
+    padding: var(--b);
+    border: 1px dashed var(--tan);
+    border-radius: var(--r-card);
+    text-align: center;
+    color: var(--grey);
+  }
+
+  .sv-moments__cta {
+    margin: var(--b) 0 0;
+    text-align: center;
+  }
+
+  @media (max-width: 749px) {
+    [data-sv] .sv-moments__row {
+      grid-auto-columns: 70%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sv-moment:hover .sv-moment__img > img {
+      transform: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Moments",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Small label", "default": "From our families" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Sahasra Vastra Moments" },
+    { "type": "text", "id": "sub", "label": "Line under the heading", "default": "Little ones in their Sahasra Vastra, sent in by their parents. Tag us or send us yours on WhatsApp." },
+    { "type": "text", "id": "cta_label", "label": "Button label", "info": "e.g. Share your moment" },
+    { "type": "url", "id": "cta_url", "label": "Button link", "info": "e.g. your Instagram or WhatsApp link" }
+  ],
+  "blocks": [
+    {
+      "type": "moment",
+      "name": "Moment",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Customer photo", "info": "Only real photos a customer sent, with their permission. Portrait (4:5) works best." },
+        { "type": "text", "id": "name", "label": "Whose little one", "info": "e.g. Aarav, 2 · Kochi — or the parent's Instagram handle" },
+        { "type": "text", "id": "caption", "label": "What they said" },
+        { "type": "product", "id": "product", "label": "What they are wearing" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "SV Moments" }]
+}
+{% endschema %}

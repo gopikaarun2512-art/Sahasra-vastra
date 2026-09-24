@@ -1,0 +1,28 @@
+{% doc %}
+  The Products popup's frame — an empty <dialog> on every page, filled
+  from sections/sv-finder the first time it opens.
+
+  What opens it:
+  · any link to /pages/products — so the main menu's "Products" item
+    (point it at the Products page) opens the popup instead of leaving
+    the page, and still works as a plain link with script off;
+  · a top-level menu item titled "Products" (sv-header, sv-hero-video),
+    whatever it links to — so the live menu can be renamed before this
+    theme is published and still land somewhere real on the old one;
+  · any element with data-sv-finder, e.g. a "Shop by category" tile,
+    which can name its category with data-sv-finder-cat="<handle>" so
+    the popup asks only the age and goes straight on.
+{% enddoc %}
+
+{{ 'sv-finder.css' | asset_url | stylesheet_tag }}
+
+<dialog class="sv-finderdlg" data-sv data-sv-finder-dialog aria-label="Shop products by age and category" data-src="{{ routes.root_url }}?section_id=sv-finder">
+  <div class="sv-finderdlg__panel">
+    <button type="button" class="sv-finderdlg__x" data-sv-finder-close aria-label="Close">{% render 'sv-icon', name: 'close' %}</button>
+    <div class="sv-finderdlg__body" data-sv-finder-mount>
+      <p class="sv-finderdlg__loading" role="status">Loading…</p>
+    </div>
+  </div>
+</dialog>
+
+<script src="{{ 'sv-finder.js' | asset_url }}" defer></script>

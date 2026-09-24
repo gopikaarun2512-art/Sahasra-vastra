@@ -1,0 +1,7 @@
+{%- comment -%}
+  Turns sv-cat-counts' "all:3,age-0-3m:2" into {"all":3,"age-0-3m":2}.
+  Tags and counts carry no quotes or commas of their own, so a plain
+  replace is exact. @param {string} counts
+{%- endcomment -%}
+{%- assign c = counts | strip -%}
+{%- if c == blank -%}{"all":0}{%- else -%}{"{{ c | replace: ':', '":' | replace: ',', ',"' }}}{%- endif -%}

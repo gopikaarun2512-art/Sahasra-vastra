@@ -1,0 +1,242 @@
+{%- comment -%}
+  Products in tabs — the littlesmile "New Arrivals: Girls · Boys ·
+  Sibling set · Baby quilts" band.
+
+  One block per tab: a label, a collection, and optionally a tag that
+  narrows it — so "Girls" can be New Arrivals narrowed to `gender-girl`
+  without a separate collection to keep in step. Every tab's products are
+  rendered up front and the tabs only switch which list is visible, so
+  it works as plain HTML and a tab never waits on a request. A tab with
+  nothing in it is not drawn at all.
+
+  Cards are the same sv-card the product-page shelves use.
+{%- endcomment -%}
+
+{%- liquid
+  assign limit = section.settings.limit | default: 8
+  assign uid = 'sv-tabs-' | append: section.id
+-%}
+
+{%- capture panels -%}
+  {%- assign drawn = 0 -%}
+  {%- for block in section.blocks -%}
+    {%- liquid
+      assign col = block.settings.collection
+      if col == blank
+        continue
+      endif
+      assign tag = block.settings.tag | strip
+      assign n = 0
+    -%}
+    {%- capture cards -%}
+      {%- for p in col.products -%}
+        {%- if tag != blank -%}
+          {%- unless p.tags contains tag -%}{%- continue -%}{%- endunless -%}
+        {%- endif -%}
+        {%- render 'sv-card', product: p -%}
+        {%- assign n = n | plus: 1 -%}
+        {%- if n >= limit -%}{%- break -%}{%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if n == 0 -%}{%- continue -%}{%- endif -%}
+    {%- liquid
+      assign url = col.url
+      if tag != blank
+        assign url = col.url | append: '/' | append: tag
+      endif
+    -%}
+    <div
+      class="sv-tabs__panel"
+      id="{{ uid }}-p{{ forloop.index }}"
+      role="tabpanel"
+      aria-labelledby="{{ uid }}-t{{ forloop.index }}"
+      data-label="{{ block.settings.label | default: col.title | escape }}"
+      data-index="{{ forloop.index }}"
+      data-url="{{ url }}"
+      {% if drawn > 0 %}hidden{% endif %}
+      {{ block.shopify_attributes }}
+    >
+      <ul class="sv-tabs__grid" role="list">{{ cards }}</ul>
+      <p class="sv-tabs__more"><a class="btn btn--ghost" href="{{ url }}">{{ section.settings.more_label | default: 'View all' }} {{ block.settings.label | default: col.title }}</a></p>
+    </div>
+    {%- assign drawn = drawn | plus: 1 -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- if panels contains 'sv-tabs__panel' -%}
+  {{ 'sv-card.css' | asset_url | stylesheet_tag }}
+  {{ 'sv-product.css' | asset_url | stylesheet_tag }}
+  <section class="sv-tabs" data-sv data-sv-tabs>
+    <div class="w w--wide">
+      <header class="sv-tabs__head">
+        {%- if section.settings.heading != blank -%}<h2 class="sv-tabs__h">{{ section.settings.heading }}</h2>{%- endif -%}
+        {%- if section.settings.sub != blank -%}<p class="sv-tabs__sub">{{ section.settings.sub }}</p>{%- endif -%}
+      </header>
+      <div class="sv-tabs__bar" role="tablist" data-sv-tabs-bar></div>
+      {{ panels }}
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const band = document.currentScript.previousElementSibling;
+      if (!band || band.dataset.svBound) return;
+      band.dataset.svBound = '1';
+      const bar = band.querySelector('[data-sv-tabs-bar]');
+      const panels = Array.from(band.querySelectorAll('.sv-tabs__panel'));
+      /* Tabs are built from the panels that rendered, so a tab never
+         points at an empty list. */
+      const tabs = panels.map((panel, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sv-tabs__tab';
+        b.id = panel.getAttribute('aria-labelledby');
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-controls', panel.id);
+        b.textContent = panel.dataset.label;
+        bar.append(b);
+        return b;
+      });
+      const select = (i, focus) => {
+        tabs.forEach((t, n) => {
+          const on = n === i;
+          t.setAttribute('aria-selected', String(on));
+          t.tabIndex = on ? 0 : -1;
+          t.classList.toggle('is-on', on);
+          panels[n].hidden = !on;
+        });
+        if (focus) tabs[i].focus();
+      };
+      tabs.forEach((t, i) => {
+        t.addEventListener('click', () => select(i));
+        t.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') select((i + 1) % tabs.length, true);
+          if (e.key === 'ArrowLeft') select((i - 1 + tabs.length) % tabs.length, true);
+        });
+      });
+      select(0);
+    })();
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  section[data-sv].sv-tabs {
+    padding: var(--d) 0 0;
+  }
+
+  .sv-tabs__head {
+    text-align: center;
+  }
+
+  [data-sv] .sv-tabs__h {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+    font-weight: 500;
+    color: var(--emerald);
+  }
+
+  [data-sv] .sv-tabs__sub {
+    margin: 10px auto 0;
+    color: var(--grey);
+  }
+
+  .sv-tabs__bar {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px var(--b);
+    margin: var(--b) 0 var(--c);
+  }
+
+  .sv-tabs__tab {
+    padding: 8px 2px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: var(--grey);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sv-tabs__tab:hover {
+    color: var(--ink);
+  }
+
+  .sv-tabs__tab.is-on {
+    border-bottom-color: var(--emerald);
+    color: var(--ink);
+  }
+
+  [data-sv] .sv-tabs__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--b) var(--a);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sv-tabs__more {
+    margin: var(--c) 0 0;
+    text-align: center;
+  }
+
+  @media (max-width: 989px) {
+    [data-sv] .sv-tabs__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 749px) {
+    [data-sv] .sv-tabs__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sv-tabs__bar {
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+
+    .sv-tabs__tab {
+      white-space: nowrap;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Products in tabs",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "New arrivals" },
+    { "type": "text", "id": "sub", "label": "Line under the heading", "default": "Browse the newest designs" },
+    { "type": "range", "id": "limit", "label": "Products per tab", "min": 4, "max": 16, "step": 1, "default": 8 },
+    { "type": "text", "id": "more_label", "label": "Button text before the tab name", "default": "View all" }
+  ],
+  "blocks": [
+    {
+      "type": "tab",
+      "name": "Tab",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Tab name", "default": "Girls" },
+        { "type": "collection", "id": "collection", "label": "Collection" },
+        { "type": "text", "id": "tag", "label": "Only products tagged", "info": "Optional, e.g. gender-girl or gender-boy. Leave empty to show the whole collection." }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "SV Products in tabs",
+      "blocks": [
+        { "type": "tab", "settings": { "label": "Girls", "tag": "gender-girl" } },
+        { "type": "tab", "settings": { "label": "Boys", "tag": "gender-boy" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

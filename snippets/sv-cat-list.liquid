@@ -1,0 +1,64 @@
+{% doc %}
+  The product categories, read from Admin's navigation — never typed in
+  the theme. Prints "handle::label" pairs joined by "||", nothing else,
+  so it is used through capture:
+
+    {%- capture raw -%}{% render 'sv-cat-list' %}{%- endcapture -%}
+    {%- assign cats = raw | strip | split: '||' -%}
+    → each entry split by '::' gives the collection handle and the label
+
+  With `parent`, it prints that category's SUB-categories instead (the
+  pikabookidz "Diaper & Nappy → Muslin nappy · Velcro nappy" level).
+
+  ── Where categories come from, in order ──────────────────────────────
+  1. A menu with the handle `sv-categories`, if the store has one: its
+     top level is the categories, its second level the sub-categories.
+  2. Otherwise the main menu's own category entry — the top-level item
+     that links to /pages/products, or is titled "Products", "Shop by
+     Type", "Shop by Category" or "Categories". Its children are the
+     categories and their children the sub-categories.
+
+  Only links that point at a collection count; a page or URL link in the
+  same list is skipped, because a category has to have a shelf to land on.
+
+  @param {string} [parent] - Collection handle whose sub-categories to list
+{% enddoc %}
+
+{%- liquid
+  assign top = blank
+  assign own = linklists['sv-categories']
+  if own.links.size > 0
+    assign top = own.links
+  else
+    for link in linklists['main-menu'].links
+      assign t = link.title | downcase | strip
+      assign u = link.url | downcase
+      if u contains '/pages/products' or t == 'products' or t == 'shop by type' or t == 'shop by category' or t == 'categories'
+        assign top = link.links
+        break
+      endif
+    endfor
+  endif
+
+  assign out = ''
+  for link in top
+    if link.type != 'collection_link' or link.object == blank
+      continue
+    endif
+    if parent != blank
+      if link.object.handle != parent
+        continue
+      endif
+      for sub in link.links
+        if sub.type != 'collection_link' or sub.object == blank
+          continue
+        endif
+        assign out = out | append: sub.object.handle | append: '::' | append: sub.title | append: '||'
+      endfor
+      break
+    else
+      assign out = out | append: link.object.handle | append: '::' | append: link.title | append: '||'
+    endif
+  endfor
+  echo out
+-%}

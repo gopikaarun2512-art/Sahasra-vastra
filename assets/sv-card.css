@@ -13,7 +13,7 @@
 /* section[data-sv] carries sv-system's 160px section padding at (0,1,1);
    the shelves must out-rank it or every shelf opens a 160px void. */
 section[data-sv].sv-shelf {
-  padding: var(--d) 0 0;
+  padding: var(--b) 0 0;
 }
 
 .sv-shelf__head {

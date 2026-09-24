@@ -6,7 +6,8 @@
  * or related systems. Please exercise caution as any changes
  * made to this file may be overwritten.
  * ------------------------------------------------------------
- */{
+ */
+{
   "sections": {
     "sv_hero_film": {
       "type": "sv-hero-video",
@@ -176,11 +177,46 @@
         "frame_playroom",
         "frame_first_drop"
       ]
+    },
+    "sv_shop_category": {
+      "type": "sv-shop-by-category",
+      "settings": {
+        "eyebrow": "Shop by category",
+        "heading": "",
+        "sub": "",
+        "shape": "square",
+        "columns": 6,
+        "columns_mobile": 2,
+        "cta_label": "See every category",
+        "auto_open": false,
+        "tile_size": 300
+      }
+    },
+    "sv_reels_home": {
+      "type": "sv-reels",
+      "settings": {
+        "eyebrow": "Watch",
+        "heading": "Reels",
+        "sub": "Our clothes, moving the way little ones do."
+      }
+    },
+    "sv_moments": {
+      "type": "sv-moments",
+      "settings": {
+        "eyebrow": "From our families",
+        "heading": "Sahasra Vastra Moments",
+        "sub": "Little ones in their Sahasra Vastra, sent in by their parents. Tag us or send us yours on WhatsApp.",
+        "cta_label": "",
+        "cta_url": ""
+      }
     }
   },
   "order": [
     "sv_hero_film",
     "sv_shop_age",
-    "sv_new_drop"
+    "sv_shop_category",
+    "sv_new_drop",
+    "sv_reels_home",
+    "sv_moments"
   ]
 }

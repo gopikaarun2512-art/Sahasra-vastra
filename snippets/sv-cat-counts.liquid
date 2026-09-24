@@ -1,0 +1,53 @@
+{% doc %}
+  How many products a collection holds in each age band. Prints
+  "all:N,age-0-3m:N,age-3-6m:N,…" — the total first, then one entry per
+  band that has at least one product — and nothing else, for capture.
+
+  Counted from `collection.products`, which Liquid hands over 50 at a
+  time outside a paginate tag, so a category with more than 50 designs
+  counts its first 50. Right for this catalogue; the day a category
+  outgrows it, the answer is a smart collection per age, not a bigger
+  loop here.
+
+  Counting without a hash: every age tag a product carries is appended
+  as "<tag>", and a band's count is how much shorter the string gets when
+  that token is removed, divided by the token's length. Exact, and it
+  cannot confuse age-1-2y with age-12-18m because the angle brackets
+  close each token.
+
+  @param {object} collection
+  @param {string} tags - The band tags to report, space-separated
+  @param {string} [gender] - Only count products carrying this tag
+{% enddoc %}
+
+{%- liquid
+  assign seen = ''
+  assign total = 0
+  for p in collection.products
+    if gender != blank
+      unless p.tags contains gender
+        continue
+      endunless
+    endif
+    assign total = total | plus: 1
+    for t in p.tags
+      assign head = t | slice: 0, 4
+      if head == 'age-'
+        assign seen = seen | append: '<' | append: t | append: '>'
+      endif
+    endfor
+  endfor
+
+  assign out = 'all:' | append: total
+  assign band_tags = tags | split: ' '
+  for bt in band_tags
+    assign token = '<' | append: bt | append: '>'
+    unless seen contains token
+      continue
+    endunless
+    assign without = seen | remove: token
+    assign n = seen.size | minus: without.size | divided_by: token.size
+    assign out = out | append: ',' | append: bt | append: ':' | append: n
+  endfor
+  echo out
+-%}

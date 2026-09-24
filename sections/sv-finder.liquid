@@ -1,0 +1,225 @@
+{%- comment -%}
+  The Products finder — the inside of the "Products" popup.
+
+  Age first, then only the categories that age is actually made in, then
+  (where a category has them) its sub-categories, then the shelf:
+  /collections/<category>/<age-tag>, which Shopify narrows by tag before
+  the grid renders. A parent never lands on a category that has nothing
+  in their child's size — rompers simply do not appear for 5–6 y.
+
+  ── Why this is a section nobody places ──────────────────────────────
+  It is never in a template. sv-finder.js asks for it through the Section
+  Rendering API (/?section_id=sv-finder) the first time the popup opens,
+  so the counting below costs nothing on the pages where nobody opens it,
+  and every page gets the same, current answer.
+
+  ── Where everything comes from ──────────────────────────────────────
+  Ages: the main menu's size links (snippets/sv-age-list).
+  Categories and sub-categories: sv-categories menu or the main menu's
+  Products / Shop by Type entry (snippets/sv-cat-list).
+  Pictures: snippets/sv-cat-icon.
+  Girls / boys: the product tags `gender-girl` and `gender-boy` — a
+  unisex design carries both. Until some product carries one, the
+  Girls · Boys choice does not render at all.
+
+  Counts come from each collection's first 50 products (see
+  sv-cat-counts); categories and sub-categories with nothing in the
+  chosen age are hidden by the script, never linked.
+{%- endcomment -%}
+
+{%- liquid
+  capture bands_raw
+    render 'sv-age-list'
+  endcapture
+  assign bands = bands_raw | strip | split: '||'
+  assign band_tags = ''
+  for b in bands
+    assign bp = b | split: '::'
+    assign band_tags = band_tags | append: bp[0] | append: ' '
+  endfor
+
+  capture cats_raw
+    render 'sv-cat-list'
+  endcapture
+  assign cats = cats_raw | strip | split: '||'
+
+  assign has_gender = false
+-%}
+
+<div class="sv-finder" data-sv-finder-body>
+  {%- comment -%} ── Step 1 · who and how old ─────────────────────── {%- endcomment -%}
+  <div class="sv-finder__step" data-step="age">
+    <p class="lab lab--grey sv-finder__kicker" data-sv-finder-kicker hidden></p>
+    <h2 class="sv-finder__h" tabindex="-1">{{ section.settings.age_heading | default: 'How old is your little one?' }}</h2>
+    <p class="sv-finder__sub">{{ section.settings.age_sub | default: 'We’ll show only what’s made in their size.' }}</p>
+
+    <div class="sv-finder__gender" data-sv-finder-gender hidden>
+      <div class="sv-finder__seg" role="radiogroup" aria-label="Shopping for">
+        <button type="button" class="sv-finder__segbtn is-on" role="radio" aria-checked="true" data-gender="">All</button>
+        <button type="button" class="sv-finder__segbtn" role="radio" aria-checked="false" data-gender="gender-girl">Girls</button>
+        <button type="button" class="sv-finder__segbtn" role="radio" aria-checked="false" data-gender="gender-boy">Boys</button>
+      </div>
+    </div>
+
+    <div class="sv-finder__ages">
+      {%- for b in bands -%}
+        {%- assign bp = b | split: '::' -%}
+        {%- if bp[0] == blank -%}{%- continue -%}{%- endif -%}
+        <button type="button" class="sv-finder__age" data-age="{{ bp[0] | escape }}" data-label="{{ bp[1] | escape }}">
+          <span class="sv-finder__agelabel">{{ bp[1] }}</span>
+          <span class="sv-finder__agenote" data-sv-finder-agenote></span>
+        </button>
+      {%- endfor -%}
+    </div>
+
+    <button type="button" class="sv-finder__skip" data-age="">{{ section.settings.all_label | default: 'Skip — show every age' }}</button>
+  </div>
+
+  {%- comment -%} ── Step 2 · categories for that age ─────────────── {%- endcomment -%}
+  <div class="sv-finder__step" data-step="cat" hidden>
+    <button type="button" class="sv-finder__back" data-sv-finder-back="age">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m14.5 6-6 6 6 6"/></svg>
+      <span data-sv-finder-agenow>Change age</span>
+    </button>
+    <h2 class="sv-finder__h" tabindex="-1">{{ section.settings.cat_heading | default: 'What are you looking for?' }}</h2>
+    <ul class="sv-finder__grid" role="list">
+      {%- for c in cats -%}
+        {%- liquid
+          assign cp = c | split: '::'
+          assign cp_h = cp[0]
+          assign col = collections[cp_h]
+          if col == blank or col.id == blank
+            continue
+          endif
+          capture n_all
+            render 'sv-cat-counts', collection: col, tags: band_tags
+          endcapture
+          capture n_girl
+            render 'sv-cat-counts', collection: col, tags: band_tags, gender: 'gender-girl'
+          endcapture
+          capture n_boy
+            render 'sv-cat-counts', collection: col, tags: band_tags, gender: 'gender-boy'
+          endcapture
+          assign ng = n_girl | strip | split: ',' | first
+          assign nb = n_boy | strip | split: ',' | first
+          if ng != 'all:0' or nb != 'all:0'
+            assign has_gender = true
+          endif
+
+          capture subs_raw
+            render 'sv-cat-list', parent: col.handle
+          endcapture
+          assign subs = subs_raw | strip | split: '||'
+        -%}
+        <li class="sv-finder__cell" data-cat="{{ col.handle }}">
+          <button
+            type="button"
+            class="sv-finder__tile"
+            data-sv-finder-cat="{{ col.handle }}"
+            data-url="{{ col.url }}"
+            data-label="{{ cp[1] | escape }}"
+            data-counts='{% render 'sv-counts-json', counts: n_all %}'
+            data-counts-girl='{% render 'sv-counts-json', counts: n_girl %}'
+            data-counts-boy='{% render 'sv-counts-json', counts: n_boy %}'
+            data-subs="{{ subs.size }}"
+          >
+            <span class="sv-finder__icon">{% render 'sv-cat-icon', collection: col, sizes: '120px', class: 'sv-finder__img' %}</span>
+            <span class="sv-finder__name">{{ cp[1] }}</span>
+            <span class="sv-finder__count" data-sv-finder-count></span>
+          </button>
+        </li>
+      {%- endfor -%}
+    </ul>
+    <p class="sv-finder__empty" data-sv-finder-empty hidden>
+      {{ section.settings.empty_text | default: 'Nothing in this age just yet — new designs land every few weeks.' }}
+    </p>
+  </div>
+
+  {%- comment -%}
+    ── Step 3 · sub-categories (the pikabookidz cards) ──────────────
+    One list per category, all rendered, the script shows the one that
+    was chosen. "All <category>" leads so the shelf is never more than
+    one tap away.
+  {%- endcomment -%}
+  <div class="sv-finder__step" data-step="sub" hidden>
+    <button type="button" class="sv-finder__back" data-sv-finder-back="cat">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m14.5 6-6 6 6 6"/></svg>
+      <span>All categories</span>
+    </button>
+    <h2 class="sv-finder__h" tabindex="-1" data-sv-finder-subhead></h2>
+    {%- for c in cats -%}
+      {%- liquid
+        assign cp = c | split: '::'
+        assign cp_h = cp[0]
+          assign col = collections[cp_h]
+        if col == blank or col.id == blank
+          continue
+        endif
+        capture subs_raw
+          render 'sv-cat-list', parent: col.handle
+        endcapture
+        assign subs = subs_raw | strip | split: '||'
+        if subs.size == 0
+          continue
+        endif
+      -%}
+      <ul class="sv-finder__cards" role="list" data-sv-finder-subs="{{ col.handle }}" hidden>
+        <li>
+          <button type="button" class="sv-finder__card sv-finder__card--all" data-sv-finder-go="{{ col.url }}" data-counts-from="{{ col.handle }}">
+            <span class="sv-finder__cardimg">{% render 'sv-cat-icon', collection: col, sizes: '(max-width: 749px) 44vw, 180px', class: 'sv-finder__img' %}</span>
+            <span class="sv-finder__cardname">All {{ cp[1] }}</span>
+          </button>
+        </li>
+        {%- for s in subs -%}
+          {%- liquid
+            assign sp = s | split: '::'
+            assign sp_h = sp[0]
+          assign sc = collections[sp_h]
+            if sc == blank or sc.id == blank
+              continue
+            endif
+            capture s_all
+              render 'sv-cat-counts', collection: sc, tags: band_tags
+            endcapture
+            capture s_girl
+              render 'sv-cat-counts', collection: sc, tags: band_tags, gender: 'gender-girl'
+            endcapture
+            capture s_boy
+              render 'sv-cat-counts', collection: sc, tags: band_tags, gender: 'gender-boy'
+            endcapture
+          -%}
+          <li>
+            <button
+              type="button"
+              class="sv-finder__card"
+              data-sv-finder-go="{{ sc.url }}"
+              data-counts='{% render 'sv-counts-json', counts: s_all %}'
+              data-counts-girl='{% render 'sv-counts-json', counts: s_girl %}'
+              data-counts-boy='{% render 'sv-counts-json', counts: s_boy %}'
+            >
+              <span class="sv-finder__cardimg">{% render 'sv-cat-icon', collection: sc, sizes: '(max-width: 749px) 44vw, 180px', class: 'sv-finder__img' %}</span>
+              <span class="sv-finder__cardname">{{ sp[1] }}</span>
+            </button>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endfor -%}
+  </div>
+
+  {%- if has_gender -%}<span data-sv-finder-has-gender hidden></span>{%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "SV Products finder",
+  "class": "sv-finder-section",
+  "settings": [
+    { "type": "paragraph", "content": "The inside of the Products popup. It is loaded on demand, so it never needs placing on a page. Categories come from the 'sv-categories' menu, or the main menu's Products / Shop by Type item." },
+    { "type": "text", "id": "age_heading", "label": "Age question", "default": "How old is your little one?" },
+    { "type": "text", "id": "age_sub", "label": "Line under it", "default": "We’ll show only what’s made in their size." },
+    { "type": "text", "id": "all_label", "label": "Skip link", "default": "Skip — show every age" },
+    { "type": "text", "id": "cat_heading", "label": "Category heading", "default": "What are you looking for?" },
+    { "type": "text", "id": "empty_text", "label": "Nothing in this age", "default": "Nothing in this age just yet — new designs land every few weeks." }
+  ]
+}
+{% endschema %}
