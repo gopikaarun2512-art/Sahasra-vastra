@@ -9,6 +9,9 @@
   that age. With script off the tile is a plain link to the category.
 
   ── Where tiles come from ─────────────────────────────────────────────
+  Categories with no products yet are left out (setting), so adding a
+  new type to the menu ahead of stock never shows an empty tile.
+
   By default, the store's categories (snippets/sv-cat-list: the
   sv-categories menu, else the main menu's Products / Shop by Type item),
   in menu order, with each category's icon from snippets/sv-cat-icon.
@@ -79,6 +82,7 @@
           {%- assign cp = c | split: '::' -%}
           {%- assign cp_h = cp[0] -%}{%- assign col = collections[cp_h] -%}
           {%- if col == blank or col.id == blank -%}{%- continue -%}{%- endif -%}
+          {%- if col.products_count == 0 and section.settings.show_empty == false -%}{%- continue -%}{%- endif -%}
           <li class="sv-cats__cell">
             <a class="sv-cats__tile" href="{{ col.url }}" data-sv-finder data-sv-finder-cat="{{ col.handle }}">
               <span class="sv-cats__icon">
@@ -229,6 +233,7 @@
     { "type": "range", "id": "columns", "label": "Icons per row (desktop)", "min": 3, "max": 10, "step": 1, "default": 8 },
     { "type": "range", "id": "columns_mobile", "label": "Icons per row (phone)", "min": 2, "max": 4, "step": 1, "default": 3 },
     { "type": "text", "id": "cta_label", "label": "Button under the grid", "info": "Opens the Products popup. Leave empty for no button." },
+    { "type": "checkbox", "id": "show_empty", "label": "Show categories that have no products yet", "default": false },
     { "type": "checkbox", "id": "auto_open", "label": "Open the age question as soon as the page loads", "info": "Turn on for the Products page only.", "default": false },
     { "type": "paragraph", "content": "Tiles come from your categories menu automatically (the 'sv-categories' menu, or the main menu's Products / Shop by Type item). Icons come from each collection's image. Add Category blocks only to pick different collections or icons here." }
   ],

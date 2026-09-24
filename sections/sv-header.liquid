@@ -124,6 +124,7 @@
               -%}
               <ul class="sv-header__sub{% if split %} sv-header__sub--split{% endif %}">
                 {%- for child in link.links -%}
+                  {%- if child.type == 'collection_link' and child.links.size == 0 and child.object.products_count == 0 -%}{%- continue -%}{%- endif -%}
                   <li class="sv-header__group{% if forloop.first %} is-first{% endif %}">
                     <a class="sv-header__sub-link" href="{{ child.url }}">
                       {{ child.title }}
@@ -169,6 +170,7 @@
                 {%- if link.links.size > 0 -%}
                   <ul class="sv-header__sheet-sub">
                     {%- for child in link.links -%}
+                      {%- if child.type == 'collection_link' and child.links.size == 0 and child.object.products_count == 0 -%}{%- continue -%}{%- endif -%}
                       <li>
                         <a class="sv-header__sheet-child" href="{{ child.url }}">{{ child.title }}</a>
                         {%- if child.links.size > 0 -%}
