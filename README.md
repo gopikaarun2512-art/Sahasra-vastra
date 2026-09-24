@@ -30,7 +30,9 @@ With the Shopify CLI: `shopify theme dev --store sahasravastra.myshopify.com`.
 * The **Products** page exists (handle `products`, template **products**).
 * In the main menu, *Shop by Type* is renamed **Products**. It still links to All products, so the old theme keeps working. This theme opens the popup from any top-level menu item titled "Products", whatever its link.
 * Products are tagged `gender-girl` / `gender-boy`; unisex designs have both.
-* The preview theme **"Sahasra — Products finder (preview)"** (unpublished) holds this branch's changes.
+* The preview theme **"Sahasra — Products finder (preview 2)"** (unpublished) holds this branch's changes on top of the live theme's stock-limit work.
+* Every garment type is its own smart collection on a `type-` tag, listed under **Products** in the main menu. Clothing: Sleepsuits (`type-sleepsuit`), Rompers (`type-romper`), Onesies (`type-onesie`), Jumpsuits (`type-jumpsuit`), Dungarees (`type-dungaree`), Co-ord Sets (`type-co-ord`), Sunsuits (`type-sunsuit`), Frocks & Dresses (`type-frock`), T-Shirts & Tops (`type-top`), Bottoms (`type-bottom`), Ethnic Wear (`type-ethnic`). Accessories: Sleeping Bags (`type-sleeping-bag`), Swaddles (`type-swaddle`), Bibs (`type-bib`), Burp Cloths (`type-burp-cloth`), Caps (`type-cap`). A type with no products yet stays hidden in the menu, the category grid and the popup.
+* The footed sleepsuits carry `type-sleepsuit`, not `type-romper`. The old *Rompers & Onesies* collection is no longer in the menu.
 
 ## Collection page
 
