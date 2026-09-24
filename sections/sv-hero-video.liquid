@@ -111,14 +111,34 @@
       <div class="sv-hero-video__navgroup">
         <a class="sv-hero-video__navpill sv-hero-video__navpill--logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
           {%- comment -%}
-            Below 64px the 24-petal emblem blurs; the 8-path simple variant
-            is the same mark drawn for small sizes (brand system §2).
+            The full 24-petal emblem, the same mark the header carries on
+            every other page (owner's direction, Sep 2026: the 8-petal
+            simple variant read as a different logo).
           {%- endcomment -%}
-          <img src="{{ 'emblem-simple-colour.svg' | asset_url }}" alt="" width="52" height="52">
+          <img src="{{ 'emblem-colour.svg' | asset_url }}" alt="" width="52" height="52">
         </a>
 
         <nav class="sv-hero-video__navpill sv-hero-video__navlinks" aria-label="{{ nav_menu.title | escape }}">
           {%- for link in nav_menu.links -%}
+            {%- comment -%} A top-level link to an empty collection is skipped until it has stock (revenue audit, Sep 2026). {%- endcomment -%}
+            {%- liquid
+  # Revenue audit, Sep 2026: a link to an empty collection is a dead end,
+  # so it is skipped until the collection has a product. Works for a
+  # picked collection and for a typed /collections/<handle> URL alike.
+  assign sv_dead = false
+  if link.links.size == 0
+    if link.type == 'collection_link'
+      if link.object.products_count == 0
+        assign sv_dead = true
+      endif
+    elsif link.url contains '/collections/'
+      assign sv_h = link.url | split: '/collections/' | last | split: '/' | first | split: '?' | first
+      if sv_h != 'all' and collections[sv_h] != blank and collections[sv_h].products_count == 0
+        assign sv_dead = true
+      endif
+    endif
+  endif
+-%}{%- if sv_dead -%}{%- continue -%}{%- endif -%}
             {%- if link.links.size > 0 -%}
               {%- comment -%}
                 Phase 1.2 — a parent with children is a BUTTON on desktop,
@@ -205,6 +225,24 @@
           <nav class="sv-hero-video__sheet" aria-label="{{ nav_menu.title | escape }}">
             <ul class="sv-hero-video__sheet-list">
               {%- for link in nav_menu.links -%}
+                {%- liquid
+  # Revenue audit, Sep 2026: a link to an empty collection is a dead end,
+  # so it is skipped until the collection has a product. Works for a
+  # picked collection and for a typed /collections/<handle> URL alike.
+  assign sv_dead = false
+  if link.links.size == 0
+    if link.type == 'collection_link'
+      if link.object.products_count == 0
+        assign sv_dead = true
+      endif
+    elsif link.url contains '/collections/'
+      assign sv_h = link.url | split: '/collections/' | last | split: '/' | first | split: '?' | first
+      if sv_h != 'all' and collections[sv_h] != blank and collections[sv_h].products_count == 0
+        assign sv_dead = true
+      endif
+    endif
+  endif
+-%}{%- if sv_dead -%}{%- continue -%}{%- endif -%}
                 <li>
                   <a class="sv-hero-video__sheet-link" href="{{ link.url }}"{% assign sv_lt = link.title | downcase | strip %}{% if sv_lt == 'products' %} data-sv-finder{% endif %}>{{ link.title }}</a>
                   {%- if link.links.size > 0 -%}
@@ -274,7 +312,11 @@
 
   <div class="w w--wide sv-hero-video__layout">
     <div class="sv-hero-video__content">
-      {%- if section.settings.show_lockup -%}
+      {%- assign lockup_low = false -%}
+      {%- if section.settings.show_lockup and section.settings.lockup_position == 'bottom' -%}
+        {%- assign lockup_low = true -%}
+      {%- endif -%}
+      {%- if section.settings.show_lockup and lockup_low == false -%}
         <div class="sv-hero-video__lockup-row rv">
           {% render 'sv-lockup', class: 'sv-hero-video__lockup', title: shop.name %}
         </div>
@@ -295,10 +337,49 @@
         <p class="sv-hero-video__body rv">{{ section.settings.body }}</p>
       {%- endif -%}
 
-      {%- if section.settings.cta_label != blank or section.settings.secondary_label != blank or section.settings.tertiary_label != blank -%}
+      {%- if lockup_low -%}
+        {%- comment -%}
+          The lockup under the copy (owner's direction, Sep 2026). With the
+          emblem action on, the lockup is that action, so the mark is not
+          drawn twice.
+        {%- endcomment -%}
+        {%- if section.settings.heading == blank -%}
+          <h1 class="sv-visually-hidden">{{ shop.name }}{% if section.settings.eyebrow != blank %} — {{ section.settings.eyebrow }}{% endif %}</h1>
+        {%- endif -%}
+        {%- if section.settings.cta_emblem and section.settings.cta_label != blank -%}
+          <a class="sv-hero-video__lockup-row sv-hero-video__lockup-row--low sv-hero-video__lockup-link rv" href="{{ section.settings.cta_url | default: '#' }}" aria-label="{{ section.settings.cta_label | escape }}" title="{{ section.settings.cta_label | escape }}">
+            {% render 'sv-lockup', class: 'sv-hero-video__lockup', title: shop.name %}
+          </a>
+        {%- else -%}
+          <div class="sv-hero-video__lockup-row sv-hero-video__lockup-row--low rv">
+            {% render 'sv-lockup', class: 'sv-hero-video__lockup', title: shop.name %}
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+
+      {%- liquid
+        assign show_primary = false
+        if section.settings.cta_label != blank
+          assign show_primary = true
+          if lockup_low and section.settings.cta_emblem
+            assign show_primary = false
+          endif
+        endif
+      -%}
+      {%- if show_primary or section.settings.secondary_label != blank or section.settings.tertiary_label != blank -%}
         <div class="sv-hero-video__actions rv">
-          {%- if section.settings.cta_label != blank -%}
-            <a class="btn btn--ivory" href="{{ section.settings.cta_url | default: '#' }}">{{ section.settings.cta_label }}</a>
+          {%- if show_primary -%}
+            {%- if section.settings.cta_emblem -%}
+              {%- comment -%}
+                The primary action as the emblem itself (owner's direction,
+                Sep 2026). The label stays as its accessible name and tooltip.
+              {%- endcomment -%}
+              <a class="sv-hero-video__emblemcta" href="{{ section.settings.cta_url | default: '#' }}" aria-label="{{ section.settings.cta_label | escape }}" title="{{ section.settings.cta_label | escape }}">
+                <img src="{{ 'emblem-colour.svg' | asset_url }}" alt="" width="96" height="96">
+              </a>
+            {%- else -%}
+              <a class="btn btn--ivory" href="{{ section.settings.cta_url | default: '#' }}">{{ section.settings.cta_label }}</a>
+            {%- endif -%}
           {%- endif -%}
           {%- if section.settings.secondary_label != blank -%}
             <a class="btn sv-hero-video__ghost" href="{{ section.settings.secondary_url | default: '#' }}">{{ section.settings.secondary_label }}</a>
@@ -324,11 +405,32 @@
               if card_url == blank and c != blank
                 assign card_url = c.url
               endif
+              # The supporting line reads the collection's own description
+              # (its first paragraph), so it follows whatever the collection
+              # holds instead of a line typed into the card.
+              assign card_text = block.settings.text
+              if card_text == blank and c != blank and c.description != blank
+                assign card_text = c.description | split: '</p>' | first | strip_html | strip
+              endif
               assign card_img = block.settings.image
               if card_img == blank and c != blank
                 assign card_img = c.featured_image
               endif
+
+              # A card whose collection holds nothing is skipped until it
+              # does (revenue audit, Sep 2026) — read from the picked
+              # collection, or from a /collections/<handle> link.
+              assign card_empty = false
+              if c != blank and c.products_count == 0
+                assign card_empty = true
+              elsif card_url contains '/collections/'
+                assign card_handle = card_url | split: '/collections/' | last | split: '/' | first | split: '?' | first
+                if card_handle != 'all' and collections[card_handle] != blank and collections[card_handle].products_count == 0
+                  assign card_empty = true
+                endif
+              endif
             -%}
+            {%- if card_empty -%}{%- continue -%}{%- endif -%}
             <a class="sv-hero-video__card{% unless section.settings.auto_scroll %} rv{% endunless %}" href="{{ card_url | default: '#' }}" {{ block.shopify_attributes }}>
               <span class="sv-hero-video__card-media">
                 {%- if card_img != blank -%}
@@ -339,8 +441,8 @@
               </span>
               <span class="sv-hero-video__card-copy">
                 <span class="sv-hero-video__card-title">{{ card_title }}</span>
-                {%- if block.settings.text != blank -%}
-                  <span class="sv-hero-video__card-text">{{ block.settings.text }}</span>
+                {%- if card_text != blank -%}
+                  <span class="sv-hero-video__card-text">{{ card_text }}</span>
                 {%- endif -%}
               </span>
             </a>
@@ -673,8 +775,14 @@
     flex: none;
   }
 
+  /* Shown with visibility, not display, so it lingers 0.3s after the
+     pointer leaves its age — a diagonal run over to the sizes crosses
+     the next age down without the panel vanishing (the ink header's
+     fix, sv-header §flyout). */
   .sv-hero-video__navflyout {
-    display: none;
+    display: block;
+    visibility: hidden;
+    transition: visibility 0s linear 0.3s;
     position: absolute;
     top: -8px;
     left: 100%;
@@ -694,7 +802,26 @@
   .sv-hero-video__navgroup:hover > .sv-hero-video__navflyout,
   .sv-hero-video__navgroup:focus-within > .sv-hero-video__navflyout,
   .sv-hero-video__navsub--split:not(:hover):not(:focus-within) .sv-hero-video__navgroup.is-first > .sv-hero-video__navflyout {
-    display: block;
+    visibility: visible;
+    z-index: 98;
+    transition-delay: 0.08s;
+  }
+
+  /* Keyboard and the resting first age open at once. */
+  .sv-hero-video__navgroup:focus-within > .sv-hero-video__navflyout,
+  .sv-hero-video__navsub--split:not(:hover):not(:focus-within) .sv-hero-video__navgroup.is-first > .sv-hero-video__navflyout {
+    transition-delay: 0s;
+  }
+
+  /* Bridge across the flyout's 10px margin, so the pointer never
+     crosses dead space on the way over to the sizes. */
+  .sv-hero-video__navflyout::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 100%;
+    width: 22px;
   }
 
   [data-sv] .sv-hero-video__navgroup:hover > .sv-hero-video__navsub-link,
@@ -1059,12 +1186,31 @@
     max-width: 44ch;
     margin-block-start: var(--a);
     color: var(--cream);
-    opacity: 0.9;
+    opacity: 0.95;
+  }
+
+  /* The film passes through pale frames (the cream wash between shots),
+     where cream type alone drops below readable contrast. A soft shadow
+     keeps the headline and line legible on every frame without a scrim
+     over the picture. */
+  [data-sv] .sv-hero-video__heading,
+  [data-sv] .sv-hero-video__body {
+    text-shadow: 0 1px 2px rgba(20, 30, 26, 0.35), 0 2px 18px rgba(20, 30, 26, 0.45);
   }
 
   .sv-hero-video__lockup-row { margin-block-end: var(--a); }
+  .sv-hero-video__lockup-row--low { display: block; margin-block: var(--b) 0; }
+  .sv-hero-video__lockup-link { width: max-content; max-width: 100%; text-decoration: none; }
+  .sv-hero-video__lockup-link:focus-visible { outline: 2px solid var(--cream); outline-offset: 6px; }
+  /* The horizontal lockup's viewBox starts at x=-110 but the rosette
+     only reaches x=-73.6 (80 x 0.92), so 36.4 of its 600 units are empty
+     on the left. Pulled back by that share of its own width so the
+     emblem's tips sit on the same left edge as the heading and body
+     (owner's direction, Sep 2026). */
   .sv-hero-video__lockup {
-    width: min(440px, 72vw);
+    --sv-lockup-w: min(440px, 72vw);
+    width: var(--sv-lockup-w);
+    margin-inline-start: calc(var(--sv-lockup-w) * -36.4 / 600);
     max-width: none;
     height: auto;
     display: block;
@@ -1098,6 +1244,34 @@
   [data-sv] .sv-hero-video__actions .btn--ivory:hover {
     background: var(--emerald);
     color: var(--cream);
+  }
+
+  /* The emblem as the primary action: the mark alone, turning a third on
+     hover like the logo pill in the nav. */
+  .sv-hero-video__emblemcta {
+    display: inline-block;
+    line-height: 0;
+    border-radius: 50%;
+  }
+  .sv-hero-video__emblemcta img {
+    width: 96px;
+    height: 96px;
+    transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .sv-hero-video__emblemcta:hover img,
+  .sv-hero-video__emblemcta:focus-visible img {
+    transform: rotate(120deg) scale(1.06);
+  }
+  .sv-hero-video__emblemcta:focus-visible {
+    outline: 2px solid var(--cream);
+    outline-offset: 4px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sv-hero-video__emblemcta:hover img,
+    .sv-hero-video__emblemcta:focus-visible img { transform: none; }
+  }
+  @media (max-width: 760px) {
+    .sv-hero-video__emblemcta img { width: 72px; height: 72px; }
   }
 
   [data-sv] .sv-hero-video__ghost {
@@ -1183,8 +1357,9 @@
     /* A phone is not a small desktop: the lockup drops a size, the three
        actions shrink to compact pills flowing inline, and the rhythm
        tightens so the composition breathes instead of stacking. */
-    .sv-hero-video__lockup { width: min(250px, 62vw); }
+    .sv-hero-video__lockup { --sv-lockup-w: min(250px, 62vw); }
     .sv-hero-video__lockup-row { margin-block-end: 4px; }
+    .sv-hero-video__lockup-row--low { margin-block: var(--a) 0; }
     [data-sv] .sv-hero-video__actions {
       margin-block-start: var(--a);
       gap: 10px;
@@ -1544,6 +1719,17 @@
       "info": "The lockup, large, above the actions — colour emblem with the wordmark in ivory. Clear the heading below when this is on."
     },
     {
+      "type": "select",
+      "id": "lockup_position",
+      "label": "Lockup position",
+      "options": [
+        { "value": "top", "label": "Above the heading" },
+        { "value": "bottom", "label": "Below the text" }
+      ],
+      "default": "top",
+      "info": "Below the text with the emblem action on, the lockup becomes the primary link."
+    },
+    {
       "type": "header",
       "content": "Words"
     },
@@ -1574,6 +1760,13 @@
       "id": "cta_label",
       "label": "Primary label",
       "default": "View collections"
+    },
+    {
+      "type": "checkbox",
+      "id": "cta_emblem",
+      "label": "Show the primary action as the emblem",
+      "info": "The label above becomes its hover text and screen-reader name.",
+      "default": false
     },
     {
       "type": "url",
