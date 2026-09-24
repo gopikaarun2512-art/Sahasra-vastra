@@ -2160,7 +2160,6 @@ section[data-sv].sv-pdp-facts {
    sizing note (the thumbnail rail keeps column 1). */
 .sv-gal > .sv-pdp__acc {
   grid-column: 2;
-  margin-top: var(--a);
 }
 
 .sv-gal:not(:has(.sv-gal__thumbs)) > .sv-pdp__acc {
@@ -2171,5 +2170,14 @@ section[data-sv].sv-pdp-facts {
   .sv-gal > .sv-pdp__acc {
     grid-column: 1;
     margin-inline: var(--b);
+  }
+}
+
+/* Equal widths (owner's direction, Sep 2026): the photo, the sizing note
+   and Details are exactly as wide as the buy column. The left column is
+   the right column plus the thumbnail rail (76px) and its gap (14px). */
+@media (min-width: 881px) {
+  .sv-pdp__buy {
+    grid-template-columns: minmax(0, 1fr) calc((100% - var(--d) - 90px) / 2);
   }
 }
