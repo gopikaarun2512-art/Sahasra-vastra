@@ -106,10 +106,12 @@
     $$('.sv-finder__age').forEach((btn) => {
       const age = btn.dataset.age;
       const n = preset ? countFor(preset, age) : tiles.reduce((sum, t) => sum + countFor(t, age), 0);
+      /* Only sizes that exist are offered; an empty one is not shown at all. */
+      btn.hidden = n === 0;
       btn.disabled = n === 0;
       btn.classList.toggle('is-on', age === stored);
       const note = btn.querySelector('[data-sv-finder-agenote]');
-      if (note) note.textContent = n === 0 ? 'coming soon' : preset ? designs(n) : '';
+      if (note) note.textContent = preset && n > 0 ? designs(n) : '';
     });
     $$('.sv-finder__segbtn').forEach((b) => {
       const on = b.dataset.gender === state.gender;

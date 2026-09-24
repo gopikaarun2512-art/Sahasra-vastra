@@ -139,10 +139,7 @@
   box-shadow: inset 0 0 0 1px var(--emerald);
 }
 
-.sv-finder__age[disabled] {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.sv-finder__age[hidden] { display: none; }
 
 .sv-finder__agenote {
   min-height: 1em;
