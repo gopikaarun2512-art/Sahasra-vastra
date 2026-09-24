@@ -185,42 +185,11 @@
         "heading": "",
         "sub": "",
         "shape": "square",
-        "columns": 8,
-        "columns_mobile": 3,
+        "columns": 6,
+        "columns_mobile": 2,
         "cta_label": "See every category",
-        "auto_open": false
-      }
-    },
-    "sv_new_tabs": {
-      "type": "sv-tabbed-products",
-      "name": "SV New arrivals — Girls · Boys",
-      "blocks": {
-        "tab_girls": {
-          "type": "tab",
-          "settings": {
-            "label": "Girls",
-            "collection": "new-arrivals",
-            "tag": "gender-girl"
-          }
-        },
-        "tab_boys": {
-          "type": "tab",
-          "settings": {
-            "label": "Boys",
-            "collection": "new-arrivals",
-            "tag": "gender-boy"
-          }
-        }
-      },
-      "block_order": [
-        "tab_girls",
-        "tab_boys"
-      ],
-      "settings": {
-        "heading": "New arrivals",
-        "sub": "Browse the newest designs",
-        "limit": 8,
-        "more_label": "View all"
+        "auto_open": false,
+        "tile_size": 300
       }
     },
     "sv_reels_home": {
@@ -247,7 +216,6 @@
     "sv_shop_age",
     "sv_shop_category",
     "sv_new_drop",
-    "sv_new_tabs",
     "sv_reels_home",
     "sv_moments"
   ]

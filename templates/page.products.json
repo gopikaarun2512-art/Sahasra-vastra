@@ -8,11 +8,14 @@
         "sub": "Pick a category, tell us their age, and we’ll show only what’s made to fit.",
         "shape": "square",
         "columns": 6,
-        "columns_mobile": 3,
+        "columns_mobile": 2,
         "cta_label": "",
-        "auto_open": true
+        "auto_open": true,
+        "tile_size": 300
       }
     }
   },
-  "order": ["categories"]
+  "order": [
+    "categories"
+  ]
 }

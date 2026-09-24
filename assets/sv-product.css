@@ -2161,3 +2161,16 @@ section[data-sv].sv-pdp-facts {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* The sizing note's link opens the size chart dialog, so it is a button
+   dressed as the link it replaced. */
+.sv-pdp__notelink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

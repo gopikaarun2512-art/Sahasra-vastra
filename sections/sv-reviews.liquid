@@ -132,9 +132,34 @@
               <input type="email" name="contact[email]" autocomplete="email" required>
             </label>
           </div>
-          <p class="sv-reviews__note sv-fine">
-            Have a photo of it being worn? Reply to our confirmation email or send it on WhatsApp and we’ll add it to your review.
-          </p>
+          {%- comment -%}
+            Photos. Shopify's contact form cannot carry a file, so the
+            photo goes straight from the browser to Cloudinary (an
+            unsigned upload preset — no secret ever reaches the page) and
+            only its link travels in the review email. Until a cloud name
+            and preset are set in this section, the field does not render
+            and the WhatsApp note stands in for it.
+          {%- endcomment -%}
+          {%- if section.settings.cloudinary_cloud != blank and section.settings.cloudinary_preset != blank -%}
+            <div
+              class="sv-reviews__photos"
+              data-sv-review-photos
+              data-cloud="{{ section.settings.cloudinary_cloud | escape }}"
+              data-preset="{{ section.settings.cloudinary_preset | escape }}"
+            >
+              <label class="sv-reviews__field sv-reviews__field--wide">
+                <span>Add photos (optional, up to 3)</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple data-sv-review-file>
+              </label>
+              <ul class="sv-reviews__thumbs" role="list" data-sv-review-thumbs></ul>
+              <input type="hidden" name="contact[Photos]" value="" data-sv-review-photo-urls>
+              <p class="sv-reviews__photomsg sv-fine" data-sv-review-photomsg role="status"></p>
+            </div>
+          {%- else -%}
+            <p class="sv-reviews__note sv-fine">
+              Have a photo of it being worn? Reply to our confirmation email or send it on WhatsApp and we’ll add it to your review.
+            </p>
+          {%- endif -%}
           <button type="submit" class="btn sv-reviews__submit">Send review</button>
         {%- endif -%}
       {%- endform -%}
@@ -198,6 +223,70 @@
           if (!form.hidden) form.querySelector('input:not([type=hidden]), textarea')?.focus();
         });
       }
+      /* Photos: previewed on pick, uploaded on send, links into the email. */
+      const photos = band.querySelector('[data-sv-review-photos]');
+      if (photos && form) {
+        const input = photos.querySelector('[data-sv-review-file]');
+        const thumbs = photos.querySelector('[data-sv-review-thumbs]');
+        const urls = photos.querySelector('[data-sv-review-photo-urls]');
+        const msg = photos.querySelector('[data-sv-review-photomsg]');
+        const submit = form.querySelector('.sv-reviews__submit');
+        const MAX = 3;
+        const MAX_MB = 10;
+        let files = [];
+        const paint = () => {
+          thumbs.replaceChildren(...files.map((f, i) => {
+            const li = document.createElement('li');
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(f);
+            img.alt = '';
+            const x = document.createElement('button');
+            x.type = 'button';
+            x.textContent = '×';
+            x.setAttribute('aria-label', 'Remove photo');
+            x.addEventListener('click', () => { files.splice(i, 1); paint(); });
+            li.append(img, x);
+            return li;
+          }));
+        };
+        input.addEventListener('change', () => {
+          const picked = Array.from(input.files || []);
+          const tooBig = picked.filter((f) => f.size > MAX_MB * 1024 * 1024);
+          files = files.concat(picked.filter((f) => !tooBig.includes(f))).slice(0, MAX);
+          msg.textContent = tooBig.length ? `Photos over ${MAX_MB} MB were skipped.` : '';
+          input.value = '';
+          paint();
+        });
+        let sending = false;
+        form.addEventListener('submit', async (e) => {
+          if (sending || !files.length) return;
+          e.preventDefault();
+          if (!form.reportValidity()) return;
+          sending = true;
+          submit.disabled = true;
+          msg.textContent = 'Uploading your photos…';
+          try {
+            const endpoint = `https://api.cloudinary.com/v1_1/${encodeURIComponent(photos.dataset.cloud)}/image/upload`;
+            const done = await Promise.all(files.map(async (f) => {
+              const body = new FormData();
+              body.append('file', f);
+              body.append('upload_preset', photos.dataset.preset);
+              body.append('folder', 'reviews');
+              const r = await fetch(endpoint, { method: 'POST', body });
+              if (!r.ok) throw new Error(String(r.status));
+              return (await r.json()).secure_url;
+            }));
+            urls.value = done.join('\n');
+            msg.textContent = 'Photos added — sending your review…';
+            HTMLFormElement.prototype.submit.call(form);
+          } catch {
+            sending = false;
+            submit.disabled = false;
+            msg.textContent = 'Your photos could not be uploaded. Remove them to send the review now, or try again.';
+          }
+        });
+      }
+
       const more = band.querySelector('[data-sv-review-showmore]');
       more?.addEventListener('click', () => {
         band.querySelectorAll('[data-sv-review-more]').forEach((li) => { li.hidden = false; });
@@ -403,6 +492,60 @@
     font-size: 1rem;
   }
 
+  .sv-reviews__photos {
+    margin: var(--a) 0;
+  }
+
+  .sv-reviews__photos input[type='file'] {
+    padding: 10px;
+    border: 1px dashed var(--tan);
+    border-radius: 10px;
+    background: var(--card);
+    font-size: 0.9rem;
+  }
+
+  [data-sv] .sv-reviews__thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sv-reviews__thumbs li {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--card);
+  }
+
+  .sv-reviews__thumbs img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sv-reviews__thumbs button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(26, 26, 26, 0.6);
+    color: var(--cream);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  [data-sv] .sv-reviews__photomsg {
+    margin: 8px 0 0;
+  }
+
   [data-sv] .sv-reviews__note {
     margin: var(--a) 0;
   }
@@ -514,6 +657,9 @@
     { "type": "checkbox", "id": "show_empty", "label": "Show the section before a product has reviews", "info": "Shows 'No reviews yet' with the Write a review form — never sample reviews.", "default": true },
     { "type": "text", "id": "empty_text", "label": "No reviews heading", "default": "No reviews yet." },
     { "type": "text", "id": "empty_sub", "label": "No reviews line", "default": "Bought this for your little one? Tell other parents how it fits." },
+    { "type": "header", "content": "Photo uploads" },
+    { "type": "text", "id": "cloudinary_cloud", "label": "Cloudinary cloud name", "info": "Free account at cloudinary.com. With both fields filled, parents can attach up to 3 photos to a review; the links arrive in the review email." },
+    { "type": "text", "id": "cloudinary_preset", "label": "Cloudinary unsigned upload preset", "info": "Cloudinary → Settings → Upload → Add upload preset → Signing mode: Unsigned." },
     { "type": "paragraph", "content": "Reviews are 'Product review' entries in Admin → Content → Metaobjects (only Active ones show). 'Write a review' emails the review to the store's contact address. To use a reviews app instead, add its block here." }
   ],
   "blocks": [{ "type": "@app" }],

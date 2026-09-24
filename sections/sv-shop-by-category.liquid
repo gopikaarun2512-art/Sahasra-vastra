@@ -41,7 +41,7 @@
   class="sv-cats sv-cats--{{ shape }}"
   data-sv
   {% if section.settings.auto_open %}data-sv-finder-autoopen{% endif %}
-  style="--sv-cats-cols: {{ section.settings.columns | default: 8 }}; --sv-cats-cols-m: {{ section.settings.columns_mobile | default: 3 }};"
+  style="--sv-cats-cols: {{ section.settings.columns | default: 6 }}; --sv-cats-cols-m: {{ section.settings.columns_mobile | default: 2 }}; --sv-cats-max: {{ section.settings.tile_size | default: 300 }}px;"
 >
   <div class="w w--wide">
     {%- if section.settings.eyebrow != blank or section.settings.heading != blank -%}
@@ -58,7 +58,7 @@
       </header>
     {%- endif -%}
 
-    <ul class="sv-cats__grid" role="list">
+    {%- capture tiles_html -%}
       {%- if use_blocks -%}
         {%- for block in tiles -%}
           {%- assign col = block.settings.collection -%}
@@ -93,7 +93,9 @@
           </li>
         {%- endfor -%}
       {%- endif -%}
-    </ul>
+    {%- endcapture -%}
+    {%- assign tile_count = tiles_html | split: 'class="sv-cats__cell"' | size | minus: 1 -%}
+    <ul class="sv-cats__grid" role="list" style="--sv-cats-n: {{ tile_count | at_least: 1 }};">{{ tiles_html }}</ul>
 
     {%- if section.settings.cta_label != blank -%}
       <p class="sv-cats__cta">
@@ -104,12 +106,19 @@
 </section>
 
 {% stylesheet %}
+  /* Tight under Shop by age: that band already ends on its own padding,
+     so this one adds none above. */
   section[data-sv].sv-cats {
-    padding: var(--d) 0 0;
+    padding: 0 0 var(--c);
   }
 
   .sv-cats__head {
-    margin-bottom: var(--c);
+    margin-bottom: var(--b);
+    text-align: center;
+  }
+
+  .sv-cats__head .eyebrow {
+    justify-content: center;
   }
 
   [data-sv] .sv-cats__h {
@@ -122,23 +131,32 @@
 
   [data-sv] .sv-cats__sub {
     max-width: 56ch;
-    margin: 10px 0 0;
+    margin: 10px auto 0;
     color: var(--grey);
   }
 
+  /* As many columns as there are tiles (up to the setting), each column
+     an equal share of the row, and every tile centred in its share — so
+     two categories sit at a quarter and three quarters, six fill the row
+     edge to edge, and no row ever ends in a run of empty space. */
   [data-sv] .sv-cats__grid {
     display: grid;
-    grid-template-columns: repeat(var(--sv-cats-cols), minmax(0, 1fr));
+    grid-template-columns: repeat(min(var(--sv-cats-n), var(--sv-cats-cols)), minmax(0, 1fr));
+    justify-items: center;
     gap: var(--b) var(--a);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  .sv-cats__cell {
+    width: min(100%, var(--sv-cats-max));
+  }
+
   .sv-cats__tile {
     display: grid;
     justify-items: center;
-    gap: 12px;
+    gap: 14px;
     color: var(--ink);
     text-decoration: none;
   }
@@ -173,35 +191,32 @@
   }
 
   .sv-cats__name {
-    font-size: 0.98rem;
+    font-size: 1.1rem;
     font-weight: 500;
     color: var(--emerald);
     text-align: center;
   }
 
-  .sv-cats__cta {
-    margin: var(--c) 0 0;
+  [data-sv] .sv-cats__cta {
+    max-width: none;
+    margin: var(--b) 0 0;
     text-align: center;
   }
 
   @media (max-width: 1100px) {
     [data-sv] .sv-cats__grid {
-      grid-template-columns: repeat(min(var(--sv-cats-cols), 5), minmax(0, 1fr));
+      grid-template-columns: repeat(min(var(--sv-cats-n), var(--sv-cats-cols), 4), minmax(0, 1fr));
     }
   }
 
   @media (max-width: 749px) {
-    section[data-sv].sv-cats {
-      padding-top: var(--c);
-    }
-
     [data-sv] .sv-cats__grid {
-      grid-template-columns: repeat(var(--sv-cats-cols-m), minmax(0, 1fr));
+      grid-template-columns: repeat(min(var(--sv-cats-n), var(--sv-cats-cols-m)), minmax(0, 1fr));
       gap: var(--a) 12px;
     }
 
     .sv-cats__name {
-      font-size: 0.85rem;
+      font-size: 0.95rem;
     }
   }
 
@@ -230,8 +245,9 @@
       ],
       "default": "square"
     },
-    { "type": "range", "id": "columns", "label": "Icons per row (desktop)", "min": 3, "max": 10, "step": 1, "default": 8 },
-    { "type": "range", "id": "columns_mobile", "label": "Icons per row (phone)", "min": 2, "max": 4, "step": 1, "default": 3 },
+    { "type": "range", "id": "columns", "label": "Most icons per row (desktop)", "min": 3, "max": 10, "step": 1, "default": 6 },
+    { "type": "range", "id": "tile_size", "label": "Largest icon size", "min": 160, "max": 420, "step": 20, "unit": "px", "default": 300 },
+    { "type": "range", "id": "columns_mobile", "label": "Icons per row (phone)", "min": 2, "max": 4, "step": 1, "default": 2 },
     { "type": "text", "id": "cta_label", "label": "Button under the grid", "info": "Opens the Products popup. Leave empty for no button." },
     { "type": "checkbox", "id": "show_empty", "label": "Show categories that have no products yet", "default": false },
     { "type": "checkbox", "id": "auto_open", "label": "Open the age question as soon as the page loads", "info": "Turn on for the Products page only.", "default": false },
