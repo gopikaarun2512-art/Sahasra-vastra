@@ -30,6 +30,23 @@
   assign filters = filters | default: results.filters
   assign total_active_values = 0
 
+  # Sahasra Vastra: an age page (Shop by age → Newborn, Toddler…) already
+  # narrows the shelf with its own size chips (sections/sv-age-bands), so
+  # the filter panel is dropped there; sort and item count stay. An age
+  # page is a main-menu entry pointing at this collection that has its
+  # own sizes under it — the same test sv-age-bands uses.
+  assign enable_filtering = block_settings.enable_filtering
+  if collection.url != blank
+    for link in linklists['main-menu'].links
+      for child in link.links
+        if child.url == collection.url and child.links.size > 0
+          assign enable_filtering = false
+          break
+        endif
+      endfor
+    endfor
+  endif
+
   # Calculate facets margin style
   capture facets_margin_style
     echo '--facets-margin: 0px '
@@ -67,11 +84,11 @@
   assign is_active = false
   assign should_show_pane = true
   if block_settings.filter_style == 'vertical'
-    assign should_show_pane = block_settings.enable_filtering
+    assign should_show_pane = enable_filtering
   endif
 
   assign should_use_select_on_mobile = true
-  if block_settings.enable_filtering == false and block_settings.enable_sorting
+  if enable_filtering == false and block_settings.enable_sorting
     assign should_use_select_on_mobile = false
   endif
 
@@ -105,14 +122,14 @@
   section_id: block.id
 %}
 
-{% if block_settings.enable_filtering or block_settings.enable_sorting or block_settings.enable_grid_density %}
+{% if enable_filtering or block_settings.enable_sorting or block_settings.enable_grid_density %}
   {% if block_settings.filter_style == 'vertical' %}
     {% # These elements are always rendered in the horizontal bar that's why we apply the .facets--horizontal class %}
     <div
       class="facets facets--horizontal facets-controls-wrapper spacing-style{% if has_custom_color %} color-custom-{{ block.id }}{% endif %}"
       style="{% render 'spacing-style', settings: block_settings %}{% if block_settings.text_label_case == 'uppercase' %} --facet-label-transform: uppercase;{% endif %}"
     >
-      {% if block_settings.enable_filtering %}
+      {% if enable_filtering %}
         <h4 class="facets--filters-title">{{ 'content.filters' | t }}</h4>
       {% endif %}
 
@@ -198,7 +215,7 @@
               should_show_clear_all: true
             %}
 
-            {% if block_settings.enable_filtering %}
+            {% if enable_filtering %}
               {% assign total_active_values = 0 %}
 
               {% capture rendered_filters %}
@@ -320,7 +337,7 @@
   <div
     class="
       facets-toggle
-      {%- if block_settings.enable_filtering == false %} facets-toggle--no-filters{% endif %}
+      {%- if enable_filtering == false %} facets-toggle--no-filters{% endif %}
       {%- if has_custom_color %} color-custom-{{ block.id }}{% endif %}
     "
     style="
@@ -328,7 +345,7 @@
       {{ facets_margin_style }}
     "
   >
-    {% if block_settings.enable_filtering %}
+    {% if enable_filtering %}
       <div class="facets-toggle__wrapper">
         <button
           class="button facets-toggle__button button-unstyled button-unstyled--with-icon"
@@ -365,7 +382,7 @@
 
     {% liquid
       assign child_count = 0
-      if block_settings.enable_filtering == false and block_settings.enable_sorting
+      if enable_filtering == false and block_settings.enable_sorting
         assign child_count = child_count | plus: 1
       endif
       if block_settings.enable_grid_density
@@ -374,7 +391,7 @@
     %}
 
     <div class="facets-mobile-wrapper facets-controls-wrapper{% if child_count > 1 %} facets-mobile-wrapper--multiple-controls{% endif %}">
-      {% if block_settings.enable_filtering == false and block_settings.enable_sorting %}
+      {% if enable_filtering == false and block_settings.enable_sorting %}
         <facets-form-component
           section-id="{{ section.id }}"
           id="FacetFiltersForm--{{ section.id }}-mobile-sorting-only"
@@ -409,7 +426,7 @@
   <div></div>
 {% endif %}
 
-{% if block_settings.enable_filtering %}
+{% if enable_filtering %}
   <theme-drawer
     id="filters-drawer"
     data-skip-node-update
@@ -464,7 +481,7 @@
           <scroll-hint
             class="facets-drawer__filters"
           >
-            {% if block_settings.enable_filtering %}
+            {% if enable_filtering %}
               {% render 'filter-remove-buttons',
                 filters: filters,
                 results_url: results_url,

@@ -117,8 +117,23 @@
     text-align: center;
   }
 
-  .sv-cats__head .eyebrow {
+  /* Same centred label as Shop by age's "Start with the age": emerald,
+     stepped up from the corner-label size, with a gold dash either side. */
+  [data-sv] .sv-cats__head .sv-cats__eyebrow {
     justify-content: center;
+    max-width: none;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 500;
+    letter-spacing: 0.26em;
+    color: var(--emerald);
+  }
+
+  .sv-cats__head .sv-cats__eyebrow::after {
+    content: "";
+    width: 44px;
+    height: 1px;
+    background: var(--tan);
   }
 
   [data-sv] .sv-cats__h {
@@ -154,6 +169,7 @@
   }
 
   .sv-cats__tile {
+    position: relative;
     display: grid;
     justify-items: center;
     gap: 14px;
@@ -161,15 +177,16 @@
     text-decoration: none;
   }
 
+  /* Rounded frame with the name as an emerald pill over its corner —
+     the same card as the New-in "first drop" frame. */
   .sv-cats__icon {
     display: block;
     width: 100%;
     aspect-ratio: 1;
-    border: 1px solid var(--cream-2);
-    border-radius: var(--r-img);
-    background: var(--cream-2);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--emerald) 6%, transparent);
     overflow: hidden;
-    transition: border-color var(--micro) var(--e), transform var(--std) var(--e), box-shadow var(--std) var(--e);
+    transition: transform var(--std) var(--e), box-shadow var(--std) var(--e);
   }
 
   .sv-cats--circle .sv-cats__icon {
@@ -185,16 +202,45 @@
 
   .sv-cats__tile:hover .sv-cats__icon,
   .sv-cats__tile:focus-visible .sv-cats__icon {
-    border-color: var(--tan);
     box-shadow: var(--sh-s);
     transform: translateY(-3px);
   }
 
   .sv-cats__name {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    max-width: calc(100% - 32px);
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: var(--emerald);
+    color: var(--cream);
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition: transform var(--std) var(--e);
+  }
+
+  .sv-cats__tile:hover .sv-cats__name,
+  .sv-cats__tile:focus-visible .sv-cats__name {
+    transform: translateY(-3px);
+  }
+
+  /* A pill cannot sit on a circle's corner; there the name stays below. */
+  .sv-cats--circle .sv-cats__name {
+    position: static;
+    max-width: none;
+    padding: 0;
+    background: none;
+    color: var(--emerald);
     font-size: 1.1rem;
     font-weight: 500;
-    color: var(--emerald);
+    letter-spacing: normal;
+    text-transform: none;
     text-align: center;
+    transform: none;
   }
 
   [data-sv] .sv-cats__cta {
@@ -210,18 +256,40 @@
   }
 
   @media (max-width: 749px) {
+    /* Short dashes and a tighter step so the label stays on one line. */
+    [data-sv] .sv-cats__head .sv-cats__eyebrow {
+      gap: 12px;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+    }
+
+    .sv-cats__head .sv-cats__eyebrow::before,
+    .sv-cats__head .sv-cats__eyebrow::after {
+      width: 24px;
+    }
+
     [data-sv] .sv-cats__grid {
       grid-template-columns: repeat(min(var(--sv-cats-n), var(--sv-cats-cols-m)), minmax(0, 1fr));
       gap: var(--a) 12px;
     }
 
     .sv-cats__name {
+      left: 10px;
+      bottom: 10px;
+      max-width: calc(100% - 20px);
+      padding: 7px 12px;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+    }
+
+    .sv-cats--circle .sv-cats__name {
       font-size: 0.95rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sv-cats__tile:hover .sv-cats__icon {
+    .sv-cats__tile:hover .sv-cats__icon,
+    .sv-cats__tile:hover .sv-cats__name {
       transform: none;
     }
   }
