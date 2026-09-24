@@ -77,8 +77,7 @@
       {%- else -%}
         {%- for c in cats -%}
           {%- assign cp = c | split: '::' -%}
-          {%- assign cp_h = cp[0]
-          assign col = collections[cp_h] -%}
+          {%- assign cp_h = cp[0] -%}{%- assign col = collections[cp_h] -%}
           {%- if col == blank or col.id == blank -%}{%- continue -%}{%- endif -%}
           <li class="sv-cats__cell">
             <a class="sv-cats__tile" href="{{ col.url }}" data-sv-finder data-sv-finder-cat="{{ col.handle }}">

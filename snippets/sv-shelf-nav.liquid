@@ -126,8 +126,7 @@
               <ul class="sv-shelfnav__subs" role="list">
                 {%- for s in subs -%}
                   {%- assign sp = s | split: '::' -%}
-                  {%- assign sp_h = sp[0]
-          assign sc = collections[sp_h] -%}
+                  {%- assign sp_h = sp[0] -%}{%- assign sc = collections[sp_h] -%}
                   {%- if sc == blank or sc.id == blank -%}{%- continue -%}{%- endif -%}
                   <li>
                     <a class="sv-shelfnav__sub{% if sc.handle == collection.handle %} is-on{% endif %}" href="{{ sc.url }}{{ tail }}" {% if sc.handle == collection.handle %}aria-current="page"{% endif %}>{{ sp[1] }}</a>
