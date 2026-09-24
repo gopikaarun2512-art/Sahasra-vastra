@@ -373,6 +373,20 @@
   text-transform: uppercase;
 }
 
+/* The drawer lays over the page; it never squeezes it. Horizon narrows
+   .page-wrapper by the drawer's width while a drawer is open (990px+),
+   but the header sizes itself by the VIEWPORT (its desktop layout and
+   compact steps are media queries), so in the squeezed page the pill's
+   links ran under the search, account and wishlist roundels. Keeping the
+   page at full width means the header never reflows when the bag opens. */
+.page-wrapper.page-wrapper--drawer-open {
+  margin-right: 0;
+}
+
+.page-wrapper.page-wrapper--drawer-open shopify-account::part(dialog) {
+  translate: none;
+}
+
 /* ── 07 · "BEFORE YOU PAY" NOTES ─────────────────────────────────────── */
 .sv-cart-notes {
   display: grid;
