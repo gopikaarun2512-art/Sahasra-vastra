@@ -393,18 +393,14 @@
           </div>
 
           {%- comment -%}
-            Stars under the title (momandzoey), from the same published
-            reviews the reviews section shows, linking down to them.
-            Nothing at all until a product has a review.
+            Stars under the title (momandzoey): Judge.me's preview badge,
+            linking down to the reviews. Judge.me fills it in and leaves
+            it blank on a product with no reviews, so nothing shows until
+            there is something true to show.
           {%- endcomment -%}
-          {%- capture review_stats -%}{% render 'sv-review-stats', product: product %}{%- endcapture -%}
-          {%- assign rs = review_stats | strip | split: ',' -%}
-          {%- assign rs_count = rs[0] | plus: 0 -%}
-          {%- if rs_count > 0 -%}
-            {%- assign rs_avg = rs[1] | times: 1.0 | divided_by: rs_count -%}
+          {%- if product.metafields.judgeme != blank or shop.metafields.judgeme != blank -%}
             <a class="sv-pdp__rating" href="#reviews">
-              {%- render 'sv-stars', rating: rs_avg -%}
-              <span>{{ rs_avg | round: 1 }} &middot; {{ rs_count }} review{% if rs_count != 1 %}s{% endif %}</span>
+              <span class="jdgm-widget jdgm-preview-badge" data-id="{{ product.id }}">{{ product.metafields.judgeme.badge }}</span>
             </a>
           {%- endif -%}
 

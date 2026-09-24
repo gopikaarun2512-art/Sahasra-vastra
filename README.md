@@ -51,10 +51,11 @@ The order is now: product, **You may also like**, **Recently viewed**, **Custome
 * **Details** and **Size guide** (the measurement table and size chart) are accordions in the right-hand column.
 * Product **videos** added to a product's media play inside the image carousel.
 
-### Reviews
-* Reviews live in **Content → Metaobjects → Product review** (type `sv_review`). Only **Active** entries show on the site; leave a new one as Draft until it's checked.
-* **Write a review** on the site emails the review to the store's contact address. Copy the good ones into a Product review entry, and add the parent's photo if they sent one.
-* To use a reviews app instead (Judge.me, Loox), add its block to the *SV Reviews* section.
+### Reviews (Judge.me, free plan)
+* Install **Judge.me Product Reviews** from the Shopify App Store (Free plan) and switch on its **Judge.me Core** app embed (Customize → App embeds).
+* The *SV Reviews* section (after Recently viewed) then shows the Judge.me widget: star summary, reviews with photos/videos, and "Write a review" with photo upload. Judge.me emails buyers after delivery asking for a review.
+* The star badge under the product title is Judge.me's; it stays blank until a product has reviews.
+* Before Judge.me is installed, the section shows nothing on the site.
 
 ## Homepage additions
 * **SV Shop by category**: tiles open the popup with that category already chosen.

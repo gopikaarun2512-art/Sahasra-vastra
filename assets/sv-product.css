@@ -2127,26 +2127,7 @@ section[data-sv].sv-pdp-facts {
   }
 }
 
-/* Star line under the title, and the stars themselves (also styled in
-   sections/sv-reviews; repeated here because the title renders first). */
-.sv-stars {
-  position: relative;
-  display: inline-block;
-  font-size: 1rem;
-  line-height: 1;
-  letter-spacing: 2px;
-  color: var(--cream-2);
-  white-space: nowrap;
-}
-
-.sv-stars__row--on {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: var(--sv-stars);
-  overflow: hidden;
-  color: var(--tan);
-}
-
+/* Star line under the title (Judge.me's preview badge). */
 .sv-pdp__rating {
   display: inline-flex;
   align-items: center;
