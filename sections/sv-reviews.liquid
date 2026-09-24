@@ -57,6 +57,34 @@
   </section>
 {%- endif -%}
 
+{%- if app_block or jm_installed -%}
+  {%- comment -%}
+    Judge.me's review form takes a video file or a YouTube link — it
+    rejects any other URL ("Not a YouTube video URL"), and that check is
+    Judge.me's own. Parents who post on Instagram are told how to bring
+    the reel anyway: save it and upload the file. The note is placed
+    under Judge.me's YouTube field whenever its form opens; nothing else
+    in the form is touched.
+  {%- endcomment -%}
+  <script>
+    (() => {
+      const NOTE = {{ section.settings.video_note | default: 'Instagram reel? Save it to your phone from Instagram and upload the video file in the box above — links only work from YouTube.' | json }};
+      const place = () => {
+        document.querySelectorAll('input[placeholder*="Youtube" i], input[placeholder*="YouTube" i]').forEach((input) => {
+          if (input.dataset.svNote) return;
+          input.dataset.svNote = '1';
+          const p = document.createElement('p');
+          p.className = 'sv-reviews__vidnote';
+          p.textContent = NOTE;
+          input.insertAdjacentElement('afterend', p);
+        });
+      };
+      new MutationObserver(place).observe(document.body, { childList: true, subtree: true });
+      place();
+    })();
+  </script>
+{%- endif -%}
+
 {% stylesheet %}
   section[data-sv].sv-reviews {
     padding: var(--c) 0 0;
@@ -74,6 +102,14 @@
      its widget, the section stays out of the page. */
   .sv-reviews--live:has(.jdgm-review-widget:empty) {
     display: none;
+  }
+
+  /* The Instagram note sits inside Judge.me's popup, outside [data-sv]. */
+  .sv-reviews__vidnote {
+    margin: 8px 0 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: #6b665d;
   }
 
   [data-sv] .sv-reviews__hint {
@@ -111,6 +147,7 @@
   "tag": "div",
   "settings": [
     { "type": "text", "id": "heading", "label": "Heading", "default": "Customer reviews" },
+    { "type": "textarea", "id": "video_note", "label": "Note under Judge.me's YouTube field", "info": "Judge.me only accepts YouTube links; this tells Instagram users to upload the video file instead.", "default": "Instagram reel? Save it to your phone from Instagram and upload the video file in the box above — links only work from YouTube." },
     { "type": "paragraph", "content": "Reviews come from Judge.me. Install 'Judge.me Product Reviews' (free plan) and switch on its 'Judge.me Core' app embed; the widget then shows here automatically. You can also add Judge.me's review widget block to this section instead." }
   ],
   "blocks": [{ "type": "@app" }],
