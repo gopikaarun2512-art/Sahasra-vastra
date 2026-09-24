@@ -421,6 +421,15 @@
       if (match) select(match);
     });
 
+    /* Product & manufacturer information: the filed record's popup. */
+    const legal = root.querySelector('[data-sv-legal]');
+    if (legal) {
+      root.querySelectorAll('[data-sv-legal-open]').forEach((b) =>
+        b.addEventListener('click', () => legal.showModal())
+      );
+      legal.addEventListener('click', (e) => { if (e.target === legal) legal.close(); });
+    }
+
     /* Size chart: every [data-sv-chart-open] opens the one dialog. */
     const chart = root.querySelector('[data-sv-chart]');
     if (chart) {

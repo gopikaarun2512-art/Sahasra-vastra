@@ -57,6 +57,10 @@
   assign shrinkage = mf.shrinkage.value
   assign colourfastness = mf.colourfastness.value
   assign design_code = mf.design_code.value
+  assign country = mf.country_of_origin.value
+  assign net_quantity = mf.net_quantity.value
+  assign manufacturer = mf.manufacturer.value
+  assign support_email = shop.metafields.custom.support_email.value
   assign colourway = mf.colourway.value
   assign colour_group = mf.colour_group.value
   assign pack_size = mf.pack_size.value
@@ -379,6 +383,16 @@
             <div class="sv-acc__body"><p>{{ care | newline_to_br }}</p></div>
           </details>
         {%- endif -%}
+
+        {%- comment -%}
+          The Legal Metrology record, one tap away (owner's direction,
+          Sep 2026): manufacturer, origin, common name, net quantity, MRP
+          and customer care, in a popup rather than a box at the foot of
+          the page. Always linked from here, on every product.
+        {%- endcomment -%}
+        <button type="button" class="sv-acc__item sv-pdp__legallink" data-sv-legal-open aria-haspopup="dialog">
+          <span>Product &amp; manufacturer information</span>
+        </button>
         </div>
       </div>
 
@@ -889,6 +903,46 @@
       </form>
     </dialog>
   {%- endif -%}
+
+  {%- comment -%}
+    ── The filed record, as a popup ─────────────────────────────────
+    Legal Metrology (§6.8 element 11). Every value from a metafield; the
+    MRP from the selected variant (sv-product.js keeps data-sv-mrp in
+    step). Opened from "Product & manufacturer information" under
+    Details.
+  {%- endcomment -%}
+  <dialog class="sv-chart sv-pdp__legaldlg" data-sv-legal aria-label="Product and manufacturer information">
+    <form method="dialog" class="sv-chart__panel sv-pdp__legalpanel">
+      <button type="submit" class="sv-chart__x" aria-label="Close">{% render 'sv-icon', name: 'close' %}</button>
+      <aside class="sv-pdp__filed" aria-label="Product and manufacturer information">
+        <div class="sv-pdp__filedhead">
+          <span class="lab lab--grey">On record</span>
+          {%- if design_code != blank -%}
+            <span class="sv-pdp__filedref sv-fine sv-fine--caps">{{ design_code }}</span>
+          {%- endif -%}
+        </div>
+
+        <dl class="sv-pdp__legal sv-fine">
+          {%- if manufacturer != blank -%}
+            <div><dt>Manufactured and packed by</dt><dd>{{ manufacturer | newline_to_br }}</dd></div>
+          {%- endif -%}
+          {%- if country != blank -%}
+            <div><dt>Country of origin</dt><dd>{{ country }}</dd></div>
+          {%- endif -%}
+          {%- if product.type != blank -%}
+            <div><dt>Common name</dt><dd>{{ product.type }}</dd></div>
+          {%- endif -%}
+          {%- if net_quantity != blank -%}
+            <div><dt>Net quantity</dt><dd>{{ net_quantity }}</dd></div>
+          {%- endif -%}
+          <div><dt>MRP</dt><dd data-sv-mrp>{{ variant.price | money }} inclusive of all taxes</dd></div>
+          {%- if support_email != blank -%}
+            <div><dt>Customer care</dt><dd><a href="mailto:{{ support_email }}">{{ support_email }}</a></dd></div>
+          {%- endif -%}
+        </dl>
+      </aside>
+    </form>
+  </dialog>
 
   {%- comment -%}
     ── Age picker (the lunabee popup, adapted) ───────────────────────

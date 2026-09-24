@@ -2188,3 +2188,66 @@ section[data-sv].sv-pdp-facts {
   flex-direction: column;
   justify-content: space-between;
 }
+
+/* ── 25 · TIGHTER PAGE RHYTHM (owner's direction, Sep 2026) ───────────
+   The product flows straight into its shelves: a small step under the
+   buy zone instead of 72 + 72px, and the lower bands close up the same
+   way. */
+[data-sv].sv-pdp {
+  padding-bottom: var(--a);
+}
+
+[data-sv].sv-pdp--record {
+  padding: 0 0 var(--b);
+}
+
+.sv-pdp--record .sv-pdp__ledger {
+  margin-top: var(--c);
+}
+
+section[data-sv].sv-pdp-facts {
+  padding-top: var(--c);
+}
+
+/* "Product & manufacturer information" — a row in the Details stack
+   that opens the filed record's popup. */
+.sv-pdp__legallink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 20px;
+  border: 0;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sv-pdp__legallink::after {
+  content: '';
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.sv-pdp__legaldlg .sv-pdp__filed {
+  padding: var(--c) var(--b) var(--b);
+  border-radius: 0;
+  background: var(--card);
+}
+
+.sv-pdp__legaldlg .sv-pdp__filedhead {
+  padding-right: 48px;
+}
+
+@media (max-width: 880px) {
+  [data-sv].sv-pdp {
+    padding-bottom: var(--a);
+  }
+}

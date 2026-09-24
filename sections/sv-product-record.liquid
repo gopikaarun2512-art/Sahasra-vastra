@@ -1,27 +1,21 @@
 {%- comment -%}
-  The rest of the product page's ledger, below the shelves — "Completes
-  the set" and the filed Legal Metrology record ("On record").
+  "Completes the set", below the shelves. The Legal Metrology record
+  ("On record") moved into a popup linked from the Details column
+  (owner's direction, Sep 2026) — see sv-product.liquid.
 
   Moved out of sv-product (Sep 2026, owner's direction) so that "You may
   also like", "Recently viewed" and the reviews come straight after the
-  product. Nothing here changed; it was lifted as it stood. The MRP line
-  keeps its data-sv-mrp hook and sv-product.js still updates it when a
-  size is picked. Every field renders only when it has a value.
+  product. Renders nothing when the product has no set items.
 {%- endcomment -%}
 
 {{ 'sv-product.css' | asset_url | stylesheet_tag }}
 
 {%- liquid
   assign mf = product.metafields.custom
-  assign variant = product.selected_or_first_available_variant
-  assign design_code = mf.design_code.value
-  assign country = mf.country_of_origin.value
-  assign net_quantity = mf.net_quantity.value
-  assign manufacturer = mf.manufacturer.value
   assign set_items = mf.complete_set.value
-  assign support_email = shop.metafields.custom.support_email.value
 -%}
 
+{%- if set_items.size > 0 -%}
 <section class="sv-pdp sv-pdp--record" data-sv>
   <div class="w sv-pdp__w">
     <div class="sv-pdp__ledger">
@@ -67,43 +61,10 @@
         </section>
       {%- endif -%}
 
-      {%- comment -%}
-        ── The filed record ────────────────────────────────────────
-        Legal Metrology (§6.8 element 11). Every value from a metafield;
-        the MRP from the variant itself. Set small and filed rather than
-        hidden, because it is a statutory disclosure and a closed panel
-        is not a disclosure.
-      {%- endcomment -%}
-      <aside class="sv-pdp__filed" aria-label="Product and manufacturer information">
-        <div class="sv-pdp__filedhead">
-          <span class="lab lab--grey">On record</span>
-          {%- if design_code != blank -%}
-            <span class="sv-pdp__filedref sv-fine sv-fine--caps">{{ design_code }}</span>
-          {%- endif -%}
-        </div>
-
-        <dl class="sv-pdp__legal sv-fine">
-          {%- if manufacturer != blank -%}
-            <div><dt>Manufactured and packed by</dt><dd>{{ manufacturer | newline_to_br }}</dd></div>
-          {%- endif -%}
-          {%- if country != blank -%}
-            <div><dt>Country of origin</dt><dd>{{ country }}</dd></div>
-          {%- endif -%}
-          {%- if product.type != blank -%}
-            <div><dt>Common name</dt><dd>{{ product.type }}</dd></div>
-          {%- endif -%}
-          {%- if net_quantity != blank -%}
-            <div><dt>Net quantity</dt><dd>{{ net_quantity }}</dd></div>
-          {%- endif -%}
-          <div><dt>MRP</dt><dd data-sv-mrp>{{ variant.price | money }} inclusive of all taxes</dd></div>
-          {%- if support_email != blank -%}
-            <div><dt>Customer care</dt><dd><a href="mailto:{{ support_email }}">{{ support_email }}</a></dd></div>
-          {%- endif -%}
-        </dl>
-      </aside>
     </div>
   </div>
 </section>
+{%- endif -%}
 
 {% schema %}
 {
@@ -111,7 +72,7 @@
   "tag": "div",
   "enabled_on": { "templates": ["product"] },
   "settings": [
-    { "type": "paragraph", "content": "Completes the set (custom.complete_set) and the Legal Metrology record. Keep this section on the product page — the manufacturer and MRP disclosure is a legal requirement." }
+    { "type": "paragraph", "content": "Completes the set (custom.complete_set). The manufacturer and MRP record is a popup link under Details in the product section." }
   ],
   "presets": [{ "name": "SV Product record" }]
 }
