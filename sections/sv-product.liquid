@@ -334,7 +334,7 @@
         <div class="sv-acc sv-pdp__acc">
 
         {%- if product.description != blank -%}
-          <details class="sv-acc__item" open>
+          <details class="sv-acc__item">
             <summary>Details</summary>
             <div class="sv-acc__body sv-pdp__rte">{{ product.description }}</div>
           </details>
@@ -836,7 +836,7 @@
             unless it is a process that actually happens.
           {%- endcomment -%}
           {%- assign threshold = shop.metafields.custom.free_shipping_threshold.value -%}
-          <ul class="sv-pdp__tiles" role="list">
+          <ul class="sv-pdp__tiles" role="list" data-sv-tiles>
             {%- if threshold != blank -%}
               <li class="sv-pdp__tile">
                 <span class="sv-pdp__tileicon">{% render 'sv-icon', name: 'truck' %}</span>

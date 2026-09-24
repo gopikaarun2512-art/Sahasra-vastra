@@ -445,6 +445,7 @@
       if (window.location.hash === `#${measure.id}`) openMeasure();
     }
 
+    matchColumns(root);
     setupGallery(root);
     setupShare(root);
     setupSave(root);
@@ -488,6 +489,46 @@
     } catch {
       /* ignore */
     }
+  }
+
+  /* ── the two columns end together ─────────────────────────────────
+     On desktop the promise tiles are spaced out so the last one ends
+     level with the bottom of the Details bar under the photographs
+     (owner's direction). Measured with Details closed, as the page
+     loads; opening it later does not re-stretch the tiles. Skipped on
+     phones (one column) and when the tiles are already the longer side. */
+  function matchColumns(root) {
+    const tiles = root.querySelector('[data-sv-tiles]');
+    const acc = root.querySelector('.sv-gal > .sv-pdp__acc');
+    if (!tiles || !acc) return;
+    const wide = window.matchMedia('(min-width: 881px)');
+
+    const measure = () => {
+      tiles.style.minHeight = '';
+      tiles.classList.remove('is-matched');
+      if (!wide.matches || acc.querySelector('details[open]')) return;
+      const top = tiles.getBoundingClientRect().top + window.scrollY;
+      const end = acc.getBoundingClientRect().bottom + window.scrollY;
+      const need = end - top;
+      if (need > tiles.offsetHeight && need - tiles.offsetHeight < 480) {
+        tiles.style.minHeight = `${need}px`;
+        tiles.classList.add('is-matched');
+      }
+    };
+
+    /* Measure only while the column is not stuck, or positions lie. */
+    const run = () => {
+      if (window.scrollY > 0) return;
+      measure();
+    };
+    if (document.readyState === 'complete') run();
+    else window.addEventListener('load', run, { once: true });
+    let t;
+    window.addEventListener('resize', () => {
+      clearTimeout(t);
+      t = setTimeout(run, 150);
+    });
+    wide.addEventListener?.('change', measure);
   }
 
   /* ── gallery ──────────────────────────────────────────────────────

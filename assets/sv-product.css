@@ -2181,3 +2181,10 @@ section[data-sv].sv-pdp-facts {
     grid-template-columns: minmax(0, 1fr) calc((100% - var(--d) - 90px) / 2);
   }
 }
+
+/* Tiles spread to end level with Details (sv-product.js matchColumns). */
+[data-sv] .sv-pdp__tiles.is-matched {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
