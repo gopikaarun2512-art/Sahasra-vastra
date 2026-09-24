@@ -2155,3 +2155,21 @@ section[data-sv].sv-pdp-facts {
   text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* Details sit under the photographs, in the stage's column like the
+   sizing note (the thumbnail rail keeps column 1). */
+.sv-gal > .sv-pdp__acc {
+  grid-column: 2;
+  margin-top: var(--a);
+}
+
+.sv-gal:not(:has(.sv-gal__thumbs)) > .sv-pdp__acc {
+  grid-column: 1;
+}
+
+@media (max-width: 880px) {
+  .sv-gal > .sv-pdp__acc {
+    grid-column: 1;
+    margin-inline: var(--b);
+  }
+}

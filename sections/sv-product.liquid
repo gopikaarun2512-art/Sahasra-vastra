@@ -321,6 +321,65 @@
             <p>Not sure, or missing a measurement? <a href="https://wa.me/{{ whatsapp }}?text={{ 'Hi, can you help me pick a size for ' | append: product.title | append: '? ' | append: share_url | url_encode | replace: '+', '%20' }}" target="_blank" rel="noopener" data-sv-wa-size>WhatsApp us</a></p>
           {%- endif -%}
         </div>
+
+        {%- comment -%}
+          ── Details · Fabric · Care (Sep 2026) ──
+          Expandable, under the photographs and the sizing note (owner's
+          direction): the left column ran short of the buy column, so the
+          details fill that space and "You may also like" still follows
+          straight on after the product. Size guide and Fit were removed
+          — the "Size chart" link by the price and the sizing note above
+          already open the chart. Details opens by default.
+        {%- endcomment -%}
+        <div class="sv-acc sv-pdp__acc">
+
+        {%- if product.description != blank -%}
+          <details class="sv-acc__item" open>
+            <summary>Details</summary>
+            <div class="sv-acc__body sv-pdp__rte">{{ product.description }}</div>
+          </details>
+        {%- endif -%}
+
+
+        {%- if cell_fabric != blank or gsm != blank or azo or shrinkage != blank or colourfastness != blank -%}
+          <details class="sv-acc__item">
+            <summary>Fabric</summary>
+            <div class="sv-acc__body">
+              {%- if cell_fabric != blank -%}<p>{{ cell_fabric | strip }}</p>{%- endif -%}
+              {%- if gsm != blank -%}
+                <p>
+                  <strong>What {{ gsm }} GSM means.</strong> GSM is grams per square metre &mdash;
+                  the weight of the fabric. {{ gsm }} is a mid-weight knit: substantial enough to
+                  hold its shape after washing, light enough for Kerala heat. Thin kidswear is
+                  often 120&ndash;140, which is why it goes shapeless after a few washes.
+                </p>
+              {%- endif -%}
+              {%- if azo -%}
+                <p>
+                  <strong>Azo-free.</strong> 112 azo dyes are prohibited in textiles under
+                  India&rsquo;s Environment (Protection) Act because they can release compounds
+                  that irritate skin. Our supplier provides a signed declaration for every batch.
+                  This is a legal standard, not a marketing claim.
+                </p>
+              {%- endif -%}
+              {%- if shrinkage != blank or colourfastness != blank -%}
+                <dl class="sv-pdp__dl">
+                  {%- if shrinkage != blank -%}<dt>Shrinkage</dt><dd>{{ shrinkage }}</dd>{%- endif -%}
+                  {%- if colourfastness != blank -%}<dt>Colourfastness</dt><dd>{{ colourfastness }}</dd>{%- endif -%}
+                </dl>
+              {%- endif -%}
+            </div>
+          </details>
+        {%- endif -%}
+
+
+        {%- if care != blank -%}
+          <details class="sv-acc__item">
+            <summary>Care guide</summary>
+            <div class="sv-acc__body"><p>{{ care | newline_to_br }}</p></div>
+          </details>
+        {%- endif -%}
+        </div>
       </div>
 
       {%- comment -%}
@@ -796,72 +855,6 @@
             </li>
           </ul>
 
-          {%- comment -%}
-            ── Details · Fabric · Care (Sep 2026) ──
-            Size guide and Fit were taken out again (owner's direction):
-            the "Size chart" link by the price and the sizing note under
-            the gallery already open the chart, and a second copy here
-            only lengthened the column.
-            Expandable, in the decision column, the sweetlime/momandzoey
-            way (owner's direction): the product's own details sit beside
-            the buy button instead of in a document under it, which is
-            what lets "You may also like" and "Recently viewed" follow
-            straight on under the photographs. Nothing was dropped in the
-            move — the description, the measurement table (selected row
-            still lit), the size chart, fabric, fit and care are all here.
-
-            Details opens by default so the column never lands on a stack
-            of closed bars.
-          {%- endcomment -%}
-          <div class="sv-acc sv-pdp__acc">
-
-          {%- if product.description != blank -%}
-            <details class="sv-acc__item" open>
-              <summary>Details</summary>
-              <div class="sv-acc__body sv-pdp__rte">{{ product.description }}</div>
-            </details>
-          {%- endif -%}
-
-
-          {%- if cell_fabric != blank or gsm != blank or azo or shrinkage != blank or colourfastness != blank -%}
-            <details class="sv-acc__item">
-              <summary>Fabric</summary>
-              <div class="sv-acc__body">
-                {%- if cell_fabric != blank -%}<p>{{ cell_fabric | strip }}</p>{%- endif -%}
-                {%- if gsm != blank -%}
-                  <p>
-                    <strong>What {{ gsm }} GSM means.</strong> GSM is grams per square metre &mdash;
-                    the weight of the fabric. {{ gsm }} is a mid-weight knit: substantial enough to
-                    hold its shape after washing, light enough for Kerala heat. Thin kidswear is
-                    often 120&ndash;140, which is why it goes shapeless after a few washes.
-                  </p>
-                {%- endif -%}
-                {%- if azo -%}
-                  <p>
-                    <strong>Azo-free.</strong> 112 azo dyes are prohibited in textiles under
-                    India&rsquo;s Environment (Protection) Act because they can release compounds
-                    that irritate skin. Our supplier provides a signed declaration for every batch.
-                    This is a legal standard, not a marketing claim.
-                  </p>
-                {%- endif -%}
-                {%- if shrinkage != blank or colourfastness != blank -%}
-                  <dl class="sv-pdp__dl">
-                    {%- if shrinkage != blank -%}<dt>Shrinkage</dt><dd>{{ shrinkage }}</dd>{%- endif -%}
-                    {%- if colourfastness != blank -%}<dt>Colourfastness</dt><dd>{{ colourfastness }}</dd>{%- endif -%}
-                  </dl>
-                {%- endif -%}
-              </div>
-            </details>
-          {%- endif -%}
-
-
-          {%- if care != blank -%}
-            <details class="sv-acc__item">
-              <summary>Care guide</summary>
-              <div class="sv-acc__body"><p>{{ care | newline_to_br }}</p></div>
-            </details>
-          {%- endif -%}
-                  </div>
 
 
         </div>
