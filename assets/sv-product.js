@@ -143,6 +143,11 @@
 
       if (barSize && barSize.value !== id) barSize.value = id;
 
+      /* A new size has its own stock, so the quantity is re-capped
+         for it. The error is hidden just below, so this stays quiet. */
+      stock = readStock(button.dataset.stock);
+      applyStockCap();
+
       /* Keep the URL shareable and the back button honest. */
       const url = new URL(window.location.href);
       url.searchParams.set('variant', id);
@@ -151,13 +156,107 @@
       hideError();
     }
 
-    /* ── quantity ───────────────────────────────────────────────────*/
+    /* ── quantity ───────────────────────────────────────────────────
+       Capped at what can still be bought: the size's stock minus what
+       is already in the bag. Going past it says so right away, at the
+       stepper, instead of letting the visitor press Add and find out
+       from the cart that only some of them went in. `stock` is null
+       when Shopify is not limiting the size (untracked or continue
+       selling), and then there is no cap at all. */
+    let stock = readStock(
+      sizes.find((b) => b.classList.contains('is-on'))?.dataset.stock ?? qtyInput?.dataset.stock
+    );
+    /** @type {Map<string, number>} variant id → quantity in the bag */
+    let inBag = new Map();
+
+    function readStock(value) {
+      if (value === undefined || value === null || value === '') return null;
+      const n = parseInt(value, 10);
+      return Number.isFinite(n) ? Math.max(0, n) : null;
+    }
+
+    function currentId() {
+      return String(variantInput?.value || new FormData(form).get('id') || '');
+    }
+
+    /** How many more of the selected size can go in the bag. */
+    function room() {
+      if (stock === null) return Infinity;
+      return Math.max(0, stock - (inBag.get(currentId()) || 0));
+    }
+
+    function stockMessage(left) {
+      const had = inBag.get(currentId()) || 0;
+      const piece = (n) => (n === 1 ? '1 piece' : `${n} pieces`);
+      if (left <= 0) {
+        return had
+          ? `Only ${piece(stock)} in stock in this size, and ${had === 1 ? 'it is' : 'all are'} already in your bag.`
+          : 'This size is out of stock.';
+      }
+      return had
+        ? `Only ${piece(stock)} in stock in this size and you have ${had} in your bag, so you can add ${left} more.`
+        : `Only ${piece(left)} in stock in this size.`;
+    }
+
+    /* Pull the quantity back under the cap. `announce` is for when the
+       visitor pushed past it; a silent re-cap (new size, bag changed)
+       should not flash an error at someone who did nothing. */
+    function applyStockCap(announce = false) {
+      if (!qtyInput) return true;
+      const left = room();
+      if (left === Infinity) {
+        qtyInput.removeAttribute('max');
+        return true;
+      }
+      qtyInput.max = String(Math.max(1, left));
+      const asked = parseInt(qtyInput.value, 10) || 1;
+      if (asked <= left) return true;
+      qtyInput.value = String(Math.max(1, left));
+      if (announce) showError(stockMessage(left));
+      return false;
+    }
+
+    async function refreshBag() {
+      try {
+        const base = window.Shopify?.routes?.root || '/';
+        const cart = await fetch(`${base}cart.js`).then((r) => r.json());
+        setBag(cart);
+      } catch {
+        /* Offline or blocked: keep the last known bag. Shopify still
+           refuses an oversell server-side, so nothing breaks. */
+      }
+    }
+
+    function setBag(cart) {
+      inBag = new Map();
+      (cart?.items || []).forEach((item) => {
+        const id = String(item.variant_id);
+        inBag.set(id, (inBag.get(id) || 0) + item.quantity);
+      });
+      applyStockCap();
+    }
+
+    /* Know the bag from the start, and again whenever the drawer
+       changes it (a line removed there frees stock up here). */
+    if (stock !== null || sizes.some((b) => b.dataset.stock)) refreshBag();
+    document.addEventListener('cart:update', () => refreshBag());
+
     form.querySelectorAll('[data-sv-qty]').forEach((button) => {
       button.addEventListener('click', () => {
         if (!qtyInput) return;
-        const next = (parseInt(qtyInput.value, 10) || 1) + Number(button.dataset.svQty);
-        qtyInput.value = String(Math.max(1, next));
+        const step = Number(button.dataset.svQty);
+        const next = Math.max(1, (parseInt(qtyInput.value, 10) || 1) + step);
+        qtyInput.value = String(next);
+        if (step > 0) applyStockCap(true);
+        else if (next <= room()) hideError();
       });
+    });
+
+    /* Typed quantities get the same cap and the same message. */
+    qtyInput?.addEventListener('change', () => {
+      const n = parseInt(qtyInput.value, 10);
+      if (!Number.isFinite(n) || n < 1) qtyInput.value = '1';
+      if (applyStockCap(true)) hideError();
     });
 
     /* ── add to cart ────────────────────────────────────────────────*/
@@ -174,7 +273,26 @@
       /* form.submit() does not re-fire this handler, so the fallback is a
          plain POST to /cart/add and never a loop. The sale completes
          either way; only the drawer is lost. */
-      addToCart().catch(() => form.submit());
+      checkStock().then((ok) => {
+        if (ok) return addToCart().catch(() => form.submit());
+      });
+    }
+
+    /* Last look before adding: the bag may have changed in another tab
+       or in the drawer. More than is left is never sent — the quantity
+       is brought down and the visitor told why, so the bag only ever
+       holds what they were shown. */
+    async function checkStock() {
+      if (stock === null) return true;
+      /* Read before the refresh: refreshBag re-caps quietly, and the
+         visitor must hear about it if what they asked for was cut. */
+      const asked = parseInt(qtyInput?.value, 10) || 1;
+      await refreshBag();
+      const left = room();
+      if (asked <= left) return true;
+      if (qtyInput) qtyInput.value = String(Math.max(1, left));
+      showError(stockMessage(left));
+      return false;
     }
 
     async function addToCart() {
@@ -227,6 +345,7 @@
         const root = window.Shopify?.routes?.root || '/';
         const cart = await fetch(`${root}cart.js`).then((r) => r.json());
         const didError = Boolean(payload.status);
+        setBag(cart);
 
         if (didError) {
           /* Shopify answers an oversell or a vanished variant with a
