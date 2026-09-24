@@ -1,0 +1,172 @@
+{% doc %}
+  Wishlist on a product card.
+
+  The product page has had a Wishlist button since the rebuild; the grid
+  had none, so a parent scanning a shelf could only save a garment by
+  opening it first. Horizon's own card is a theme block this theme does
+  not own, so rather than fork the card, this adds one button to each
+  card that is already on the page — bottom-left, opposite Horizon's
+  add-to-bag roundel, which keeps the two actions from being mistaken
+  for each other.
+
+  Same store as everywhere else: localStorage `sv_saved`, a list of
+  product handles, device-local, nothing sent anywhere. It fires the
+  same `sv:saved-change` event the product page fires, so the header's
+  heart count follows without knowing where the click came from.
+
+  Cards arrive and re-arrive: filtering, sorting and pagination all
+  re-render the grid through the Section Rendering API. An observer
+  re-paints whatever appears, and each card is marked so a button is
+  never added twice.
+
+  Progressive: with the script blocked nothing is added and the grid is
+  exactly Horizon's.
+{% enddoc %}
+
+{%- capture sv_heart -%}{% render 'sv-icon', name: 'heart' %}{%- endcapture -%}
+
+<script>
+  (() => {
+    const KEY = 'sv_saved';
+    const HEART = {{ sv_heart | strip_newlines | json }};
+
+    const read = () => {
+      try {
+        const v = JSON.parse(localStorage.getItem(KEY) || '[]');
+        return Array.isArray(v) ? v : [];
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const write = (list) => {
+      try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {}
+    };
+
+    const handleOf = (card) => {
+      const link = card.querySelector('a[href*="/products/"]');
+      if (!link) return '';
+      const path = link.getAttribute('href').split('?')[0].split('#')[0];
+      const bit = path.split('/products/')[1];
+      return bit ? bit.split('/')[0] : '';
+    };
+
+    const paint = (button) => {
+      const on = read().includes(button.dataset.handle);
+      button.setAttribute('aria-pressed', String(on));
+      button.classList.toggle('is-on', on);
+      button.setAttribute('aria-label', on ? 'Remove from wishlist' : 'Add to wishlist');
+    };
+
+    const build = (card) => {
+      if (card.dataset.svCardheart === 'on') return;
+      const host = card.querySelector('.card-gallery');
+      const handle = handleOf(card);
+      if (!host || !handle) return;
+      card.dataset.svCardheart = 'on';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sv-cardheart';
+      button.dataset.handle = handle;
+      button.innerHTML = HEART;
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const list = read().filter((h) => h !== handle);
+        if (button.getAttribute('aria-pressed') !== 'true') list.unshift(handle);
+        write(list.slice(0, 60));
+        document.querySelectorAll('.sv-cardheart').forEach(paint);
+        document.dispatchEvent(new CustomEvent('sv:saved-change', { detail: { count: list.length } }));
+      });
+      paint(button);
+      host.appendChild(button);
+    };
+
+    const scan = (root) => {
+      const scope = root && root.querySelectorAll ? root : document;
+      scope.querySelectorAll('.product-grid__item, .product-card').forEach(build);
+      if (scope.matches && scope.matches('.product-grid__item, .product-card')) build(scope);
+    };
+
+    const start = () => {
+      scan(document);
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) if (node.nodeType === 1) scan(node);
+        }
+      }).observe(document.body, { childList: true, subtree: true });
+      window.addEventListener('storage', (e) => {
+        if (e.key === KEY) document.querySelectorAll('.sv-cardheart').forEach(paint);
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+  })();
+</script>
+
+{% stylesheet %}
+  /* Bottom-left of the photograph, mirroring Horizon's add-to-bag
+     roundel on the right. Always present rather than hover-revealed:
+     on a phone there is no hover, and a save is the one action a parent
+     takes while still deciding. */
+  .sv-cardheart {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    inline-size: 44px;
+    block-size: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--cream, #fbf7ef) 92%, transparent);
+    color: var(--ink, #1a1a1a);
+    box-shadow: 0 2px 10px rgba(26, 26, 26, 0.14);
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    transition: transform 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+  }
+
+  .sv-cardheart svg {
+    inline-size: 20px;
+    block-size: 20px;
+  }
+
+  .sv-cardheart:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Saved: the heart fills, so a scan of the shelf shows what is on the
+     list without reading anything. */
+  .sv-cardheart.is-on {
+    color: var(--emerald, #14524a);
+    --sv-heart-fill: var(--emerald, #14524a);
+  }
+
+  .sv-cardheart:focus-visible {
+    outline: 2px solid var(--emerald, #14524a);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 749px) {
+    .sv-cardheart {
+      left: 8px;
+      bottom: 8px;
+      inline-size: 38px;
+      block-size: 38px;
+    }
+
+    .sv-cardheart svg {
+      inline-size: 18px;
+      block-size: 18px;
+    }
+  }
+{% endstylesheet %}

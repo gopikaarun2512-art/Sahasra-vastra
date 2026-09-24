@@ -1,0 +1,136 @@
+{% doc %}
+  The age question, everywhere except the product page.
+
+  ── Why it is rendered from the layout ────────────────────────────────
+  Same reason sv-card-wish is: the question belongs to the shopper, not
+  to one template. A parent can arrive on a collection from Instagram, on
+  search results from Google, or on the homepage from a card — and until
+  now only the product page ever asked them what size they were shopping
+  for. One render keeps the wording, the storage and the behaviour from
+  drifting between them.
+
+  The product page keeps its own copy: it does more with the answer
+  (it pre-selects a variant), so sv-product.js owns that dialog and this
+  snippet stands down there entirely.
+
+  ── Where the bands come from ─────────────────────────────────────────
+  Admin's navigation — the same third level the chip rows read, so the
+  labels in the dialog and the labels on the shelf can never disagree,
+  and each band carries the collection it lands on. Nothing is typed
+  here.
+
+  ── When it asks unprompted ───────────────────────────────────────────
+  On a shelf: collections, search results, the collection index. Not on
+  the homepage, which opens on the film and then asks the same question
+  in full as its first section — a dialog over that is the question asked
+  twice. Not on cart, account or policy pages, where the shopper is
+  finishing something. The dialog is still RENDERED on those pages so a
+  "change" control keeps working; it just does not open by itself.
+
+  @param {string} [menu] - Menu whose third level holds the size links
+{% enddoc %}
+
+{%- liquid
+  assign menu_handle = menu | default: 'main-menu'
+  assign nav = linklists[menu_handle]
+
+  assign labels = ''
+  assign band_json = '['
+  assign n = 0
+
+  for link in nav.links
+    for band in link.links
+      for chip in band.links
+        assign parts = chip.url | split: '/'
+        assign tag = parts.last
+        assign head = tag | slice: 0, 4
+        if head != 'age-'
+          continue
+        endif
+
+        assign probe = chip.title | append: '|'
+        if labels contains probe
+          continue
+        endif
+        assign labels = labels | append: probe
+
+        assign j_label = chip.title | json
+        assign j_tag = tag | json
+        assign j_url = chip.url | json
+        if n > 0
+          assign band_json = band_json | append: ','
+        endif
+        assign band_json = band_json | append: '{"label":' | append: j_label
+        assign band_json = band_json | append: ',"tag":' | append: j_tag
+        assign band_json = band_json | append: ',"url":' | append: j_url | append: '}'
+        assign n = n | plus: 1
+      endfor
+    endfor
+  endfor
+
+  assign band_json = band_json | append: ']'
+  assign labels = labels | split: '|'
+-%}
+
+{%- if n > 1 -%}
+  {%- liquid
+    # Which size this shelf is already narrowed to, if any. Read by
+    # prefix, because a filtered URL can also carry a garment type.
+    assign active_tag = ''
+    for t in current_tags
+      assign head = t | slice: 0, 4
+      if head == 'age-'
+        assign active_tag = t
+        break
+      endif
+    endfor
+
+    assign ask = false
+    if template.name == 'collection' or template.name == 'search' or template.name == 'list-collections'
+      assign ask = true
+    endif
+
+    assign page = 'other'
+    if template.name == 'collection' and collection != blank
+      assign page = 'collection'
+    endif
+  -%}
+
+  {{ 'sv-age.css' | asset_url | stylesheet_tag }}
+
+  {%- render 'sv-agepick', id: 'global', bands: labels, page: page -%}
+
+  {%- comment -%}
+    The band table is handed over as data rather than written into the
+    script file, because it is Admin's menu and changes without a deploy.
+  {%- endcomment -%}
+  <script>
+    (() => {
+      const d = document.querySelector('dialog[data-sv-age]');
+      if (!d) return;
+      d.dataset.bands = {{ band_json | json }};
+      d.dataset.activeTag = {{ active_tag | json }};
+      d.dataset.ask = {{ ask | json }};
+      {%- comment -%}
+        A type shelf — Rompers & Onesies, Co-ord Sets — can be narrowed by
+        size too: its own tag URL keeps the type AND filters the size,
+        which is what a parent asked for. The shelf's own tag list comes
+        with it so the script can tell "we make that here" from "we do
+        not" before sending anyone anywhere; without it an empty size
+        would land them back on the whole shelf, showing every size to
+        someone who just named one.
+      {%- endcomment -%}
+      d.dataset.shelfUrl = {% if collection %}{{ collection.url | json }}{% else %}""{% endif %};
+      {%- comment -%}
+        `| default:` stringifies an array, which shipped a comma-joined
+        list where JSON was expected — branch instead.
+      {%- endcomment -%}
+      {%- comment -%}
+        dataset values are strings: assigning the array itself gave a
+        comma-joined list, which JSON.parse then choked on. Stringify it.
+      {%- endcomment -%}
+      d.dataset.shelfTags = JSON.stringify({% if collection %}{{ collection.all_tags | json }}{% else %}[]{% endif %});
+    })();
+  </script>
+  <script src="{{ 'sv-age.js' | asset_url }}" defer></script>
+{%- endif -%}

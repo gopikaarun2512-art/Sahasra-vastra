@@ -1,0 +1,13 @@
+{%- comment -%}
+  Horizon preloaded its four setting fonts (all Inter) here, at the very
+  top of <head>. The Sahasra design system sets its own faces — Jost and
+  EB Garamond, loaded and preloaded by sections/sv-header.liquid — and
+  Inter survives only in the few Horizon surfaces left, so three early
+  Inter downloads competed with the fonts every page actually paints in
+  (measured Sep 2026). Inter's @font-face rules still ship from
+  theme-styles-variables, so wherever it IS used it loads on demand.
+
+  To restore Horizon's behaviour, the original was:
+    {{ settings.type_body_font | font_url | preload_tag: as: 'font', type: 'font/woff2', fetchpriority: 'low' }}
+  once per type_body / type_subheading / type_heading / type_accent font.
+{%- endcomment -%}

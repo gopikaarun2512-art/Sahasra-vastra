@@ -1,0 +1,88 @@
+{%- comment -%}
+  SAHASRA VASTRA · CART PAGE
+  Replaces Horizon's main-cart on templates/cart.json.
+
+  ── What is ours and what is Horizon's ─────────────────────────────────
+  The frame, the heading, the empty state and the "before you pay" notes
+  are ours. The line items and the totals are still Horizon's static
+  blocks (_cart-products, _cart-summary), restyled in sv-cart.css, because
+  they carry the machinery we want to keep: quantity steppers, removal,
+  discount codes, error messages, and the section morph that
+  component-cart-items.js performs after every change.
+
+  Everything lives inside the cart-items-component wrapper with THIS
+  section's id, so when a quantity changes the JS re-renders this section
+  through the Section Rendering API and the shipping line in the notes
+  updates in the same beat as the totals.
+
+  `#empty-cart-template` is required by component-cart-items.js: removing
+  the last line swaps the component's children for the template's content
+  optimistically, before the server answers.
+{%- endcomment -%}
+
+{% capture sv_cart_empty %}
+  <div class="sv-cart sv-cart--empty">
+    <div class="sv-cart__w">
+      <div class="sv-cart__empty">
+        <p class="eyebrow">Your bag</p>
+        <h1 class="display sv-cart__title">Nothing in here yet</h1>
+        <p class="sv-cart__lede">
+          Soft cotton for the first years, measured in centimetres so you can size it against something they already wear.
+        </p>
+        <div class="sv-cart__empty-actions">
+          <a class="btn" href="{{ routes.all_products_collection_url }}">Shop everything</a>
+          <a class="act" href="{{ routes.root_url }}#shop-by-age">Shop by age</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endcapture %}
+
+{% capture cart_items_children %}
+  <template id="empty-cart-template">{{ sv_cart_empty }}</template>
+
+  {%- if cart.empty? -%}
+    {{ sv_cart_empty }}
+  {%- else -%}
+    <div class="sv-cart">
+      <div class="sv-cart__w">
+        <header class="sv-cart__head">
+          <p class="eyebrow">
+            Your bag &middot; {{ cart.item_count }}
+            {% if cart.item_count == 1 %}piece{% else %}pieces{% endif %}
+          </p>
+          <h1 class="display sv-cart__title">Your bag</h1>
+        </header>
+
+        <div class="sv-cart__grid">
+          <div class="sv-cart__items">
+            {%- content_for 'block', id: 'cart-page-items', type: '_cart-products' -%}
+            <a class="act sv-cart__continue" href="{{ routes.all_products_collection_url }}">Continue shopping</a>
+          </div>
+
+          <aside class="sv-cart__summary" aria-label="Order summary">
+            {% render 'sv-cart-ship', context: 'page' %}
+            <h2 class="sv-cart__summary-title">Order summary</h2>
+            {%- content_for 'block', id: 'cart-page-summary', type: '_cart-summary' -%}
+            {% render 'sv-cart-notes', context: 'page' %}
+          </aside>
+        </div>
+      </div>
+    </div>
+  {%- endif -%}
+{% endcapture %}
+
+{% render 'cart-items-component', children: cart_items_children, section_id: section.id %}
+
+{% schema %}
+{
+  "name": "SV Cart",
+  "tag": "section",
+  "class": "sv-cart-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "blocks": [{ "type": "@app" }],
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,300 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+/*
+ * ------------------------------------------------------------
+ * Sahasra Vastra — Report a problem (Sep 2026).
+ *
+ * The page previously fell through to templates/page.json and rendered
+ * as a single RTE dump inside `sv-page`: 600 words of prose in a 760px
+ * column, with the WhatsApp number two thirds of the way down and the
+ * 24-hour deadline set as a bold word inside a sentence.
+ *
+ * Nobody reads this page. They arrive angry, on a phone, inside that
+ * window, holding a video they do not know how to send. Content now
+ * lives in these blocks rather than the Admin page body because the
+ * triage, the kit that narrows to the chosen claim, the stable anchors
+ * and the HowTo JSON-LD all need structure the RTE cannot carry.
+ *
+ * Content changes from the Admin copy:
+ *   · "What we can put right" became four choosable claim types, each
+ *     of which prefills the message and narrows the kit
+ *   · the unboxing rule became a four-frame sequence — it was one long
+ *     sentence, and it is the reason most claims fail
+ *   · the large-file advice moved from a parenthesis into its own route
+ *   · the video rationale moved into the page's one emerald panel
+ *
+ * Everything on this page is editable in the theme editor. The Admin
+ * page body (/pages/report-a-problem) is now unused by this template.
+ * Leave it in place as the fallback if the template is ever unassigned.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "sv-report",
+      "blocks": {
+        "claim_damaged": {
+          "type": "claim",
+          "settings": {
+            "label": "It arrived damaged",
+            "detail": "Torn, stained, or with a manufacturing defect.",
+            "art": "damaged",
+            "slug": "damaged",
+            "wa_text": "The garment arrived damaged"
+          }
+        },
+        "claim_wrong": {
+          "type": "claim",
+          "settings": {
+            "label": "It is the wrong item",
+            "detail": "A different design, colour or size from the one you ordered.",
+            "art": "wrong",
+            "slug": "wrong",
+            "wa_text": "I received the wrong item"
+          }
+        },
+        "claim_missing": {
+          "type": "claim",
+          "settings": {
+            "label": "Something is missing",
+            "detail": "An item on your invoice was not in the parcel.",
+            "art": "missing",
+            "slug": "missing",
+            "wa_text": "An item on my invoice is missing from the parcel"
+          }
+        },
+        "claim_tampered": {
+          "type": "claim",
+          "settings": {
+            "label": "The parcel was opened",
+            "detail": "It arrived already open, resealed or tampered with.",
+            "art": "tampered",
+            "slug": "tampered",
+            "wa_text": "The parcel arrived opened or tampered with"
+          }
+        },
+        "need_order": {
+          "type": "need",
+          "settings": {
+            "label": "Your order number",
+            "detail": "<p>It begins with SV and is on your confirmation email and your packing slip.</p>",
+            "slug": "order-number",
+            "claims": "",
+            "hint_label": "Where do I find it?",
+            "hint": "<p>Search your inbox for <strong>Sahasra Vastra</strong> — the confirmation email carries it in the subject line. It is also printed at the top of the packing slip inside the parcel.</p>"
+          }
+        },
+        "need_video": {
+          "type": "need",
+          "settings": {
+            "label": "Your unboxing video",
+            "detail": "<p>Required for every claim. It must start before the packet was opened and run in one unbroken shot showing the sealed parcel, the shipping label, the packet being opened, and every item coming out.</p>",
+            "slug": "unboxing-video",
+            "claims": "",
+            "hint_label": "It is too large to send",
+            "hint": "<p>That is normal — unboxing videos usually are. Upload it to Google Drive, WeTransfer or any similar service and send us the link instead. If none of that is possible, message us on WhatsApp and we will find another way. Do not let the file size stop you from reporting a problem.</p>"
+          }
+        },
+        "need_photos": {
+          "type": "need",
+          "settings": {
+            "label": "Photographs",
+            "detail": "<p>Of the problem itself, and of the shipping label on the parcel.</p>",
+            "slug": "photographs",
+            "claims": "",
+            "hint_label": "What should they show?",
+            "hint": "<p>Daylight, no filter, close enough to see the fault. For a damaged garment, one photograph of the whole piece and one of the damage. For a wrong item, the care label and the size tag.</p>"
+          }
+        },
+        "need_outside": {
+          "type": "need",
+          "settings": {
+            "label": "A photograph of the outside of the parcel",
+            "detail": "<p>Before you open it. If the packaging looked wrong on arrival, that photograph is the claim.</p>",
+            "slug": "parcel-outside",
+            "claims": "tampered",
+            "hint_label": "",
+            "hint": ""
+          }
+        },
+        "frame_sealed": {
+          "type": "frame",
+          "settings": {
+            "caption": "Start filming before you open it",
+            "detail": "Show the sealed parcel, all sides, before anything is cut. The video has to begin here or it cannot prove what was inside.",
+            "image": "shopify://shop_images/Premium_courier_parcel_product_photo_1.png",
+            "art": "sealed"
+          }
+        },
+        "frame_label": {
+          "type": "frame",
+          "settings": {
+            "caption": "Hold the shipping label in shot",
+            "detail": "Long enough to read. It is the only thing tying the parcel to your order once the packaging is in the bin.",
+            "image": "shopify://shop_images/Close-up_straight-on_parcel_with_hands_and_soft_label.png",
+            "art": "label"
+          }
+        },
+        "frame_opening": {
+          "type": "frame",
+          "settings": {
+            "caption": "Open it on camera, without stopping",
+            "detail": "One unbroken shot. A video that cuts between the sealed parcel and the contents cannot tell us what happened in between.",
+            "image": "shopify://shop_images/Parcel_opening_moment_with_hands.png",
+            "art": "opening"
+          }
+        },
+        "frame_contents": {
+          "type": "frame",
+          "settings": {
+            "caption": "Take every item out, in shot",
+            "detail": "Including the packing slip. A claim for a missing item is settled in these few seconds or not at all.",
+            "image": "shopify://shop_images/Unboxed_parcel_contents_laid_out_flat.png",
+            "art": "contents"
+          }
+        },
+        "route_whatsapp": {
+          "type": "route",
+          "settings": {
+            "kind": "whatsapp",
+            "title": "WhatsApp",
+            "body": "<p>Easiest, and fastest at our end. Send the video straight from your camera roll.</p>",
+            "cta": "Open WhatsApp",
+            "primary": true
+          }
+        },
+        "route_email": {
+          "type": "route",
+          "settings": {
+            "kind": "email",
+            "title": "Email",
+            "body": "<p>Fine for photographs and the order number. Most video files will be too large for it.</p>",
+            "cta": "Write to us",
+            "primary": false
+          }
+        },
+        "route_link": {
+          "type": "route",
+          "settings": {
+            "kind": "note",
+            "title": "If the video is too large",
+            "body": "<p>Upload it to Google Drive, WeTransfer or any similar service and send us the link instead. If none of that is possible, message us on WhatsApp and we will find another way.</p>",
+            "cta": "",
+            "primary": false
+          }
+        },
+        "step_reply": {
+          "type": "step",
+          "settings": {
+            "meta": "Within 1 working day",
+            "title": "We reply",
+            "body": "<p>A real answer from the people who packed your parcel, not a ticket number.</p>"
+          }
+        },
+        "step_pickup": {
+          "type": "step",
+          "settings": {
+            "meta": "At our cost",
+            "title": "We arrange the pickup",
+            "body": "<p>A free reverse pickup, or photographs instead where a courier run is not worth it. You never pay return shipping on an accepted claim.</p>"
+          }
+        },
+        "step_choice": {
+          "type": "step",
+          "settings": {
+            "meta": "Your choice",
+            "title": "Replacement or refund",
+            "body": "<p>The same item again, subject to stock, or your money back in full. Whichever you prefer.</p>"
+          }
+        },
+        "step_refund": {
+          "type": "step",
+          "settings": {
+            "meta": "Within 7 working days",
+            "title": "The refund reaches you",
+            "body": "<p>To your original payment method, within 7 working days of acceptance. Your bank may take a further 2 to 5 working days to show it.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "claim_damaged",
+        "claim_wrong",
+        "claim_missing",
+        "claim_tampered",
+        "need_order",
+        "need_video",
+        "need_photos",
+        "need_outside",
+        "frame_sealed",
+        "frame_label",
+        "frame_opening",
+        "frame_contents",
+        "route_whatsapp",
+        "route_email",
+        "route_link",
+        "step_reply",
+        "step_pickup",
+        "step_choice",
+        "step_refund"
+      ],
+      "settings": {
+        "eyebrow": "Claims",
+        "title_a": "Something wrong",
+        "title_b": "<em>with your order?</em>",
+        "lead": "We are sorry. Tell us quickly and we will put it right at our cost — a replacement or a full refund, whichever you prefer.",
+        "window_value": "24",
+        "window_label": "Hours",
+        "window_line": "You have 24 hours from delivery or collection to report a problem.",
+        "window_note": "Message us inside that window and the claim stands, even if it takes us both a few days to settle it.",
+        "cta_primary": "Report it on WhatsApp",
+        "cta_secondary": "Other ways to reach us",
+        "whatsapp": "918547629251",
+        "email": "info@sahasravastra.com",
+        "prefill_opener": "Hi Sahasra Vastra, I need to report a problem with my order.",
+        "mail_subject": "Problem with my order",
+        "triage_title": "What went wrong?",
+        "triage_slug": "what-went-wrong",
+        "triage_note": "Tap the one that fits. It fills in your message for you and shows you exactly what we will need.",
+        "triage_exclusion": "<p>We cannot accept a change of mind, or a size that matches the published chart. That is why we ask you to measure a garment your child already wears before ordering — see our <a href=\"/pages/size-guide\">Size Guide</a>.</p>",
+        "kit_title": "What to send us",
+        "kit_slug": "what-to-send",
+        "kit_note": "Tick these off as you gather them. We keep your place in this browser, so you can go to your camera roll and come back.",
+        "tick_label": "Mark as ready",
+        "gauge_waiting": "Nothing ready yet. Take them in any order.",
+        "gauge_part": "Almost. Message us anyway if you are stuck on one of them.",
+        "gauge_ready": "All set. Send it now and we will reply within one working day.",
+        "order_label": "Your order number",
+        "order_placeholder": "SV1234",
+        "order_note": "Kept in this browser only, and added to your message so we can find you faster.",
+        "film_eyebrow": "The one thing we cannot waive",
+        "film_title": "How to film the unboxing",
+        "film_slug": "unboxing",
+        "film_note": "<p>One unbroken shot, start to finish. Half a minute of filming is what lets us settle a claim the same day instead of arguing about it. We cannot accept a claim without it.</p>",
+        "routes_title": "How to send it",
+        "routes_slug": "how-to-send",
+        "routes_note": "Whichever you choose, we get the same claim. Do not let a file size stop you from reporting a problem.",
+        "copy_label": "Copy",
+        "copy_done": "Copied",
+        "next_title": "What happens next",
+        "next_slug": "what-happens",
+        "next_note": "<p>Please keep the item, its tags and the original packaging until the claim is closed.</p>",
+        "why_label": "Straight with you",
+        "why_title": "Why we ask for a video",
+        "why_quote": "It is the only way either of us can show what was actually inside the parcel when it arrived.",
+        "why_body": "<p>With it we can settle most claims the same day and without argument. Without it we would have to build the cost of claims we cannot verify into our prices, and every honest customer would end up paying for that.</p>",
+        "fine": "<p>This page is a summary. The complete terms are in our <a href=\"/policies/refund-policy\">Refund Policy</a>, and delivery matters are covered in our <a href=\"/policies/shipping-policy\">Shipping Policy</a>.</p><p>For a complaint about privacy or about how we have handled your personal information, please write to our Grievance Officer instead — the details are on our <a href=\"/policies/contact-information\">Contact Information</a> page.</p>",
+        "bg_motion": "full"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

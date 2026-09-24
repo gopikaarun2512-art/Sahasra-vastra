@@ -1,0 +1,134 @@
+{% doc %}
+  The Sahasra Vastra lockup, in both orientations and both colourways.
+
+  Source masters: docs/lockup-horizontal-colour.svg, lockup-stacked-colour.svg
+  and lockup-stacked-bilingual-white.svg (the reversed set). Geometry, sizes,
+  letter-spacing and the ornament are taken from those files unchanged.
+
+  INLINED, never <img src>. The wordmark is live <text> in Jost. An SVG loaded
+  through <img> renders in an isolated document with no access to page fonts
+  and would fall back to Helvetica.
+
+  Fills are design tokens, not literals: sv-system.css v1.3 exists because the
+  stylesheet and the logo drifted apart, and binding the inlined mark to the
+  same tokens is what stops it recurring.
+
+  The reversed master is MONO — every fill is one colour, not gold-on-ivory.
+  That is a brand decision, reproduced here.
+
+  No Devanagari. The brand README warns that positive tracking breaks the
+  वस्त्र conjunct, and these masters drop the line entirely.
+
+  DIVERGES FROM THE MASTERS (Sep 2026): the divider ornament's petals are
+  redrawn as double-pointed lenses emerging from the centre disc, at the
+  owner's request. Regenerate the master SVGs to match.
+
+  @param {string} [orientation] - 'stacked'. Default 'horizontal'.
+  @param {string} [variant] - 'reversed' for emerald grounds. Default colour.
+  @param {string} [class] - class applied to the <svg>
+  @param {string} [title] - accessible name. Omit where a parent link names it.
+
+  @example
+  {% render 'sv-lockup', orientation: 'stacked', variant: 'reversed' %}
+{% enddoc %}
+
+{%- liquid
+  if variant == 'reversed'
+    assign gold = 'var(--cream)'
+    assign emerald = 'var(--cream)'
+  else
+    assign gold = 'var(--tan)'
+    assign emerald = 'var(--emerald)'
+  endif
+
+  assign outer = '0,15,30,45,60,75,90,105,120,135,150,165,180,195,210,225,240,255,270,285,300,315,330,345' | split: ','
+  assign inner = '15,45,75,105,135,165,195,225,255,285,315,345' | split: ','
+  assign eight = '0,45,90,135,180,225,270,315' | split: ','
+
+  if orientation == 'stacked'
+    assign box = '0 0 550 420'
+  else
+    assign box = '-110 -110 600 220'
+  endif
+-%}
+
+<svg
+  {% if class %}class="{{ class }}"{% endif %}
+  viewBox="{{ box }}"
+  xmlns="http://www.w3.org/2000/svg"
+  {% if title != blank %}role="img" aria-label="{{ title | escape }}"{% else %}aria-hidden="true"{% endif %}
+  focusable="false"
+>
+  {%- if title != blank -%}<title>{{ title }}</title>{%- endif -%}
+
+  {%- comment -%} the thousand-petal mark — 24 outer, 12 inner, two centres {%- endcomment -%}
+  {%- if orientation == 'stacked' -%}
+    <g transform="translate(275,100) scale(0.9)">
+  {%- else -%}
+    <g transform="scale(0.92)">
+  {%- endif -%}
+    {%- for r in outer -%}
+      <path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" transform="rotate({{ r }})" fill="{{ gold }}"/>
+    {%- endfor -%}
+    {%- for r in inner -%}
+      <path d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" transform="rotate({{ r }})" fill="{{ emerald }}"/>
+    {%- endfor -%}
+    <circle r="13" fill="{{ gold }}"/>
+    <circle r="5.5" fill="{{ emerald }}"/>
+  </g>
+
+  {%- if orientation == 'stacked' -%}
+    <text x="275" y="268" text-anchor="middle" dx="10.5"
+          font-family="Jost, sans-serif" font-weight="300"
+          font-size="62" letter-spacing="21" fill="{{ emerald }}">SAHASRA</text>
+
+    <g stroke="{{ gold }}" stroke-width="2">
+      <line x1="60" y1="312" x2="248" y2="312"/>
+      <line x1="302" y1="312" x2="490" y2="312"/>
+    </g>
+
+    <g transform="translate(275,312) scale(0.28)">
+      {%- for r in eight -%}
+        <path d="M0 -10 C -6.5 -27 -6.5 -46 0 -62 C 6.5 -46 6.5 -27 0 -10 Z" transform="rotate({{ r }})" fill="{{ gold }}"/>
+      {%- endfor -%}
+      <circle r="20" fill="{{ emerald }}"/>
+    </g>
+
+    <text x="275" y="372" text-anchor="middle" dx="8"
+          font-family="Jost, sans-serif" font-weight="400"
+          font-size="26" letter-spacing="16" fill="{{ gold }}">VASTRA</text>
+  {%- else -%}
+    {%- comment -%}
+      DIVERGES FROM THE MASTER — see the report. lockup-horizontal-colour.svg
+      sets the wordmark at x=140/size 46 with the rule 140-380. At the sizes
+      the header renders, that left a wide gap between mark and wordmark and
+      the type read small beside the rosette. Moved in to x=100 and scaled up
+      (46 -> 54, 19 -> 22), tracking held at the master's ratios
+      (15/46 and 11/19). The master should be regenerated to match so the two
+      cannot drift.
+    {%- endcomment -%}
+    <text x="100" y="-16"
+          font-family="Jost, sans-serif" font-weight="300"
+          font-size="54" letter-spacing="17" fill="{{ emerald }}">SAHASRA</text>
+
+    {%- comment -%}
+      The rule runs the measured width of SAHASRA (x=100 to 468) so the two
+      align, with the ornament centred at 284 in a 50-unit break.
+    {%- endcomment -%}
+    <g stroke="{{ gold }}" stroke-width="1.8">
+      <line x1="100" y1="10" x2="259" y2="10"/>
+      <line x1="309" y1="10" x2="468" y2="10"/>
+    </g>
+
+    <g transform="translate(284,10) scale(0.23)">
+      {%- for r in eight -%}
+        <path d="M0 -10 C -6.5 -27 -6.5 -46 0 -62 C 6.5 -46 6.5 -27 0 -10 Z" transform="rotate({{ r }})" fill="{{ gold }}"/>
+      {%- endfor -%}
+      <circle r="20" fill="{{ emerald }}"/>
+    </g>
+
+    <text x="100" y="64"
+          font-family="Jost, sans-serif" font-weight="400"
+          font-size="22" letter-spacing="13" fill="{{ gold }}">VASTRA</text>
+  {%- endif -%}
+</svg>

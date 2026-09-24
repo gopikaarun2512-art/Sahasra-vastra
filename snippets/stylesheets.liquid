@@ -1,0 +1,14 @@
+{{ 'overflow-list.css' | asset_url | preload_tag: as: 'style' }}
+{{ 'base.css' | asset_url | stylesheet_tag: preload: true }}
+
+{%- comment -%}
+  Sahasra Vastra design system. Loaded AFTER base.css deliberately: where a
+  selector collides with Horizon's, the design system must win, and load order
+  is the only resolution available without restructuring the supplied file.
+{%- endcomment -%}
+{{ 'sv-system.css' | asset_url | stylesheet_tag: preload: true }}
+
+{%- comment -%}
+  Cart page + cart drawer. Global because the drawer is on every page.
+{%- endcomment -%}
+{{ 'sv-cart.css' | asset_url | stylesheet_tag }}

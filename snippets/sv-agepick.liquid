@@ -1,0 +1,67 @@
+{% doc %}
+  The age picker dialog — "What size are you shopping for?"
+
+  One question, asked once, answered on the device. It started on the
+  product page (the lunabee popup, adapted) and was lifted into a snippet
+  when the same question turned out to be worth asking on a collection:
+  a parent who lands on Rompers & Onesies from a search has told us
+  nothing about their child either.
+
+  The markup is deliberately unchanged from the copy that lived inside
+  sv-product.liquid, attribute for attribute, because two scripts drive
+  it — sv-product.js on a product, sv-age.js everywhere else — and both
+  find their controls by these data attributes.
+
+  Single choice, unlike lunabee's multi-select: one child is being
+  dressed at a time, and one answer maps to one size.
+
+  @param {string} id - Unique suffix for the heading id
+  @param {array} bands - Age labels, in order, e.g. ['0–3 m', '3–6 m']
+  @param {string} [skip] - Collection handles that mean "already answered"
+  @param {string} [heading] - The question
+  @param {string} [sub] - The line under it
+  @param {string} [ok_label] - The confirm button
+  @param {string} [all_label] - The decline button
+  @param {string} [page] - 'collection' when the shelf can be narrowed
+{% enddoc %}
+
+<dialog
+  class="sv-agepick"
+  data-sv-age
+  data-skip-collections="{{ skip | escape }}"
+  data-page="{{ page | default: 'other' }}"
+  aria-labelledby="sv-age-h-{{ id }}"
+>
+  <form method="dialog" class="sv-agepick__panel">
+    <h2 class="sv-agepick__h" id="sv-age-h-{{ id }}">
+      {{- heading | default: 'What size are you shopping for?' -}}
+    </h2>
+    <p class="sv-agepick__sub">
+      {{- sub | default: 'Pick your child’s age — we’ll pre-select the right size on every design.' -}}
+    </p>
+    <div class="sv-agepick__chips" role="radiogroup" aria-label="Age">
+      {%- for band in bands -%}
+        {%- assign b = band | strip -%}
+        {%- if b == blank -%}{%- continue -%}{%- endif -%}
+        <button
+          type="button"
+          class="sv-agepick__chip"
+          role="radio"
+          aria-checked="false"
+          data-sv-age-band="{{ b | escape }}"
+        >{{ b }}</button>
+      {%- endfor -%}
+    </div>
+    <div class="sv-agepick__actions">
+      <button type="button" class="btn sv-agepick__ok" data-sv-age-ok disabled>
+        {{- ok_label | default: 'Show my size' -}}
+      </button>
+      <button type="button" class="btn btn--ghost sv-agepick__all" data-sv-age-all>
+        {{- all_label | default: 'Show all sizes' -}}
+      </button>
+    </div>
+    <button type="button" class="sv-agepick__x" data-sv-age-all aria-label="Close">
+      {% render 'sv-icon', name: 'close' %}
+    </button>
+  </form>
+</dialog>

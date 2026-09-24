@@ -1,0 +1,2235 @@
+{% doc %}
+  FAQ — the page customers reach when something has gone wrong, so it is
+  built to be scanned, not read.
+
+  Replaces the generic `sv-page` frame for /pages/faq. Content lives in
+  schema blocks rather than the Admin RTE because four features need
+  structure the RTE cannot carry: stable anchors for support to paste into
+  a reply, a jump rail built from the real group list, client-side
+  filtering, and FAQPage JSON-LD.
+
+  Block model is a flat list with delimiters — Shopify blocks cannot nest.
+  A `group` block opens a category; every `question` after it belongs to
+  that category until the next `group`. `pin` blocks are hoisted out in a
+  pre-pass and rendered as the three answers above the fold.
+
+  Motion: the accordion height transition is one of the two exceptions
+  §08 of sv-system.css allows to transform-only motion. Everything else
+  here is opacity/transform.
+{% enddoc %}
+
+{%- liquid
+  assign wa = section.settings.whatsapp | remove: ' ' | remove: '+' | remove: '-'
+-%}
+
+<section class="sv-faq sv-faq--bg-{{ section.settings.bg_motion }}" data-sv data-sv-faq>
+
+  {%- render 'sv-motion-gate' -%}
+
+
+  {%- comment -%}
+    ── The ground ────────────────────────────────────────────────────
+    A fixed, decorative layer behind everything: a slow weave, two
+    drifting lights, and the brand petal adrift. It is purely
+    ornamental — aria-hidden, pointer-events none, and it carries no
+    content, so it can never be the reason something is unreadable.
+
+    The petal is the mark from sv-system.css §06, not a new shape.
+    The weave loops seamlessly because each layer translates by exactly
+    one tile of its own gradient; anything else visibly jumps.
+  {%- endcomment -%}
+  {%- unless section.settings.bg_motion == 'off' -%}
+    <div class="sv-faq__bg" aria-hidden="true">
+      <div class="sv-faq__weave"></div>
+      <div class="sv-faq__glow sv-faq__glow--a"></div>
+      <div class="sv-faq__glow sv-faq__glow--b"></div>
+      {%- for i in (1..7) -%}
+        <svg class="sv-faq__petal sv-faq__petal--{{ i }}" viewBox="-14 -86 28 92" focusable="false">
+          <path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z"/>
+        </svg>
+      {%- endfor -%}
+    </div>
+  {%- endunless -%}
+
+  <div class="w sv-faq__inner">
+
+    {%- comment -%} ── Masthead ────────────────────────────────────── {%- endcomment -%}
+    <header class="sv-faq__head" data-sv-motion>
+      <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+      {%- comment -%}
+        Line reveal, by line — §08 permits no finer grain. The spans are
+        always in the markup; only the motion-ready class makes them a
+        mask, so the title is never left hidden if the script fails.
+      {%- endcomment -%}
+      <h1 class="sv-faq__title">
+        <span class="sv-faq__line"><span>{{ section.settings.title_a }}</span></span>
+        <span class="sv-faq__line"><span>{{ section.settings.title_b }}</span></span>
+      </h1>
+      {%- if section.settings.lead != blank -%}
+        <p class="sv-faq__lead lead">{{ section.settings.lead }}</p>
+      {%- endif -%}
+    </header>
+
+    {%- comment -%}
+      ── Pins ──────────────────────────────────────────────────────────
+      The three answers people actually arrive for. Hoisted out of the
+      block order so they read before the accordion regardless of where
+      the merchant leaves them in the editor.
+    {%- endcomment -%}
+    {%- assign pin_count = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'pin' -%}{%- assign pin_count = pin_count | plus: 1 -%}{%- endif -%}
+    {%- endfor -%}
+
+    {%- if pin_count > 0 -%}
+      <ul class="sv-faq__pins" data-sv-motion>
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'pin' -%}
+            <li class="sv-faq__pin" {{ block.shopify_attributes }}>
+              <span class="lab">{{ block.settings.label }}</span>
+              <strong class="sv-faq__pinval">{{ block.settings.value }}</strong>
+              {%- if block.settings.note != blank -%}
+                <span class="sv-faq__pinnote">{{ block.settings.note }}</span>
+              {%- endif -%}
+              {%- if block.settings.target != blank -%}
+                <a class="sv-faq__pinlink" href="#{{ block.settings.target }}">
+                  <span class="sv-visually-hidden">{{ block.settings.label }} — read the full answer</span>
+                  <span aria-hidden="true">↓</span>
+                </a>
+              {%- endif -%}
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    {%- comment -%}
+      ── Search ────────────────────────────────────────────────────────
+      Progressive: the field is injected by script, so a no-JS visitor is
+      never shown a control that cannot work.
+    {%- endcomment -%}
+    <div class="sv-faq__search" data-sv-search hidden>
+      <label class="sv-visually-hidden" for="sv-faq-q">Search the questions</label>
+      <svg class="sv-faq__searchicon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="16.2" y1="16.2" x2="21" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <input class="sv-faq__input" id="sv-faq-q" type="search" autocomplete="off"
+             placeholder="{{ section.settings.search_placeholder | escape }}"
+             aria-describedby="sv-faq-count">
+      <button class="sv-faq__clear" type="button" data-sv-clear hidden>
+        <span class="sv-visually-hidden">Clear the search</span>
+        <span aria-hidden="true">×</span>
+      </button>
+      <p class="sv-faq__count sv-fine" id="sv-faq-count" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="sv-faq__grid">
+
+      {%- comment -%}
+        ── Jump rail ───────────────────────────────────────────────────
+        Built from the group blocks, so it can never fall out of step
+        with the page. Sticky on desktop, a scrolling pill strip on
+        mobile. Scroll-spy marks the active group in gold.
+      {%- endcomment -%}
+      <nav class="sv-faq__rail" aria-label="Question categories" data-sv-rail>
+        <p class="lab lab--grey sv-faq__raillab">Jump to</p>
+        <ul class="sv-faq__raillist">
+          {%- comment -%}
+            The thread: the rail's own hairline, filling as you read
+            down the page. Decorative, but it is also the only readout
+            of how much is left. Scroll-driven, so it carries no state
+            of its own to fall out of step.
+          {%- endcomment -%}
+          <span class="sv-faq__thread" aria-hidden="true"></span>
+          {%- comment -%}
+            One marker that travels, rather than six that toggle. Sized
+            100px on its moving axis so the script's scale is simply
+            target size ÷ 100. Placed by script; inert until then, so the
+            per-link fallback state still reads without it.
+          {%- endcomment -%}
+          <span class="sv-faq__railmark" data-sv-railmark aria-hidden="true" hidden></span>
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'group' -%}
+              <li>
+                <a class="sv-faq__raillink" href="#{{ block.settings.slug }}"
+                   data-sv-railto="{{ block.settings.slug }}">{{ block.settings.title }}</a>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </nav>
+
+      {%- comment -%}
+        ── Groups and questions ────────────────────────────────────────
+        The walk: a `group` block closes whatever group is open and
+        starts a new one. Its CTA is captured on the way in and emitted
+        at the close, because it must sit after the questions it belongs
+        to and Liquid gives us no second pass.
+      {%- endcomment -%}
+      <div class="sv-faq__body">
+
+        {%- assign is_open = false -%}
+        {%- assign pending_cta = '' -%}
+
+        {%- for block in section.blocks -%}
+          {%- case block.type -%}
+
+            {%- when 'group' -%}
+              {%- if is_open -%}
+                  </div>{{ pending_cta }}
+                </section>
+              {%- endif -%}
+
+              {%- capture pending_cta -%}
+                {%- if block.settings.cta_label != blank -%}
+                  {%- liquid
+                    if block.settings.cta_wa != blank
+                      assign cta_href = block.settings.cta_wa | url_encode | prepend: '?text=' | prepend: wa | prepend: 'https://wa.me/'
+                      assign cta_ext = true
+                    else
+                      assign cta_href = block.settings.cta_url
+                      assign cta_ext = false
+                    endif
+                  -%}
+                  <p class="sv-faq__cta">
+                    <a class="act{% if cta_ext %} ext{% endif %}" href="{{ cta_href }}"
+                       {% if cta_ext %}target="_blank" rel="noopener"{% endif %}>{{ block.settings.cta_label }}</a>
+                  </p>
+                {%- endif -%}
+              {%- endcapture -%}
+
+              <section class="sv-faq__group{% if block.settings.tone == 'emerald' %} sv-faq__group--dark{% endif %}"
+                       id="{{ block.settings.slug }}" data-sv-group="{{ block.settings.slug }}"
+                       aria-labelledby="h-{{ block.settings.slug }}" data-sv-motion
+                       {{ block.shopify_attributes }}>
+                <header class="sv-faq__grouphead">
+                  <h2 class="sv-faq__h2" id="h-{{ block.settings.slug }}">{{ block.settings.title }}</h2>
+                  {%- if block.settings.blurb != blank -%}
+                    <p class="sv-faq__blurb">{{ block.settings.blurb }}</p>
+                  {%- endif -%}
+                </header>
+                <div class="sv-faq__list">
+              {%- assign is_open = true -%}
+
+            {%- when 'question' -%}
+              {%- liquid
+                assign qid = block.settings.slug
+                if qid == blank
+                  assign qid = block.id
+                endif
+              -%}
+              <details class="sv-faq__q" id="{{ qid }}" data-sv-q
+                       data-sv-text="{{ block.settings.question | append: ' ' | append: block.settings.answer | append: ' ' | append: block.settings.keywords | strip_html | downcase | escape }}"
+                       {% if block.settings.start_open %}open{% endif %}
+                       {{ block.shopify_attributes }}>
+                <summary class="sv-faq__sum">
+                  <span class="sv-faq__qt">{{ block.settings.question }}</span>
+                  <span class="sv-faq__mark" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" focusable="false">
+                      <line class="sv-faq__markh" x1="1" y1="8" x2="15" y2="8"/>
+                      <line class="sv-faq__markv" x1="8" y1="1" x2="8" y2="15"/>
+                    </svg>
+                  </span>
+                </summary>
+
+                <div class="sv-faq__wrap">
+                  <div class="sv-faq__a">
+                    {{ block.settings.answer }}
+
+                    {%- if block.settings.table_rows != blank -%}
+                      <div class="sv-faq__tablewrap">
+                        <table class="sv-faq__table">
+                          {%- if block.settings.table_head != blank -%}
+                            <thead>
+                              <tr>
+                                {%- assign heads = block.settings.table_head | split: '|' -%}
+                                {%- for h in heads -%}<th scope="col">{{ h | strip }}</th>{%- endfor -%}
+                              </tr>
+                            </thead>
+                          {%- endif -%}
+                          <tbody>
+                            {%- assign rows = block.settings.table_rows | newline_to_br | split: '<br />' -%}
+                            {%- for row in rows -%}
+                              {%- assign r = row | strip -%}
+                              {%- if r != blank -%}
+                                <tr>
+                                  {%- assign cells = r | split: '|' -%}
+                                  {%- for c in cells -%}<td>{{ c | strip }}</td>{%- endfor -%}
+                                </tr>
+                              {%- endif -%}
+                            {%- endfor -%}
+                          </tbody>
+                        </table>
+                      </div>
+                    {%- endif -%}
+
+                    {%- comment -%}
+                      No copy-link control by owner's decision. The
+                      anchor on the <details> stays, so a pasted
+                      /pages/faq#{{ qid }} still opens this answer —
+                      only the on-page affordance is gone.
+                    {%- endcomment -%}
+                    <div class="sv-faq__foot" data-sv-foot hidden>
+                      <div class="sv-faq__vote" data-sv-vote="{{ qid }}">
+                        <span class="sv-faq__votelab">Did this help?</span>
+                        <button class="sv-faq__voteb" type="button" data-sv-voteval="up">
+                          <span class="sv-visually-hidden">Yes, this answered my question</span>
+                          <span aria-hidden="true">Yes</span>
+                        </button>
+                        <button class="sv-faq__voteb" type="button" data-sv-voteval="down">
+                          <span class="sv-visually-hidden">No, this did not answer my question</span>
+                          <span aria-hidden="true">No</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+          {%- endcase -%}
+        {%- endfor -%}
+
+        {%- if is_open -%}
+            </div>{{ pending_cta }}
+          </section>
+        {%- endif -%}
+
+        {%- comment -%}
+          Empty state. Shown by script when a filter matches nothing —
+          every failed search becomes a WhatsApp conversation rather
+          than a bounce.
+        {%- endcomment -%}
+        <div class="sv-faq__empty" data-sv-empty hidden>
+          <p class="sv-faq__emptyh">No question here matches <em data-sv-term></em>.</p>
+          <p class="sv-faq__emptyp">That is our gap, not yours. Send it to us and we will answer within one working day — and add it to this page.</p>
+          <a class="btn" data-sv-emptywa href="https://wa.me/{{ wa }}" target="_blank" rel="noopener">Ask us on WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%}
+    The closing emerald contact panel was removed at the owner's
+    direction: the page now ends on the answers, and the footer
+    immediately below already carries the same contact routes.
+    The per-question and per-group WhatsApp CTAs are untouched.
+  {%- endcomment -%}
+
+  {%- comment -%}
+    ── Structured data ───────────────────────────────────────────────
+    FAQPage rich results. These are high-intent long-tail queries and
+    the content is already written, so the markup is free traffic.
+    `json` does the quoting — never hand-escape into JSON-LD.
+  {%- endcomment -%}
+  {%- capture faq_ld -%}
+    {%- assign first = true -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'question' -%}
+        {%- unless first %},{% endunless -%}
+        {%- assign first = false -%}
+        {"@type":"Question","name":{{ block.settings.question | strip_html | strip_newlines | json }},"acceptedAnswer":{"@type":"Answer","text":{{ block.settings.answer | strip_html | strip_newlines | strip | json }}}}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{{ faq_ld | strip_newlines }}]}
+  </script>
+
+  <script>
+    (function () {
+      var root = document.currentScript.closest('[data-sv-faq]');
+      if (!root) return;
+
+      var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      root.classList.add('sv-faq--js');
+
+      /* ── Sticky offset ──────────────────────────────────────────────
+         The rail has to sit flush under the header group, and anchors
+         have to land clear of it. That height is not knowable in CSS —
+         it changes with the announcement bar and between breakpoints —
+         so it is measured. The CSS value stays the fallback. */
+      var chrome = document.getElementById('header-group');
+      function setStick() {
+        if (!chrome) return;
+        var h = Math.round(chrome.getBoundingClientRect().height);
+        if (h > 0) root.style.setProperty('--stick', h + 'px');
+      }
+      setStick();
+      window.addEventListener('resize', setStick);
+
+      /* ── Accordion ──────────────────────────────────────────────────
+         Native <details> is the no-JS baseline and stays intact. With
+         script we own the toggle so the height can transition both ways
+         — a class-only CSS approach cannot animate the close, because
+         the browser hides the content the instant `open` is removed. */
+      var items = Array.prototype.slice.call(root.querySelectorAll('[data-sv-q]'));
+
+      items.forEach(function (d) {
+        if (d.open) d.classList.add('is-open');
+        var sum = d.querySelector('summary');
+
+        sum.addEventListener('click', function (e) {
+          if (calm) return;                 /* let the browser do it plainly */
+          e.preventDefault();
+          if (d.open) close(d); else open(d);
+        });
+      });
+
+      function open(d) {
+        d.open = true;
+        /* Flush layout so 0fr is committed as the transition's start,
+           then flip synchronously. rAF would read better but does not
+           fire in a throttled or non-rendered tab, which would leave
+           the answer open at zero height — present, but invisible. */
+        void d.offsetHeight;
+        d.classList.add('is-open');
+      }
+
+      function close(d) {
+        var wrap = d.querySelector('.sv-faq__wrap');
+        d.classList.remove('is-open');
+        var done = function (e) {
+          if (e && e.target !== wrap) return;
+          wrap.removeEventListener('transitionend', done);
+          if (!d.classList.contains('is-open')) d.open = false;
+        };
+        wrap.addEventListener('transitionend', done);
+        setTimeout(done, 480);              /* transitionend can be skipped */
+      }
+
+      /* ── Deep links ─────────────────────────────────────────────────
+         Support pastes /pages/faq#unboxing-video into a reply and the
+         customer lands on that answer, already open. */
+      function reveal() {
+        var id = decodeURIComponent(window.location.hash.slice(1));
+        if (!id) return;
+        var el = root.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(id) : id));
+        if (!el) return;
+
+        if (el.matches('[data-sv-q]')) {
+          el.open = true;
+          el.classList.add('is-open');
+        }
+        el.scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
+        el.classList.add('is-landed');
+        setTimeout(function () { el.classList.remove('is-landed'); }, 2200);
+      }
+      window.addEventListener('hashchange', reveal);
+      if (window.location.hash) setTimeout(reveal, 60);
+
+      /* ── Helpful votes ──────────────────────────────────────────────
+         No backend: the vote is kept per-browser so a returning visitor
+         sees their own answer, and a "no" opens the real channel rather
+         than dead-ending. Pushed to dataLayer if one exists. */
+      root.querySelectorAll('[data-sv-vote]').forEach(function (box) {
+        var key = 'sv-faq-vote:' + box.dataset.svVote;
+        var prior = null;
+        try { prior = window.localStorage.getItem(key); } catch (err) {}
+        if (prior) settle(box, prior);
+
+        box.querySelectorAll('[data-sv-voteval]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var v = b.dataset.svVoteval;
+            try { window.localStorage.setItem(key, v); } catch (err) {}
+            if (window.dataLayer) {
+              window.dataLayer.push({ event: 'faq_vote', faq_id: box.dataset.svVote, faq_vote: v });
+            }
+            settle(box, v);
+          });
+        });
+      });
+
+      function settle(box, v) {
+        box.setAttribute('data-sv-voted', v);
+        var msg = document.createElement('p');
+        msg.className = 'sv-faq__voted';
+        if (v === 'up') {
+          msg.textContent = 'Thank you — noted.';
+        } else {
+          msg.innerHTML = 'Noted. <a href="https://wa.me/{{ wa }}?text=' +
+            encodeURIComponent('Hi Sahasra Vastra, the FAQ answer on "') +
+            encodeURIComponent(box.closest('[data-sv-q]').querySelector('.sv-faq__qt').textContent.trim()) +
+            encodeURIComponent('" did not answer my question. ') +
+            '" target="_blank" rel="noopener">Tell us what is missing</a> and we will fix it.';
+        }
+        box.replaceChildren(msg);
+      }
+
+      /* ── Search ─────────────────────────────────────────────────────
+         Injected only now, so a no-JS visitor never sees a dead field. */
+      var search = root.querySelector('[data-sv-search]');
+      var input  = root.querySelector('.sv-faq__input');
+      var clear  = root.querySelector('[data-sv-clear]');
+      var count  = root.querySelector('.sv-faq__count');
+      var empty  = root.querySelector('[data-sv-empty]');
+      var term   = root.querySelector('[data-sv-term]');
+      var emptyWa = root.querySelector('[data-sv-emptywa]');
+      var groups = Array.prototype.slice.call(root.querySelectorAll('[data-sv-group]'));
+      var rail   = root.querySelector('[data-sv-rail]');
+      search.hidden = false;
+
+      var tick;
+      input.addEventListener('input', function () {
+        clearTimeout(tick);
+        tick = setTimeout(filter, 120);
+      });
+
+      clear.addEventListener('click', function () {
+        input.value = '';
+        filter();
+        input.focus();
+      });
+
+      function filter() {
+        var q = input.value.trim().toLowerCase();
+        clear.hidden = !q;
+
+        var hits = 0;
+
+        flip(function () {
+          if (!q) {
+            items.forEach(function (d) { d.hidden = false; });
+            groups.forEach(function (g) { g.hidden = false; });
+            empty.hidden = true;
+            if (rail) rail.hidden = false;
+            count.textContent = '';
+            hits = -1;
+            return;
+          }
+
+          items.forEach(function (d) {
+            var match = d.dataset.svText.indexOf(q) > -1;
+            d.hidden = !match;
+            if (match) hits++;
+          });
+
+          groups.forEach(function (g) {
+            g.hidden = !g.querySelector('[data-sv-q]:not([hidden])');
+          });
+
+          if (rail) rail.hidden = true;
+          empty.hidden = hits > 0;
+          if (!hits) {
+            term.textContent = '“' + input.value.trim() + '”';
+            emptyWa.href = 'https://wa.me/{{ wa }}?text=' +
+              encodeURIComponent('Hi Sahasra Vastra, I could not find this on your FAQ: ' + input.value.trim());
+          }
+          count.textContent = hits === 1 ? '1 question matches.' : hits + ' questions match.';
+        });
+
+        placeMark();   /* no-op while the rail is hidden; re-measures on return */
+      }
+
+      /* ── FLIP ───────────────────────────────────────────────────────
+         Filtering used to hard-cut: items blinked out and the survivors
+         jumped up the page, so you could not see what had survived.
+         Measure first, mutate, then invert and play — the survivors
+         slide to their new rows and newcomers lift in. Transform and
+         opacity only; the inline styles are torn off as each finishes. */
+      function flip(mutate) {
+        if (calm) { mutate(); return; }
+
+        var first = new Map();
+        items.forEach(function (d) {
+          if (!d.hidden) first.set(d, d.getBoundingClientRect().top);
+        });
+
+        mutate();
+
+        /* Two passes with one flush between them. Per-item reflow inside
+           a single loop would thrash layout across nineteen elements;
+           rAF would avoid that but does not fire in a throttled tab,
+           which would strand every item at its inverted offset. */
+        var moved = [];
+        items.forEach(function (d) {
+          if (d.hidden) return;
+          var last = d.getBoundingClientRect().top;
+          var known = first.has(d);
+          var dy = known ? first.get(d) - last : 0;
+          if (known && Math.abs(dy) < 1) return;      /* it did not move */
+
+          d.style.transition = 'none';
+          d.style.transform = 'translateY(' + (known ? dy : 14) + 'px)';
+          if (!known) d.style.opacity = '0';
+          moved.push(d);
+        });
+
+        if (!moved.length) return;
+        void root.offsetHeight;                        /* one flush for all */
+
+        moved.forEach(function (d) {
+          d.style.transition = 'transform .42s var(--e), opacity .3s var(--e)';
+          d.style.transform = '';
+          d.style.opacity = '';
+
+          var clean = function () {
+            d.style.transition = '';
+            d.style.transform = '';
+            d.style.opacity = '';
+            d.removeEventListener('transitionend', clean);
+          };
+          d.addEventListener('transitionend', clean);
+          setTimeout(clean, 600);
+        });
+      }
+
+      /* ── Scroll-spy ─────────────────────────────────────────────────
+         Marks the rail link for whichever group owns the top of the
+         viewport, under the sticky header. */
+      var links = {};
+      root.querySelectorAll('[data-sv-railto]').forEach(function (a) {
+        links[a.dataset.svRailto] = a;
+      });
+
+      /* ── The travelling marker ──────────────────────────────────────
+         Six links toggling a border reads as six separate states. One
+         marker moving between them reads as a position. It rides the
+         axis the rail is laid out on: a gold hairline down the border
+         on desktop, the filled pill on mobile. Base size is 100px on
+         that axis, so the scale is simply target ÷ 100. */
+      var railMark = root.querySelector('[data-sv-railmark]');
+      var current = null;
+
+      function placeMark() {
+        if (!railMark || !current || rail.hidden) return;
+        var vertical = window.matchMedia('(min-width: 901px)').matches;
+        railMark.hidden = false;
+        railMark.style.transform = vertical
+          ? 'translateY(' + current.offsetTop + 'px) scaleY(' + (current.offsetHeight / 100) + ')'
+          : 'translateX(' + current.offsetLeft + 'px) scaleX(' + (current.offsetWidth / 100) + ')';
+      }
+
+      function setActive(el) {
+        if (el === current) return;
+        /* First placement must not animate in from the corner. */
+        var first = !current && railMark;
+        if (first) railMark.style.transition = 'none';
+        current = el;
+        placeMark();
+        if (first) {
+          void railMark.offsetHeight;      /* commit the jump, then re-arm */
+          railMark.style.transition = '';
+        }
+        /* Keep the active pill in view on the mobile strip. */
+        if (el && railMark && !window.matchMedia('(min-width: 901px)').matches) {
+          var list = el.parentNode.parentNode;
+          var want = el.offsetLeft - (list.clientWidth - el.offsetWidth) / 2;
+          if (list.scrollTo) list.scrollTo({ left: want, behavior: calm ? 'auto' : 'smooth' });
+        }
+      }
+
+      window.addEventListener('resize', placeMark);
+
+      if ('IntersectionObserver' in window && groups.length) {
+        var seen = new Set();
+        var spy = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (en.isIntersecting) seen.add(en.target.id); else seen.delete(en.target.id);
+          });
+          var active = groups.filter(function (g) { return seen.has(g.id); })[0];
+          Object.keys(links).forEach(function (k) {
+            links[k].classList.toggle('is-on', !!active && active.id === k);
+            if (active && active.id === k) links[k].setAttribute('aria-current', 'true');
+            else links[k].removeAttribute('aria-current');
+          });
+          setActive(active ? links[active.id] : null);
+          if (!active && railMark) railMark.hidden = true;
+        }, { rootMargin: '-140px 0px -55% 0px', threshold: 0 });
+        groups.forEach(function (g) { spy.observe(g); });
+      }
+
+      /* ── Reveal on scroll ───────────────────────────────────────────
+         Same contract as sv-size-guide: fires once, then unobserves. */
+      if (!calm && 'IntersectionObserver' in window) {
+        root.classList.add('sv-motion-ready');
+
+        /* Nothing on this page may depend on an animation finishing in
+           order to be readable. Every entrance ends in a transition,
+           and a transition that never advances — a throttled or
+           backgrounded tab, a paused compositor, a dropped frame
+           budget — would leave that content invisible for good. So
+           once an element has been told to appear, a timer pins it to
+           its finished state shortly after it should have arrived.
+           Timers survive throttling; rAF and transitionend do not. */
+        var held = Array.prototype.slice.call(root.querySelectorAll('[data-sv-motion]'));
+
+        /* Named for what it does, and named distinctly: `var` is
+           function-scoped, so a second `settle` here would hoist over
+           the vote's own settle() further up and silently disable it. */
+        var pinEntrance = function (el) {
+          setTimeout(function () { el.classList.add('sv-settled'); }, 1800);
+        };
+
+        var reveal = function (el) {
+          if (el.classList.contains('sv-vis')) return;
+          el.classList.add('sv-vis');
+          mo.unobserve(el);
+          pinEntrance(el);
+        };
+
+        var mo = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) reveal(en.target); });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+
+        held.forEach(function (el) { mo.observe(el); });
+
+        /* The masthead and the pins are above the fold by definition.
+           Waiting on an observer to confirm what is already on screen
+           buys nothing but a chance of a blank hero. */
+        root.querySelectorAll('.sv-faq__head, .sv-faq__pins').forEach(reveal);
+
+        /* An observer reports a state, not every state an element
+           passed through. Scroll hard enough in one gesture and a
+           section can go from below the fold to above it without any
+           callback ever seeing it intersect — and it would then stay
+           invisible for good, which is the worst failure this page
+           has. The sweep closes that: anything that has reached the
+           fold has been seen, so it gets revealed whether the
+           observer noticed or not. */
+        var queued = false;
+        var sweep = function () {
+          queued = false;
+          var fold = window.innerHeight;
+          held.forEach(function (el) {
+            if (!el.classList.contains('sv-vis') &&
+                el.getBoundingClientRect().top < fold) reveal(el);
+          });
+        };
+
+        window.addEventListener('scroll', function () {
+          if (queued) return;
+          queued = true;
+          setTimeout(sweep, 180);
+        }, { passive: true });
+
+        setTimeout(sweep, 1200);
+      }
+
+      /* ── The reading thread ─────────────────────────────────────────
+         Purely decorative, so unlike the reveal it is allowed to lean
+         on rAF: if a frame never comes, the thread simply does not
+         move and nothing becomes unreadable. Runs outside the motion
+         block so it still tracks under reduced motion, where it reads
+         as a static position rather than an animation. */
+      var body = root.querySelector('.sv-faq__body');
+      var thread = root.querySelector('.sv-faq__thread');
+
+      if (body && thread) {
+        var ticking = false;
+
+        /* rAF must be called with window as its receiver — handing the
+           bare function reference around throws Illegal invocation. */
+        var frame = window.requestAnimationFrame
+          ? window.requestAnimationFrame.bind(window)
+          : function (fn) { return setTimeout(fn, 16); };
+
+        var track = function () {
+          ticking = false;
+          var r = body.getBoundingClientRect();
+          /* How much of the list has passed the fold, over its whole
+             height: 0 as it begins to enter, 1 once its end has gone
+             by. Measuring against the fold rather than the midpoint is
+             what keeps it continuous instead of snapping. */
+          var seen = window.innerHeight - r.top;
+          var read = r.height > 0 ? seen / r.height : 0;
+          root.style.setProperty('--read', Math.max(0, Math.min(1, read)).toFixed(4));
+        };
+
+        window.addEventListener('scroll', function () {
+          if (ticking) return;
+          ticking = true;
+          frame(track);
+        }, { passive: true });
+
+        window.addEventListener('resize', track);
+        track();
+      }
+
+      /* ── Footers ────────────────────────────────────────────────────
+         Copy-link and voting are script-only affordances, so they are
+         hidden in markup and revealed here. */
+      root.querySelectorAll('[data-sv-foot]').forEach(function (f) { f.hidden = false; });
+    })();
+  </script>
+</section>
+
+{% stylesheet %}
+  /* Colour, type and spacing are tokens only. Primitives borrowed from
+     sv-system.css: .eyebrow, .lab, .lead, .act, .btn, .sv-fine, and the
+     serif h1/h2 under [data-sv]. Nothing here redefines the system. */
+
+  [data-sv].sv-faq {
+    position: relative;
+    padding: var(--d) 0 0;
+  }
+
+  .sv-faq__inner {
+    position: relative;
+    z-index: 1;
+    padding-bottom: var(--f);
+  }
+
+  /* ═══ THE GROUND ══════════════════════════════════════════════════
+     Fixed behind the page. Every animation here is transform-only and
+     runs on its own compositor layer; none of it touches layout, and
+     none of it gates a single character of content. If the whole layer
+     failed to paint, the page would read exactly as it does now. */
+  .sv-faq__bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    contain: strict;
+  }
+
+  /* ── The weave ──────────────────────────────────────────────────────
+     Warp and weft as two gradients on one rotated frame, each sliding
+     by exactly one tile of its own period — 14px and 18px — so the
+     loop is seamless. Rotating the frame rather than angling the
+     gradients is what makes that arithmetic possible at all. */
+  .sv-faq__weave {
+    position: absolute;
+    inset: -40%;
+    transform: rotate(-24deg);
+    opacity: 0.85;
+  }
+
+  .sv-faq__weave::before,
+  .sv-faq__weave::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .sv-faq__weave::before {
+    background: repeating-linear-gradient(to right,
+      rgba(198, 161, 91, 0.075) 0 1px, transparent 1px 14px);
+    animation: sv-faq-warp 40s linear infinite;
+  }
+
+  .sv-faq__weave::after {
+    background: repeating-linear-gradient(to bottom,
+      rgba(20, 82, 74, 0.055) 0 1px, transparent 1px 18px);
+    animation: sv-faq-weft 57s linear infinite;
+  }
+
+  @keyframes sv-faq-warp {
+    from { transform: translateX(0); }
+    to   { transform: translateX(14px); }
+  }
+
+  @keyframes sv-faq-weft {
+    from { transform: translateY(0); }
+    to   { transform: translateY(18px); }
+  }
+
+  /* ── Two lights ─────────────────────────────────────────────────────
+     Radial gradients, not blurred circles: a filter this large would
+     cost a full-screen repaint on every frame. */
+  .sv-faq__glow {
+    position: absolute;
+    border-radius: 50%;
+    will-change: transform;
+  }
+
+  .sv-faq__glow--a {
+    width: 78vmax;
+    height: 78vmax;
+    left: -26vmax;
+    top: -22vmax;
+    background: radial-gradient(circle, rgba(20, 82, 74, 0.075), transparent 62%);
+    animation: sv-faq-glow-a 52s ease-in-out infinite;
+  }
+
+  .sv-faq__glow--b {
+    width: 62vmax;
+    height: 62vmax;
+    right: -22vmax;
+    bottom: -20vmax;
+    background: radial-gradient(circle, rgba(198, 161, 91, 0.1), transparent 64%);
+    animation: sv-faq-glow-b 67s ease-in-out infinite;
+  }
+
+  @keyframes sv-faq-glow-a {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(7vmax, 5vmax, 0) scale(1.14); }
+  }
+
+  @keyframes sv-faq-glow-b {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1.08); }
+    50%      { transform: translate3d(-6vmax, -7vmax, 0) scale(1); }
+  }
+
+  /* ── The petal adrift ───────────────────────────────────────────────
+     Seven of the brand mark, at different scales and speeds. Each
+     carries its own drift vector and rotation as custom properties so
+     one keyframe serves all of them. */
+  .sv-faq__petal {
+    position: absolute;
+    width: var(--sz, 90px);
+    height: auto;
+    fill: var(--emerald);
+    opacity: var(--op, 0.05);
+    animation: sv-faq-drift var(--dur, 60s) ease-in-out infinite;
+    animation-delay: var(--del, 0s);
+    will-change: transform;
+  }
+
+  @keyframes sv-faq-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--rot, 0deg)); }
+    50%      { transform: translate3d(var(--dx, 18px), var(--dy, -30px), 0)
+                          rotate(calc(var(--rot, 0deg) + var(--spin, 10deg))); }
+  }
+
+  .sv-faq__petal--1 { --sz: 120px; --op: .055; --rot: 14deg;   --dx: 22px;  --dy: -34px; --dur: 58s; left: 4%;  top: 12%; }
+  .sv-faq__petal--2 { --sz: 66px;  --op: .05;  --rot: -38deg;  --dx: -18px; --dy: 26px;  --dur: 71s; --del: -8s;  left: 84%; top: 8%; fill: var(--tan); }
+  .sv-faq__petal--3 { --sz: 158px; --op: .035; --rot: 122deg;  --dx: 16px;  --dy: 30px;  --dur: 86s; --del: -20s; left: 68%; top: 54%; }
+  .sv-faq__petal--4 { --sz: 54px;  --op: .06;  --rot: -72deg;  --dx: 26px;  --dy: -18px; --dur: 47s; --del: -12s; left: 18%; top: 72%; fill: var(--tan); }
+  .sv-faq__petal--5 { --sz: 96px;  --op: .04;  --rot: 200deg;  --dx: -24px; --dy: -22px; --dur: 63s; --del: -30s; left: 46%; top: 30%; }
+  .sv-faq__petal--6 { --sz: 74px;  --op: .05;  --rot: 58deg;   --dx: 14px;  --dy: 32px;  --dur: 78s; --del: -5s;  left: 92%; top: 66%; }
+  .sv-faq__petal--7 { --sz: 110px; --op: .03;  --rot: -16deg;  --dx: -20px; --dy: 24px;  --dur: 54s; --del: -24s; left: 30%; top: 46%; fill: var(--tan); }
+
+  /* Half strength, and the three smallest gone. */
+  .sv-faq--bg-subtle .sv-faq__bg { opacity: 0.55; }
+  .sv-faq--bg-subtle .sv-faq__petal--2,
+  .sv-faq--bg-subtle .sv-faq__petal--4,
+  .sv-faq--bg-subtle .sv-faq__petal--6 { display: none; }
+
+  /* Offset for the sticky rail and for anchor landings: the header group
+     sticks at the top, so a raw scroll-to would tuck the target under it. */
+  .sv-faq {
+    --stick: 124px;
+  }
+
+  .sv-faq__group,
+  .sv-faq__q {
+    scroll-margin-top: var(--stick);
+  }
+
+  /* ── Masthead ───────────────────────────────────────────────────── */
+  .sv-faq__head {
+    max-width: 760px;
+    margin-bottom: var(--d);
+  }
+
+  [data-sv] .sv-faq__title {
+    font-size: clamp(2.6rem, 6vw, 4.4rem);
+    color: var(--emerald);
+    margin-top: var(--b);
+  }
+
+  [data-sv] .sv-faq__title em {
+    color: var(--tan);
+  }
+
+  .sv-faq__head::after {
+    content: '';
+    display: block;
+    width: 56px;
+    height: 2px;
+    margin-top: var(--b);
+    background: var(--tan);
+  }
+
+  /* The reading pass (sv-system.css §03c), as the size guide's lead
+     carries it: ink rather than warm grey, regular rather than 300, and
+     a higher size floor. */
+  [data-sv] .sv-faq__lead {
+    margin-top: var(--b);
+    font-size: clamp(1.02rem, 1.25vw, 1.18rem);
+    font-weight: 400;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+
+  /* The masthead label takes the size guide's step up in weight and
+     colour. Scaled for a page rather than a 1400px canvas, so .78rem
+     instead of its 1.2rem. The gold .lab on the pin cards is a card
+     treatment and is deliberately left alone. */
+  .sv-faq .eyebrow {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    color: var(--ink);
+  }
+
+  /* ── Masthead choreography ──────────────────────────────────────────
+     The head opts out of the blanket fade-up (see §Motion) and stages
+     its own parts instead: eyebrow, then the title line by line, then
+     the lead, then the rule drawing itself left to right. All of it is
+     gated on .sv-motion-ready, so with no script the masthead is simply
+     present — no mask, no held-back opacity. */
+  .sv-faq__line {
+    display: block;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__line {
+    overflow: hidden;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__line > span {
+    display: block;
+    transform: translateY(108%);
+    transition: transform 0.95s var(--e);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__head.sv-vis .sv-faq__line > span {
+    transform: none;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__head.sv-vis .sv-faq__line:nth-child(2) > span {
+    transition-delay: 0.09s;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__head > .eyebrow,
+  .sv-faq.sv-motion-ready .sv-faq__head > .sv-faq__lead {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity 0.7s var(--entrance), transform 0.7s var(--entrance);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__head > .sv-faq__lead {
+    transition-delay: 0.3s;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__head.sv-vis > .eyebrow,
+  .sv-faq.sv-motion-ready .sv-faq__head.sv-vis > .sv-faq__lead {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The rule draws rather than fades — scaleX from the left, so it
+     reads as a stroke being made. Same gesture at every rule on the
+     page: here, each category head, and the contact panel. */
+  .sv-faq.sv-motion-ready .sv-faq__head::after {
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.8s var(--e) 0.45s;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__head.sv-vis::after {
+    transform: none;
+  }
+
+  /* ── Pins ───────────────────────────────────────────────────────────
+     The three answers people arrive for, before the list they would
+     otherwise have to read to find them. */
+  [data-sv] .sv-faq__pins {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--a);
+    margin-bottom: var(--d);
+  }
+
+  .sv-faq__pin {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: var(--b);
+    background: var(--card);
+    border-radius: var(--r-img);
+    box-shadow: var(--sh-s);
+  }
+
+  /* The gold cap is a bar, not a border, so it can draw. */
+  .sv-faq__pin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--tan);
+    border-radius: var(--r-img) var(--r-img) 0 0;
+  }
+
+  /* ── Pin choreography ───────────────────────────────────────────────
+     The list is the trigger; the cards arrive one after another on the
+     system's --stagger, each one's cap drawing in behind it. Three
+     cards landing together read as one block, which is exactly what
+     they are not. */
+  .sv-faq.sv-motion-ready .sv-faq__pins > li {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity 0.7s var(--entrance), transform 0.7s var(--entrance);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__pins.sv-vis > li {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__pins.sv-vis > li:nth-child(2) {
+    transition-delay: var(--stagger);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__pins.sv-vis > li:nth-child(3) {
+    transition-delay: calc(var(--stagger) * 2);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__pins > li::before {
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.75s var(--e);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__pins.sv-vis > li::before {
+    transform: none;
+    transition-delay: 0.25s;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__pins.sv-vis > li:nth-child(2)::before {
+    transition-delay: calc(0.25s + var(--stagger));
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__pins.sv-vis > li:nth-child(3)::before {
+    transition-delay: calc(0.25s + var(--stagger) * 2);
+  }
+
+  .sv-faq__pinval {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--emerald);
+  }
+
+  .sv-faq__pinnote {
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--grey);
+  }
+
+  /* Whole-card target: the arrow is the affordance, the ::after is the
+     hit area, so the card is one click without nesting interactive
+     elements inside a link. */
+  .sv-faq__pinlink {
+    align-self: flex-start;
+    margin-top: auto;
+    padding-top: 6px;
+    color: var(--emerald);
+    text-decoration: none;
+    transition: transform var(--micro) var(--e);
+  }
+
+  .sv-faq__pinlink::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  .sv-faq__pin:hover .sv-faq__pinlink {
+    transform: translateY(3px);
+  }
+
+  /* ── Search ─────────────────────────────────────────────────────── */
+  .sv-faq__search {
+    position: relative;
+    max-width: 560px;
+    margin-bottom: var(--c);
+  }
+
+  .sv-faq__input {
+    width: 100%;
+    padding: 16px 46px 16px 48px;
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid rgba(198, 161, 91, 0.45);
+    border-radius: 2px;
+    transition: border-color var(--micro) var(--e), box-shadow var(--micro) var(--e);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .sv-faq__input::placeholder {
+    color: var(--grey);
+  }
+
+  .sv-faq__input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .sv-faq__input:focus {
+    outline: none;
+    border-color: var(--emerald);
+    box-shadow: 0 0 0 3px rgba(20, 82, 74, 0.1);
+  }
+
+  .sv-faq__searchicon {
+    position: absolute;
+    left: 17px;
+    top: 17px;
+    width: 21px;
+    height: 21px;
+    color: var(--grey);
+    pointer-events: none;
+  }
+
+  .sv-faq__clear {
+    position: absolute;
+    right: 8px;
+    top: 9px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--grey);
+    background: none;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .sv-faq__clear:hover {
+    color: var(--ink);
+    background: var(--cream-2);
+  }
+
+  .sv-faq__count {
+    margin-top: 10px;
+    color: var(--grey);
+  }
+
+  /* ── Grid ───────────────────────────────────────────────────────── */
+  .sv-faq__grid {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: var(--d);
+    align-items: start;
+  }
+
+  .sv-faq__body {
+    max-width: 720px;
+  }
+
+  /* ── Jump rail ──────────────────────────────────────────────────── */
+  .sv-faq__rail {
+    position: sticky;
+    top: var(--stick);
+  }
+
+  .sv-faq__raillab {
+    margin-bottom: var(--a);
+  }
+
+  [data-sv] .sv-faq__raillist {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    border-left: 1px solid var(--cream-2);
+  }
+
+  .sv-faq__raillink {
+    display: block;
+    padding: 8px 0 8px var(--a);
+    font-family: var(--sans);
+    font-size: 0.86rem;
+    line-height: 1.4;
+    color: var(--grey);
+    text-decoration: none;
+    transition: color var(--std) var(--e);
+  }
+
+  .sv-faq__raillink:hover {
+    color: var(--ink);
+  }
+
+  .sv-faq__raillink.is-on {
+    color: var(--emerald);
+  }
+
+  /* ── The travelling marker ──────────────────────────────────────────
+     Replaces a per-link border that six links used to toggle. 100px on
+     the axis it moves along, so the script's scale is target ÷ 100;
+     transform-origin at the start of that axis keeps the maths honest.
+     Hidden until the script places it — an un-placed marker sitting at
+     the origin would read as a seventh, wrong, active item. */
+  .sv-faq__railmark {
+    position: absolute;
+    left: -1px;
+    top: 0;
+    width: 1px;
+    height: 100px;
+    background: var(--tan);
+    transform-origin: 0 0;
+    transition: transform var(--std) var(--e);
+    pointer-events: none;
+  }
+
+  /* [hidden] is only a UA rule at display:none, so any class here that
+     sets a display silently beats it — which is how the clear button
+     came to sit on an empty search field. One guard for the section
+     rather than remembering it at each new display declaration. */
+  .sv-faq [hidden] {
+    display: none !important;
+  }
+
+  /* ── The reading thread ─────────────────────────────────────────────
+     The rail's hairline, filling as you read. --read is written by the
+     script; the default of 0 means it simply sits empty if that never
+     runs, which is what the plain border already looked like. */
+  .sv-faq__thread {
+    position: absolute;
+    left: -1px;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--tan), rgba(198, 161, 91, 0.45));
+    transform: scaleY(var(--read, 0));
+    transform-origin: top center;
+    pointer-events: none;
+  }
+
+  /* ── Groups ─────────────────────────────────────────────────────── */
+  .sv-faq__group + .sv-faq__group {
+    margin-top: var(--d);
+  }
+
+  /* The category rule is a bar, not a border, so it draws in with the
+     group — the same gesture as the masthead's. */
+  .sv-faq__grouphead {
+    position: relative;
+    padding-bottom: var(--a);
+  }
+
+  .sv-faq__grouphead::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: rgba(198, 161, 91, 0.4);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__grouphead::after {
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.9s var(--e) 0.2s;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__group.sv-vis .sv-faq__grouphead::after {
+    transform: none;
+  }
+
+  [data-sv] .sv-faq__h2 {
+    font-size: clamp(1.5rem, 2.6vw, 1.95rem);
+    color: var(--emerald);
+  }
+
+  [data-sv] .sv-faq__blurb {
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
+
+  /* ── One question ───────────────────────────────────────────────── */
+  .sv-faq__q {
+    border-bottom: 1px solid var(--cream-2);
+  }
+
+  /* A pasted deep link needs to say which answer it landed on. */
+  .sv-faq__q.is-landed {
+    background: rgba(198, 161, 91, 0.09);
+    box-shadow: inset 2px 0 0 var(--tan);
+    transition: background-color 1.2s var(--e), box-shadow 1.2s var(--e);
+  }
+
+  .sv-faq__sum {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--a);
+    padding: var(--a) 0;
+    cursor: pointer;
+    list-style: none;
+    transition: color var(--micro) var(--e);
+  }
+
+  .sv-faq__sum::-webkit-details-marker {
+    display: none;
+  }
+
+  .sv-faq__qt {
+    font-family: var(--serif);
+    font-size: clamp(1.1rem, 1.7vw, 1.28rem);
+    line-height: 1.35;
+    color: var(--ink);
+    transition: color var(--micro) var(--e);
+  }
+
+  .sv-faq__sum:hover .sv-faq__qt,
+  .sv-faq__q[open] .sv-faq__qt {
+    color: var(--emerald);
+  }
+
+  /* The mark: a plus that loses its upright to become a minus. */
+  .sv-faq__mark {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    margin-top: 2px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(198, 161, 91, 0.5);
+    border-radius: 50%;
+    transition: background-color var(--micro) var(--e), border-color var(--micro) var(--e);
+  }
+
+  .sv-faq__mark svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--emerald);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    transition: stroke var(--micro) var(--e);
+  }
+
+  .sv-faq__markv {
+    transform-origin: center;
+    transition: transform var(--std) var(--e), opacity var(--micro) var(--e);
+  }
+
+  .sv-faq__q[open] .sv-faq__mark {
+    background: var(--emerald);
+    border-color: var(--emerald);
+  }
+
+  .sv-faq__q[open] .sv-faq__mark svg {
+    stroke: var(--cream);
+  }
+
+  .sv-faq__q[open] .sv-faq__markv {
+    transform: rotate(90deg);
+    opacity: 0;
+  }
+
+  /* ── The answer ─────────────────────────────────────────────────────
+     §08 names accordion height as one of the two sanctioned exceptions
+     to transform-only motion. 0fr→1fr is the modern form of it: no
+     measured pixel height, so it survives a reflow mid-transition.
+
+     Without script the wrapper is simply 1fr and <details> behaves
+     natively — the collapse is instant but nothing is broken. */
+  .sv-faq__wrap {
+    display: grid;
+    grid-template-rows: 1fr;
+  }
+
+  .sv-faq--js .sv-faq__wrap {
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--std) var(--e);
+  }
+
+  .sv-faq--js .sv-faq__q.is-open .sv-faq__wrap {
+    grid-template-rows: 1fr;
+  }
+
+  .sv-faq__a {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .sv-faq__a > *:first-child {
+    padding-top: 2px;
+  }
+
+  .sv-faq__a > * + * {
+    margin-top: var(--a);
+  }
+
+  /* ── Answer content ─────────────────────────────────────────────────
+     The height opening on its own leaves the text merely present. The
+     paragraphs, the table and the footer come up behind it on a short
+     stagger, so the answer reads as delivered rather than uncovered.
+
+     Opening only. Closing carries no delay and no stagger: people close
+     an answer because they want it gone, and anything that lingers
+     there reads as the page arguing. */
+  .sv-faq--js .sv-faq__a > * {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s var(--entrance), transform 0.4s var(--entrance);
+    transition-delay: 0s;
+  }
+
+  .sv-faq--js .sv-faq__q.is-open .sv-faq__a > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sv-faq--js .sv-faq__q.is-open .sv-faq__a > *:nth-child(1) { transition-delay: 0.1s; }
+  .sv-faq--js .sv-faq__q.is-open .sv-faq__a > *:nth-child(2) { transition-delay: 0.16s; }
+  .sv-faq--js .sv-faq__q.is-open .sv-faq__a > *:nth-child(3) { transition-delay: 0.22s; }
+  .sv-faq--js .sv-faq__q.is-open .sv-faq__a > *:nth-child(n + 4) { transition-delay: 0.28s; }
+
+  /* Answers take the reading pass too — this is the copy the page exists
+     to deliver, and it was the faintest type on it. */
+  [data-sv] .sv-faq__a p,
+  [data-sv] .sv-faq__a li {
+    max-width: 62ch;
+    font-size: clamp(1.02rem, 1.1vw, 1.1rem);
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  .sv-faq__a ul,
+  .sv-faq__a ol {
+    padding-left: 1.4em;
+    max-width: 60ch;
+    display: grid;
+    gap: 6px;
+    font-size: 0.97rem;
+    color: var(--grey);
+  }
+
+  .sv-faq__a ul { list-style: disc; }
+  .sv-faq__a ol { list-style: decimal; }
+
+  .sv-faq__a li::marker {
+    color: var(--tan);
+  }
+
+  .sv-faq__a a {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-color: var(--tan);
+  }
+
+  .sv-faq__a a:hover {
+    color: var(--emerald-d);
+  }
+
+  .sv-faq__a strong {
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  /* ── Table inside an answer ─────────────────────────────────────────
+     Delivery windows are tabular data; they were prose. */
+  .sv-faq__tablewrap {
+    overflow-x: auto;
+  }
+
+  .sv-faq__table {
+    width: 100%;
+    min-width: 320px;
+    border-collapse: collapse;
+    background: var(--card);
+    border-radius: var(--r-img);
+    overflow: hidden;
+    box-shadow: var(--sh-s);
+  }
+
+  .sv-faq__table th {
+    font-family: var(--sans);
+    font-weight: 400;
+    font-size: 0.64rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--cream);
+    background: var(--emerald);
+    padding: 11px var(--a);
+  }
+
+  .sv-faq__table td {
+    padding: 10px var(--a);
+    font-size: 0.92rem;
+    border-bottom: 1px solid var(--cream-2);
+  }
+
+  .sv-faq__table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .sv-faq__table td:last-child {
+    color: var(--grey);
+    white-space: nowrap;
+  }
+
+  /* ── Answer footer ────────────────────────────────────────────────
+     Holds the helpful vote alone. flex-start rather than
+     space-between: with one child, space-between reads as an accident
+     at any width where it would have had a partner. */
+  .sv-faq__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--a);
+    margin-top: var(--b);
+    padding: 12px 0 var(--b);
+  }
+
+  .sv-faq__voteb {
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    font-weight: 300;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--grey);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    transition: color var(--micro) var(--e);
+  }
+
+  .sv-faq__vote {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sv-faq__votelab {
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+
+  .sv-faq__voteb {
+    padding: 5px 14px;
+    border: 1px solid rgba(198, 161, 91, 0.5);
+    border-radius: 999px;
+    letter-spacing: 0.14em;
+  }
+
+  .sv-faq__voteb:hover {
+    color: var(--cream);
+    background: var(--emerald);
+    border-color: var(--emerald);
+  }
+
+  .sv-faq__voted {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--grey);
+  }
+
+  .sv-faq__voted a {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    text-decoration-color: var(--tan);
+  }
+
+  /* ── Group CTA ──────────────────────────────────────────────────────
+     Group-appropriate, at the close of the group it belongs to — not one
+     contact block at the very bottom that nobody scrolls to. */
+  .sv-faq__cta {
+    margin-top: var(--b);
+  }
+
+  /* ── The emerald group ──────────────────────────────────────────────
+     The AI-photography answers. The most trust-building content on the
+     site was styled identically to laundry instructions; here it is the
+     one emerald moment the system allows per page. */
+  .sv-faq__group--dark {
+    background: var(--emerald);
+    border-radius: var(--r-card);
+    padding: var(--c) var(--c) calc(var(--c) - var(--a));
+  }
+
+  .sv-faq__group--dark .sv-faq__grouphead::after {
+    background: rgba(198, 161, 91, 0.45);
+  }
+
+  /* ── The one mask ───────────────────────────────────────────────────
+     §08 allows a masked reveal once per page. The FAQ spends it here:
+     an ivory curtain retracting to the right, so the emerald ground
+     arrives as a deliberate change of mood at the moment the brand is
+     being most candid about its photographs — rather than fading up
+     like the laundry instructions.
+
+     The group opts out of the blanket fade-up; this is its entrance. */
+  .sv-faq__group--dark {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  /* A single large petal turning inside the panel. Negative z-index is
+     the whole trick: inside this stacking context it paints above the
+     emerald ground but beneath the text, so no overlay hack and
+     nothing sitting on top of anything readable. */
+  .sv-faq__group--dark::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    right: -70px;
+    bottom: -110px;
+    width: 300px;
+    height: 300px;
+    opacity: 0.09;
+    pointer-events: none;
+    background: no-repeat center/contain
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -86 28 92'%3E%3Cpath d='M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z' fill='%23FBF7EF'/%3E%3C/svg%3E");
+    animation: sv-faq-turn 90s linear infinite;
+  }
+
+  @keyframes sv-faq-turn {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__group--dark::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    background: var(--cream);
+    transform-origin: right center;
+    transition: transform 1.1s var(--e) 0.1s;
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__group--dark:not(.sv-vis)::before {
+    transform: scaleX(1);
+  }
+
+  .sv-faq.sv-motion-ready .sv-faq__group--dark.sv-vis::before {
+    transform: scaleX(0);
+  }
+
+  [data-sv] .sv-faq__group--dark .sv-faq__h2,
+  .sv-faq__group--dark .sv-faq__qt {
+    color: var(--cream);
+  }
+
+  /* `li` is listed beside `p` so a bulleted answer written into the
+     emerald group later cannot land as ink on emerald — the reading pass
+     above sets both, and this is what holds them ivory in here. */
+  [data-sv] .sv-faq__group--dark .sv-faq__blurb,
+  [data-sv] .sv-faq__group--dark .sv-faq__a p,
+  [data-sv] .sv-faq__group--dark .sv-faq__a li,
+  .sv-faq__group--dark .sv-faq__votelab,
+  .sv-faq__group--dark .sv-faq__voteb,
+  .sv-faq__group--dark .sv-faq__voted {
+    color: rgba(251, 247, 239, 0.8);
+  }
+
+  .sv-faq__group--dark .sv-faq__q {
+    border-bottom-color: rgba(251, 247, 239, 0.16);
+  }
+
+  .sv-faq__group--dark .sv-faq__sum:hover .sv-faq__qt,
+  .sv-faq__group--dark .sv-faq__q[open] .sv-faq__qt {
+    color: var(--tan);
+  }
+
+  .sv-faq__group--dark .sv-faq__mark svg {
+    stroke: var(--cream);
+  }
+
+  .sv-faq__group--dark .sv-faq__q[open] .sv-faq__mark {
+    background: var(--tan);
+    border-color: var(--tan);
+  }
+
+  .sv-faq__group--dark .sv-faq__q[open] .sv-faq__mark svg {
+    stroke: var(--emerald);
+  }
+
+  .sv-faq__group--dark .sv-faq__a strong {
+    color: var(--cream);
+  }
+
+  .sv-faq__group--dark .sv-faq__a a,
+  .sv-faq__group--dark .sv-faq__cta .act {
+    color: var(--cream);
+    border-bottom-color: var(--tan);
+    text-decoration-color: var(--tan);
+  }
+
+  .sv-faq__group--dark .sv-faq__voteb:hover {
+    color: var(--emerald);
+    background: var(--cream);
+    border-color: var(--cream);
+  }
+
+  .sv-faq__group--dark :focus-visible {
+    outline-color: var(--cream);
+  }
+
+  /* ── Empty state ────────────────────────────────────────────────── */
+  .sv-faq__empty {
+    padding: var(--d) 0;
+    text-align: left;
+  }
+
+  .sv-faq__emptyh {
+    font-family: var(--serif);
+    font-size: clamp(1.4rem, 2.4vw, 1.8rem);
+    line-height: 1.3;
+    color: var(--emerald);
+  }
+
+  .sv-faq__emptyh em {
+    font-style: italic;
+    color: var(--tan);
+  }
+
+  [data-sv] .sv-faq__emptyp {
+    margin: var(--a) 0 var(--b);
+  }
+
+  /* ── Motion ─────────────────────────────────────────────────────────
+     Same contract as sv-size-guide: the class is added by script, so
+     content is never left invisible if the script fails. */
+  /* The blanket fade-up, for anything without a choreography of its
+     own. Three elements opt out and stage themselves instead: the
+     masthead (line reveal), the pins (stagger) and the emerald group
+     (the mask). They keep [data-sv-motion] because that is what earns
+     them .sv-vis — they just decline the default entrance it normally
+     carries.
+
+     The exclusions are wrapped in :where() because :where() contributes
+     ZERO specificity, while a bare :not() donates its argument's. Three
+     bare :not()s put this resting rule at (0,6,0) — above the .sv-vis
+     rule below at (0,4,0) — so .sv-vis could never turn the opacity
+     back on, and a section stayed blank until the 1.8s !important
+     failsafe popped it in with no transition. :where() holds this at
+     (0,3,0), which is what lets .sv-vis win and the entrance actually
+     play. Keep it: the cost of a bare :not() here is a page that looks
+     like it failed to load. */
+  .sv-faq.sv-motion-ready [data-sv-motion]:not(:where(.sv-faq__head, .sv-faq__pins, .sv-faq__group--dark)) {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity 0.8s var(--entrance), transform 0.8s var(--entrance);
+  }
+
+  .sv-faq.sv-motion-ready [data-sv-motion].sv-vis {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── The failsafe ───────────────────────────────────────────────────
+     Pinned by a timer once an entrance should have finished. If the
+     entrance played, this changes nothing; if it never advanced, this
+     is what stops the page being blank. !important is deliberate — a
+     correctness guard has to outrank the choreography it rescues.
+
+     Scoped to exactly the staged selectors. It must not reach the
+     accordion's own children, whose held state is a live interaction
+     rather than an entrance. */
+  .sv-faq [data-sv-motion].sv-settled,
+  .sv-faq .sv-faq__head.sv-settled > .eyebrow,
+  .sv-faq .sv-faq__head.sv-settled > .sv-faq__lead,
+  .sv-faq .sv-faq__head.sv-settled .sv-faq__line > span,
+  .sv-faq .sv-faq__head.sv-settled::after,
+  .sv-faq .sv-faq__pins.sv-settled > li,
+  .sv-faq .sv-faq__pins.sv-settled > li::before,
+  .sv-faq .sv-faq__group.sv-settled .sv-faq__grouphead::after {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* The curtain settles open, not closed. */
+  .sv-faq .sv-faq__group--dark.sv-settled::before {
+    transform: scaleX(0) !important;
+    transition: none !important;
+  }
+
+  /* ── Responsive ─────────────────────────────────────────────────── */
+  @media (max-width: 1080px) {
+    .sv-faq__grid {
+      gap: var(--c);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .sv-faq {
+      --stick: 86px;
+    }
+
+    /* The rail becomes a scrolling pill strip pinned under the header.
+       Negative margins let it bleed to the viewport edge so the last
+       pill is visibly cut — the affordance that says "scroll me". */
+    /* minmax(0,…), not 1fr: a 1fr column takes min-width:auto, so the
+       rail's flex row of pills would size the column to its own content
+       and scroll the whole page sideways instead of scrolling itself. */
+    .sv-faq__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--b);
+    }
+
+    .sv-faq__rail {
+      min-width: 0;
+      top: var(--stick);
+      z-index: 5;
+      margin-inline: calc(var(--b) * -1);
+      padding: 12px var(--b);
+      background: rgba(251, 247, 239, 0.96);
+      backdrop-filter: blur(6px);
+    }
+
+    .sv-faq__raillab {
+      display: none;
+    }
+
+    [data-sv] .sv-faq__raillist {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      border-left: 0;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    [data-sv] .sv-faq__raillist::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sv-faq__raillist li {
+      flex: none;
+    }
+
+    .sv-faq__raillink {
+      position: relative;
+      z-index: 1;
+      padding: 8px 16px;
+      white-space: nowrap;
+      border: 1px solid rgba(198, 161, 91, 0.45);
+      border-radius: 999px;
+      transition: color var(--std) var(--e), border-color var(--std) var(--e);
+    }
+
+    /* The marker becomes the pill itself, sliding between them. The
+       link keeps only its text colour — the emerald ground travels. */
+    .sv-faq__raillink.is-on {
+      color: var(--cream);
+      border-color: transparent;
+    }
+
+    .sv-faq__railmark {
+      left: 0;
+      top: 0;
+      width: 100px;
+      height: 100%;
+      background: var(--emerald);
+      border-radius: 999px;
+    }
+
+    .sv-faq__body {
+      max-width: none;
+    }
+
+    .sv-faq__group--dark {
+      margin-inline: calc(var(--a) * -1);
+      padding: var(--b) var(--b) var(--a);
+    }
+  }
+
+  @media (max-width: 760px) {
+    [data-sv].sv-faq {
+      padding-top: var(--c);
+    }
+
+    .sv-faq__inner {
+      padding-bottom: var(--d);
+    }
+
+    .sv-faq__head {
+      margin-bottom: var(--c);
+    }
+
+    /* Two-up: three stacked cards would push the search below the fold,
+       which is the one control that has to be reachable immediately.
+       The third spans, so nothing is orphaned at half width. */
+    [data-sv] .sv-faq__pins {
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: var(--c);
+    }
+
+    .sv-faq__pin {
+      padding: var(--a);
+    }
+
+    .sv-faq__pin:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
+    .sv-faq__pinval {
+      font-size: 1.28rem;
+    }
+
+    .sv-faq__foot {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+  }
+
+  /* Every page must read as a complete document with all motion removed.
+     The accordion resolves to native <details>: the script hands the
+     toggle back to the browser under reduced motion, so the wrapper must
+     not stay collapsed at 0fr. */
+  @media (prefers-reduced-motion: reduce) {
+    .sv-faq--js .sv-faq__wrap {
+      grid-template-rows: 1fr;
+      transition: none;
+    }
+
+    /* Everything staged above resolves to its finished state. The
+       masks in particular MUST be released here: a curtain left at
+       scaleX(1) or a line left at translateY(108%) would not be
+       reduced motion, it would be a blank page. */
+    .sv-faq.sv-motion-ready [data-sv-motion],
+    .sv-faq.sv-motion-ready .sv-faq__head > .eyebrow,
+    .sv-faq.sv-motion-ready .sv-faq__head > .sv-faq__lead,
+    .sv-faq.sv-motion-ready .sv-faq__pins > li,
+    .sv-faq--js .sv-faq__a > * {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+
+    .sv-faq.sv-motion-ready .sv-faq__line > span,
+    .sv-faq.sv-motion-ready .sv-faq__head::after,
+    .sv-faq.sv-motion-ready .sv-faq__pins > li::before,
+    .sv-faq.sv-motion-ready .sv-faq__grouphead::after {
+      transform: none;
+      transition: none;
+    }
+
+    .sv-faq.sv-motion-ready .sv-faq__group--dark:not(.sv-vis)::before,
+    .sv-faq.sv-motion-ready .sv-faq__group--dark.sv-vis::before {
+      transform: scaleX(0);
+      transition: none;
+    }
+
+    .sv-faq__railmark {
+      transition: none;
+    }
+
+    /* The ground holds its opening frame: the weave, the lights and
+       the petals stay exactly where they are. Still a composed page,
+       with nothing moving in the corner of the eye. */
+    .sv-faq__weave,
+    .sv-faq__weave::before,
+    .sv-faq__weave::after,
+    .sv-faq__glow,
+    .sv-faq__petal,
+    .sv-faq__group--dark::after {
+      animation: none !important;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV FAQ",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Masthead"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Help"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "title_a",
+      "label": "Title, first line",
+      "default": "Plain answers,"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "title_b",
+      "label": "Title, second line",
+      "info": "Wrap a word in italics to set it in gold.",
+      "default": "<em>every time.</em>"
+    },
+    {
+      "type": "textarea",
+      "id": "lead",
+      "label": "Lead",
+      "default": "The questions customers ask us most, answered without hedging. If yours is not here, message us — we reply within one working day."
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search placeholder",
+      "default": "Search — try “delivery”, “size” or “refund”"
+    },
+    {
+      "type": "select",
+      "id": "bg_motion",
+      "label": "Background motion",
+      "info": "The drifting weave, lights and petals behind the page. Decorative only — nothing here is needed to read the answers.",
+      "options": [
+        { "value": "full", "label": "Full" },
+        { "value": "subtle", "label": "Subtle" },
+        { "value": "off", "label": "Off" }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "header",
+      "content": "Contact"
+    },
+    {
+      "type": "text",
+      "id": "whatsapp",
+      "label": "WhatsApp number (digits, with country code)",
+      "info": "Used by the per-question and per-group WhatsApp links, and by the empty state when a search matches nothing.",
+      "default": "918547629251"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "pin",
+      "name": "Pinned answer",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Delivery"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Answer",
+          "default": "2–7 working days"
+        },
+        {
+          "type": "textarea",
+          "id": "note",
+          "label": "Note"
+        },
+        {
+          "type": "text",
+          "id": "target",
+          "label": "Anchor to jump to",
+          "info": "The slug of the question or group this expands, without the #."
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "name": "Category",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Category title",
+          "default": "Ordering & payment"
+        },
+        {
+          "type": "text",
+          "id": "slug",
+          "label": "Anchor slug",
+          "info": "Lowercase, hyphenated. Becomes /pages/faq#slug — keep it stable, support links depend on it.",
+          "default": "ordering"
+        },
+        {
+          "type": "textarea",
+          "id": "blurb",
+          "label": "Category note"
+        },
+        {
+          "type": "select",
+          "id": "tone",
+          "label": "Treatment",
+          "options": [
+            { "value": "default", "label": "Default" },
+            { "value": "emerald", "label": "Emerald panel" }
+          ],
+          "info": "Emerald is the one inverted moment allowed per page. Use it once.",
+          "default": "default"
+        },
+        {
+          "type": "text",
+          "id": "cta_label",
+          "label": "Closing link label"
+        },
+        {
+          "type": "text",
+          "id": "cta_url",
+          "label": "Closing link URL"
+        },
+        {
+          "type": "text",
+          "id": "cta_wa",
+          "label": "Closing link — prefilled WhatsApp message",
+          "info": "If set, this wins over the URL and builds a wa.me link."
+        }
+      ]
+    },
+    {
+      "type": "question",
+      "name": "Question",
+      "settings": [
+        {
+          "type": "text",
+          "id": "question",
+          "label": "Question"
+        },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "Answer"
+        },
+        {
+          "type": "text",
+          "id": "slug",
+          "label": "Anchor slug",
+          "info": "Lowercase, hyphenated. Becomes /pages/faq#slug — keep it stable, support links depend on it."
+        },
+        {
+          "type": "checkbox",
+          "id": "start_open",
+          "label": "Open by default",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "keywords",
+          "label": "Extra search terms",
+          "info": "Words customers might type that the answer does not contain — cod, tracking, courier."
+        },
+        {
+          "type": "header",
+          "content": "Optional table"
+        },
+        {
+          "type": "text",
+          "id": "table_head",
+          "label": "Table headings",
+          "info": "Separate columns with a vertical bar: Destination | Working days"
+        },
+        {
+          "type": "textarea",
+          "id": "table_rows",
+          "label": "Table rows",
+          "info": "One row per line, columns separated by a vertical bar."
+        }
+      ]
+    }
+  ],
+  "max_blocks": 50,
+  "presets": [
+    {
+      "name": "SV FAQ"
+    }
+  ]
+}
+{% endschema %}

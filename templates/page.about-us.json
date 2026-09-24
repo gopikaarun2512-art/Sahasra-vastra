@@ -1,0 +1,127 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+/*
+ * ------------------------------------------------------------
+ * Sahasra Vastra — About, rebuilt (Sep 2026).
+ *
+ * Was: `sv-page` rendering the Admin RTE body — the brand name as an
+ * h2, five h3s and two bulleted lists in one 760px column. Every
+ * sentence true, the whole reading like a document rather than a shop
+ * that had been thought about.
+ *
+ * Now: one section, `sv-about`, built around what the copy is actually
+ * about — selection. Four sources come in, one shelf goes out, and the
+ * difference is a person asking a question. The question is the page's
+ * single emerald moment; the check-and-reject lists are half the
+ * composition rather than a bullet list near the foot.
+ *
+ * The copy below is the live Admin body, tightened into blocks. The
+ * page body in Admin is now the SEO/description surface only — it is
+ * no longer rendered. Number and support address read from metafields.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "sv-about",
+      "blocks": {
+        "s_own": {
+          "type": "source",
+          "settings": {
+            "title": "Our own small production runs",
+            "body": "For some designs we choose the fabric and the pattern ourselves, and work with trusted stitching units to cut and sew them for us."
+          }
+        },
+        "s_makers": {
+          "type": "source",
+          "settings": {
+            "title": "Makers across India",
+            "body": "From the knitwear units of Tiruppur to smaller workshops, we work with people whose fabric and stitching we have seen for ourselves."
+          }
+        },
+        "s_surplus": {
+          "type": "source",
+          "settings": {
+            "title": "Export surplus",
+            "body": "Extra pieces from production runs made for overseas buyers, available only in small quantities. We check each one ourselves before it is listed."
+          }
+        },
+        "s_import": {
+          "type": "source",
+          "settings": {
+            "title": "Selected imports",
+            "body": "We bring in a few pieces from outside India when they offer something we can't find here."
+          }
+        },
+        "k_fabric": { "type": "check", "settings": { "label": "We feel the fabric." } },
+        "k_seams": { "type": "check", "settings": { "label": "We check the seams." } },
+        "k_neck": {
+          "type": "check",
+          "settings": { "label": "We test how the neck and the fastenings open." }
+        },
+        "r_cords": { "type": "reject", "settings": { "label": "Neck cords or drawstrings" } },
+        "r_loose": {
+          "type": "reject",
+          "settings": { "label": "Loose buttons, beads or pom-poms on baby wear" }
+        },
+        "r_fabric": {
+          "type": "reject",
+          "settings": { "label": "Rough, scratchy or strong-smelling fabric" }
+        },
+        "r_own": {
+          "type": "reject",
+          "settings": { "label": "Anything we wouldn't put on our own child" }
+        }
+      },
+      "block_order": [
+        "s_own",
+        "s_makers",
+        "s_surplus",
+        "s_import",
+        "k_fabric",
+        "k_seams",
+        "k_neck",
+        "r_cords",
+        "r_loose",
+        "r_fabric",
+        "r_own"
+      ],
+      "settings": {
+        "eyebrow": "Our story",
+        "title_a": "Named after a child",
+        "title_b": "in our own family.",
+        "lead": "Sahasra Vastra is a small family business in Thiruvananthapuram, Kerala. We bring together everyday and occasion clothing for children from newborn to eight years, gathered from makers and suppliers across India and beyond.",
+        "fact_1": "Thiruvananthapuram, Kerala",
+        "fact_2": "Newborn to 8 years",
+        "fact_3": "Run by one family",
+        "q_label": "Before any piece reaches our shelf",
+        "q_quote": "Would we dress our own child in this?",
+        "q_after": "The brand carries the name of a child in our own family. That is why we are careful, and that one question is the whole of it.",
+        "src_eyebrow": "Where our clothes come from",
+        "src_title": "We don't run a factory.",
+        "src_lead": "We spend our time finding good children's clothing wherever it is made. Our pieces come from four places.",
+        "src_note": "Many of our pieces come in small lots, so a design may be available in only a few sizes. Once it is gone, it may not come back.",
+        "led_eyebrow": "Hand-picked, one piece at a time",
+        "led_title": "We look at every piece before it goes on the website.",
+        "keep_label": "What we check",
+        "drop_label": "What we leave behind",
+        "hand_label": "A small business, run by hand",
+        "hand_body": "<p>Our family runs everything here: finding the pieces, checking each one, and packing every parcel. When you message us, you are talking to the people who packed your order.</p><p>We answer within a day.</p>",
+        "sign_name": "",
+        "sign_role": "",
+        "talk_title": "Talk to us",
+        "talk_body": "Questions about sizing, fabric, or an order in transit are all welcome. The people who packed your parcel are the people who answer.",
+        "wa_label": "Message us on WhatsApp",
+        "wa_prefill": "Hi Sahasra Vastra, I have a question."
+      }
+    }
+  },
+  "order": ["main"]
+}

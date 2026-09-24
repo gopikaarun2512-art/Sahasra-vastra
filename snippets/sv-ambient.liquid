@@ -1,0 +1,48 @@
+{% doc %}
+  Ambient ground — the page's moving backdrop, promoted from
+  sv-shop-by-age once the owner asked for it to run through the page.
+
+  Three depths of gold thread and eight motes, each layer drifting on
+  its own axis and tempo so they read as depth rather than one sheet
+  sliding. Styles live in sv-system.css §08c; keyframes are transform
+  only and §08's reduced-motion rule freezes the whole thing into a
+  still engraving.
+
+  Contract: the host section carries `sv-amb-host` on its [data-sv]
+  root (positions it and clips the drift) and keeps its content inside
+  `.w`, which §08c lifts above the layer. Render this as the first
+  visual child:
+
+      <section class="sv-age sv-amb-host" data-sv>
+        {%- render 'sv-ambient' -%}
+        <div class="w"> ... </div>
+      </section>
+
+  Purely decorative: aria-hidden, pointer-events none, never read by
+  assistive tech.
+{% enddoc %}
+
+<div class="sv-amb" aria-hidden="true">
+  <svg class="sv-amb__threads sv-amb__threads--far" viewBox="0 0 1440 900" preserveAspectRatio="none" focusable="false">
+    <path d="M0,90  C300,10 620,180 940,90  S1300,30 1440,120"/>
+    <path d="M0,420 C340,330 640,510 980,410 S1300,340 1440,460"/>
+    <path d="M0,740 C300,660 620,830 960,730 S1300,680 1440,780"/>
+  </svg>
+  <svg class="sv-amb__threads sv-amb__threads--mid" viewBox="0 0 1440 900" preserveAspectRatio="none" focusable="false">
+    <path d="M0,180 C240,100 480,260 720,190 S1200,100 1440,210"/>
+    <path d="M0,500 C300,420 560,580 860,490 S1240,430 1440,540"/>
+    <path d="M0,820 C320,740 580,900 880,800 S1260,750 1440,850"/>
+  </svg>
+  <svg class="sv-amb__threads sv-amb__threads--near" viewBox="0 0 1440 900" preserveAspectRatio="none" focusable="false">
+    <path d="M0,300 C260,220 520,380 800,290 S1180,230 1440,340"/>
+    <path d="M0,650 C280,570 540,730 820,640 S1200,580 1440,690"/>
+  </svg>
+  <i class="sv-amb__mote" style="--mx:8%;  --my:72%; --md:18s; --mdel:0s;   --dx:18px; --dy:-42px"></i>
+  <i class="sv-amb__mote sv-amb__mote--near" style="--mx:22%; --my:24%; --md:23s; --mdel:-6s;  --dx:-14px;--dy:-30px"></i>
+  <i class="sv-amb__mote" style="--mx:41%; --my:82%; --md:20s; --mdel:-11s; --dx:12px; --dy:-48px"></i>
+  <i class="sv-amb__mote sv-amb__mote--far" style="--mx:58%; --my:16%; --md:26s; --mdel:-3s;  --dx:-20px;--dy:-26px"></i>
+  <i class="sv-amb__mote sv-amb__mote--near" style="--mx:72%; --my:64%; --md:17s; --mdel:-9s;  --dx:16px; --dy:-38px"></i>
+  <i class="sv-amb__mote" style="--mx:87%; --my:36%; --md:22s; --mdel:-14s; --dx:-12px;--dy:-44px"></i>
+  <i class="sv-amb__mote sv-amb__mote--far" style="--mx:33%; --my:48%; --md:25s; --mdel:-17s; --dx:22px; --dy:-24px"></i>
+  <i class="sv-amb__mote sv-amb__mote--near" style="--mx:94%; --my:78%; --md:19s; --mdel:-5s;  --dx:-16px;--dy:-36px"></i>
+</div>

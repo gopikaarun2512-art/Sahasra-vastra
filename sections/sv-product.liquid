@@ -1,0 +1,1176 @@
+{% doc %}
+  Product — the centre of the site, and the only page that consumes the
+  full Shopify data layer. Replaces Horizon's `product-information`.
+
+  ── The job ───────────────────────────────────────────────────────────
+  CREATIVE-BRIEF.md §03: "prevent the wrong size being ordered." That is
+  the literal job, because change-of-mind returns are not accepted. Every
+  element here exists to answer a question before it becomes a return
+  request, and nothing on this page links away mid-decision (§3.4) —
+  claims expand in place.
+
+  ── Composition · "the ledger" ────────────────────────────────────────
+  The buy zone is deliberately conventional: a scrolling gallery beside a
+  sticky decision column. Tier A (§3.8) allows state changes only — no
+  scroll reveals, no 3D, no reveal classes anywhere in this file.
+
+  The brand appears BELOW it, where this brand's argument actually is:
+  the ledger. The garment's own measurements in the size guide's
+  emerald-head card with the selected row lit; then description, fabric,
+  fit and care as accordions (owner's direction, Sep 2026 — replacing
+  the three standing columns); the Legal Metrology block stays open as a
+  filed record under the design code, because it is a statutory
+  disclosure.
+
+  Sep 2026 rebuild, from the owner's reference stores: thumbnail gallery
+  with hover zoom (sweetlime), age-stepper sizes with line figures and a
+  sizing note (bumchi), an age popup for visitors who did not arrive by
+  age (lunabee), an Ask · Save · Share row and promise tiles (lunabee),
+  a share menu by the title (mom & zoey), a desktop sticky bar with a
+  size select (lemoon). Recommendations, recently viewed, reels and
+  reviews are their own sections in templates/product.json.
+
+  ── Must-know is never inside an accordion (HANDOFF rule 6) ───────────
+  Always visible: size, the size run, the sizing note, the delivery
+  promise (tiles), the returns position, the per-unit price, the
+  measurement table. Folded: per-zone delivery charges (the promise is
+  already open above it) and the accordions below the fold.
+
+  ── What renders nothing rather than empty (HANDOFF rule 5) ───────────
+  Colourway siblings without a group · complete-the-set without
+  references · declarations without values · the AI notice when the flag
+  is false · reviews, which have no markup here at all until real ones
+  exist (ARCHITECTURE §27.2 — no heading, no empty state).
+{% enddoc %}
+
+{{ 'sv-product.css' | asset_url | stylesheet_tag }}
+{{ 'sv-card.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign mf = product.metafields.custom
+  assign variant = product.selected_or_first_available_variant
+
+  assign fabric = mf.fabric_composition.value
+  assign gsm = mf.fabric_gsm.value
+  assign care = mf.care_instructions.value
+  assign fit_note = mf.fit_note.value
+  assign azo = mf.azo_free.value
+  assign shrinkage = mf.shrinkage.value
+  assign colourfastness = mf.colourfastness.value
+  assign design_code = mf.design_code.value
+  assign colourway = mf.colourway.value
+  assign colour_group = mf.colour_group.value
+  assign pack_size = mf.pack_size.value
+  assign ai_imagery = mf.ai_imagery_used.value
+  assign country = mf.country_of_origin.value
+  assign net_quantity = mf.net_quantity.value
+  assign manufacturer = mf.manufacturer.value
+  assign chest_cm = mf.chest_cm.value
+  assign length_cm = mf.length_cm.value
+  assign measure_note = mf.garment_measurements.value
+  assign set_items = mf.complete_set.value
+  assign size_chart = mf.size_chart.value
+
+  assign whatsapp = shop.metafields.custom.whatsapp_number.value
+  assign dispatch = shop.metafields.custom.dispatch_promise.value
+  assign support_email = shop.metafields.custom.support_email.value
+
+  # Per-unit price. DATA-MODEL §3: pack_size drives it, and it is must-know
+  # (HANDOFF rule 6), so it sits beside the price and never in a panel.
+  assign show_per_unit = false
+  if pack_size and pack_size > 1
+    assign show_per_unit = true
+    assign per_unit = variant.price | divided_by: pack_size
+  endif
+
+  # The first line of the care text is the standing Care column; the whole
+  # thing is the expander. newline_to_br is the only reliable way to split a
+  # multi_line_text_field in Liquid.
+  assign care_lines = care | newline_to_br | split: '<br />'
+  assign care_first = care_lines.first | strip
+
+  assign form_id = 'sv-pdp-form-' | append: section.id
+  assign share_url = shop.url | append: product.url
+
+  # Age bands: the popup's choices AND the stepper's full run.
+  assign bands = section.settings.age_bands | default: '0–3 m, 3–6 m, 6–9 m, 9–12 m, 12–18 m, 18–24 m, 2–3 y, 3–4 y, 4–5 y, 5–6 y, 6–7 y, 7–8 y' | split: ','
+
+  # The measurement table needs structured data. Free text cannot drive it
+  # (DATA-MODEL §3.0.1), so the table renders from the json metafields and
+  # falls back to showing the free-text note verbatim.
+  assign has_measurements = false
+  if chest_cm != blank or length_cm != blank
+    assign has_measurements = true
+  endif
+-%}
+
+{%- comment -%}
+  Product JSON-LD. sv-meta.liquid deliberately does NOT emit this — it
+  documents that Horizon's product-information section does, via the
+  structured_data filter. This section replaces that one, so the schema
+  moves here with it. Losing it would have been silent.
+{%- endcomment -%}
+<script type="application/ld+json">
+  {{ product | structured_data }}
+</script>
+
+<section class="sv-pdp" data-sv data-sv-pdp>
+  <div class="w sv-pdp__w">
+    {%- comment -%}
+      Breadcrumb. sv-meta emits BreadcrumbList JSON-LD on this template;
+      this is its visible counterpart. `collection` is only set when the
+      visitor arrived through one, so the trail never invents a path.
+    {%- endcomment -%}
+    <nav class="sv-pdp__crumbs" aria-label="Breadcrumb">
+      <a href="{{ routes.root_url }}">Home</a>
+      {%- if collection -%}
+        <span aria-hidden="true">/</span>
+        <a href="{{ collection.url }}">{{ collection.title }}</a>
+      {%- endif -%}
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{{ product.title }}</span>
+    </nav>
+
+    {%- comment -%} ══ BUY ZONE ══════════════════════════════════════ {%- endcomment -%}
+    <div class="sv-pdp__buy">
+
+      {%- comment -%}
+        ── Gallery (Sep 2026 rebuild) ───────────────────────────────
+        Thumbnail rail · one stage · arrows, with a hover lens that fills
+        a zoom pane over the decision column on desktop (the sweetlime
+        pattern). The stage is ONE native scroll-snap row, so a phone
+        swipes it with no script and the arrows/thumbs only scroll it.
+        The zoom pane reads a 2400px rendition from data-zoom and is
+        pointer-only: touch screens pinch natively instead.
+      {%- endcomment -%}
+      <div class="sv-pdp__gallery sv-gal" data-sv-gal>
+        {%- if product.media.size > 0 -%}
+          {%- if product.media.size > 1 -%}
+            <ul class="sv-gal__thumbs" role="list">
+              {%- for media in product.media -%}
+                <li>
+                  <button
+                    type="button"
+                    class="sv-gal__thumb{% if forloop.first %} is-on{% endif %}"
+                    data-sv-gal-thumb="{{ forloop.index0 }}"
+                    aria-label="Show image {{ forloop.index }} of {{ product.media.size }}"
+                    {% if forloop.first %}aria-current="true"{% endif %}
+                  >
+                    {{ media.preview_image | image_url: width: 180 | image_tag: loading: 'lazy', alt: '', sizes: '90px', widths: '90, 180' }}
+                  </button>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+
+          <div class="sv-gal__stage">
+            <ul class="sv-gal__track" role="list" data-sv-gal-track tabindex="0" aria-label="{{ product.title | escape }} images">
+              {%- for media in product.media -%}
+                {%- liquid
+                  assign img = media.preview_image
+                  if forloop.first
+                    assign frame_loading = 'eager'
+                    assign frame_priority = 'high'
+                  else
+                    assign frame_loading = 'lazy'
+                    assign frame_priority = 'auto'
+                  endif
+                -%}
+                <li class="sv-gal__slide" data-sv-gal-slide data-zoom="{{ img | image_url: width: 2400 }}">
+                  <div class="im r-product">
+                    {{
+                      img
+                      | image_url: width: 1400
+                      | image_tag:
+                        widths: '480, 640, 900, 1200, 1400',
+                        sizes: '(max-width: 880px) 100vw, min(640px, 50vw)',
+                        loading: frame_loading,
+                        fetchpriority: frame_priority,
+                        alt: img.alt | default: product.title | escape
+                    }}
+                  </div>
+                </li>
+              {%- endfor -%}
+            </ul>
+
+            {%- if product.media.size > 1 -%}
+              <button type="button" class="sv-gal__arrow sv-gal__arrow--prev" data-sv-gal-step="-1" aria-label="Previous image">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m14.5 6-6 6 6 6"/></svg>
+              </button>
+              <button type="button" class="sv-gal__arrow sv-gal__arrow--next" data-sv-gal-step="1" aria-label="Next image">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m9.5 6 6 6-6 6"/></svg>
+              </button>
+              <p class="sv-gal__count" aria-hidden="true"><span data-sv-gal-index>1</span> / {{ product.media.size }}</p>
+            {%- endif -%}
+
+            <span class="sv-gal__lens" data-sv-gal-lens hidden></span>
+          </div>
+
+          <div class="sv-gal__zoom" data-sv-gal-zoom hidden aria-hidden="true"></div>
+        {%- else -%}
+          {%- comment -%}
+            No photography yet. Placeholder fields, no invented caption
+            — criterion 5 forbids fabricated content, and a caption
+            explaining the absence is content nobody wrote.
+          {%- endcomment -%}
+          {%- comment -%}
+            The rail stands as empty frames too, so the page keeps the
+            shape it will have on the day photography lands. Decorative
+            only: nothing to click, nothing announced.
+          {%- endcomment -%}
+          <ul class="sv-gal__thumbs" role="list" aria-hidden="true">
+            <li><span class="sv-gal__thumb is-on sv-gal__thumb--ph"><span class="im r-product"></span></span></li>
+            <li><span class="sv-gal__thumb sv-gal__thumb--ph"><span class="im im--b r-product"></span></span></li>
+            <li><span class="sv-gal__thumb sv-gal__thumb--ph"><span class="im im--c r-product"></span></span></li>
+          </ul>
+          <div class="sv-gal__stage">
+            <ul class="sv-gal__track" role="list">
+              <li class="sv-gal__slide"><div class="im r-product" role="img" aria-label="{{ product.title | escape }} — photography to come"></div></li>
+            </ul>
+          </div>
+        {%- endif -%}
+
+        {%- comment -%}
+          The AI-imagery notice sits ON the gallery, not in a footnote.
+          Terms of Service §3 tells buyers to "rely on the unedited
+          photograph and on the size chart", so the disclosure has to be
+          where the photographs are. Driven by the metafield, never by
+          hand (ARCHITECTURE §6.8 element 12).
+        {%- endcomment -%}
+        {%- if ai_imagery -%}
+          <p class="sv-pdp__ai sv-fine">
+            Some images on this page are illustrative and computer-generated.
+            Every photograph of the garment itself is a real photograph of the
+            item you will receive.
+          </p>
+        {%- endif -%}
+
+        {%- comment -%}
+          ── Sizing note (the bumchi box) ───────────────────────
+          Must-know, so it stands open. Sits under the gallery and its
+          AI notice (owner's direction, Sep 2026), not in the column. Two routes out of doubt: the measurements on this
+          page (a same-page jump, §3.4), or a person on WhatsApp.
+        {%- endcomment -%}
+        <div class="sv-pdp__sizenote">
+          <p>
+            <strong>Note:</strong> sizes vary by brand. Check
+            <a href="#sv-pdp-measure-{{ section.id }}">this garment&rsquo;s measurements</a>
+            for the right fit &mdash; measure a garment your child already wears, laid flat.
+          </p>
+          {%- if whatsapp != blank -%}
+            <p>Not sure, or missing a measurement? <a href="https://wa.me/{{ whatsapp }}?text={{ 'Hi, can you help me pick a size for ' | append: product.title | append: '? ' | append: share_url | url_encode | replace: '+', '%20' }}" target="_blank" rel="noopener" data-sv-wa-size>WhatsApp us</a></p>
+          {%- endif -%}
+        </div>
+      </div>
+
+      {%- comment -%}
+        ── Decision column ──────────────────────────────────────────
+        Sticky on desktop. Element order follows ARCHITECTURE §6.8
+        exactly: title · price · per-unit · size · size run · design
+        code · add to cart · sizing · delivery · returns.
+      {%- endcomment -%}
+      <div class="sv-pdp__col">
+        <div class="sv-pdp__stick">
+
+          {%- comment -%}
+            ── Colourway siblings ─────────────────────────────────
+            DATA-MODEL §5. The `group:` TAG is the query mechanism, not
+            the metafield — the metafield drives display only, and where
+            the two disagree the tag wins. Never iterate
+            collections.all.products unfiltered.
+
+            Ceiling worth knowing: collections.all.products yields at
+            most 50 products to Liquid without paginate, so a colour
+            group whose members sit beyond the first 50 of the catalogue
+            would not be found. Correct at this catalogue size; the scale
+            answer is a per-group collection, not a bigger loop here.
+          {%- endcomment -%}
+          {%- if colour_group != blank -%}
+            {%- assign group_tag = 'group:' | append: colour_group -%}
+            {%- assign siblings = collections.all.products | where: 'tags', group_tag -%}
+            {%- if siblings.size > 1 -%}
+              <div class="sv-pdp__colours">
+                <span class="lab lab--grey">More colours</span>
+                <ul class="sv-pdp__swatches" role="list">
+                  {%- for sibling in siblings -%}
+                    {%- liquid
+                      assign s_name = sibling.metafields.custom.colourway.value | default: sibling.title
+                      assign s_hex = sibling.metafields.custom.colour_swatch.value
+                      assign is_current = false
+                      if sibling.handle == product.handle
+                        assign is_current = true
+                      endif
+                    -%}
+                    <li>
+                      <a
+                        class="sv-pdp__swatch{% if is_current %} is-current{% endif %}{% unless sibling.available %} is-out{% endunless %}"
+                        href="{{ sibling.url }}"
+                        {% if is_current %}aria-current="true"{% endif %}
+                      >
+                        <span class="sv-pdp__dot" style="--sv-swatch: {{ s_hex | default: '#E9E1CD' }}" aria-hidden="true"></span>
+                        {%- comment -%}
+                          A sibling sold out in every size is struck
+                          through and STILL LINKED (DATA-MODEL §5) — it is
+                          a real design, and hiding it makes the range
+                          look thinner than it is.
+                        {%- endcomment -%}
+                        <span class="sv-pdp__swatchname">
+                          {{- s_name }}{% unless sibling.available %} &mdash; sold out{% endunless -%}
+                        </span>
+                      </a>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              </div>
+            {%- endif -%}
+          {%- endif -%}
+
+          <div class="sv-pdp__titlerow">
+            <h1 class="sv-pdp__title">{{ product.title }}</h1>
+            <button type="button" class="sv-pdp__iconbtn" data-sv-share-open aria-haspopup="dialog" aria-label="Share this product">
+              {% render 'sv-icon', name: 'share' %}
+            </button>
+          </div>
+
+          {%- comment -%}
+            Share menu. One panel, opened from the title icon and from the
+            action row. On a phone the script hands off to the native share
+            sheet (navigator.share) and this panel never opens; on desktop,
+            where that sheet is patchy, these links are the menu. Every link
+            works without script.
+          {%- endcomment -%}
+          <div class="sv-share" data-sv-share hidden role="dialog" aria-label="Share this product">
+            <p class="lab lab--grey sv-share__lab">Share</p>
+            <ul class="sv-share__list" role="list">
+              <li><a class="sv-share__link" data-sv-share-link="whatsapp" href="https://wa.me/?text={{ product.title | append: ' ' | append: share_url | url_encode | replace: '+', '%20' }}" target="_blank" rel="noopener">{% render 'sv-icon', name: 'whatsapp' %}<span>WhatsApp</span></a></li>
+              <li><a class="sv-share__link" data-sv-share-link="facebook" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url | url_encode }}" target="_blank" rel="noopener">{% render 'sv-icon', name: 'facebook' %}<span>Facebook</span></a></li>
+              <li><a class="sv-share__link" data-sv-share-link="pinterest" href="https://pinterest.com/pin/create/button/?url={{ share_url | url_encode }}{% if product.featured_image %}&media={{ product.featured_image | image_url: width: 1200 | prepend: 'https:' | url_encode }}{% endif %}&description={{ product.title | url_encode }}" target="_blank" rel="noopener">{% render 'sv-icon', name: 'pinterest' %}<span>Pinterest</span></a></li>
+              <li><a class="sv-share__link" data-sv-share-link="email" href="mailto:?subject={{ product.title | url_encode }}&body={{ share_url | url_encode }}">{% render 'sv-icon', name: 'mail' %}<span>Email</span></a></li>
+              <li><button type="button" class="sv-share__link" data-sv-share-copy data-url="{{ share_url }}">{% render 'sv-icon', name: 'link' %}<span data-sv-share-copy-label>Copy link</span></button></li>
+            </ul>
+          </div>
+
+          {%- comment -%}
+            Price on the left; stock, size chart and the remembered age
+            beside it on the right (owner's direction, Sep 2026) — one
+            row instead of three stacked lines.
+          {%- endcomment -%}
+          <div class="sv-pdp__pricerow">
+          <div class="sv-pdp__pricing">
+            <p class="sv-pdp__price" data-sv-price>
+              {{- variant.price | money -}}
+              {%- if variant.compare_at_price > variant.price -%}
+                <s class="sv-pdp__was">{{ variant.compare_at_price | money }}</s>
+              {%- endif -%}
+            </p>
+
+            {%- if show_per_unit -%}
+              <p class="sv-pdp__unit">{{ per_unit | money }} each &middot; pack of {{ pack_size }}</p>
+            {%- endif -%}
+
+            {%- if variant.compare_at_price > variant.price -%}
+              {%- assign saving = variant.compare_at_price | minus: variant.price -%}
+              <p class="sv-pdp__saving">You save {{ saving | money }}</p>
+            {%- endif -%}
+          </div>
+            <div class="sv-pdp__meta">
+              {%- render 'sv-size-run', product: product, class: 'sv-pdp__run' -%}
+              {%- if size_chart != blank -%}
+                <button type="button" class="sv-pdp__chartlink" data-sv-chart-open aria-haspopup="dialog">Size chart</button>
+              {%- endif -%}
+                  <p class="sv-pdp__agenow sv-fine" data-sv-age-now hidden>
+                    Shopping for <strong data-sv-age-now-label></strong>
+                    &middot; <button type="button" class="sv-pdp__agechange" data-sv-age-open>change</button>
+                  </p>
+            </div>
+          </div>
+
+          <form
+            id="{{ form_id }}"
+            class="sv-pdp__form"
+            action="{{ routes.cart_add_url }}"
+            method="post"
+            enctype="multipart/form-data"
+            data-sv-pdp-form
+            data-product-title="{{ product.title | escape }}"
+          >
+            <input type="hidden" name="id" value="{{ variant.id }}" data-sv-variant-input>
+
+            {%- comment -%}
+              ── Size, as buttons ───────────────────────────────────
+              Never a dropdown: Baymard found 57% of sites use one, and
+              a dropdown hides availability behind a tap. Sold-out sizes
+              are struck through and stay VISIBLE — a size that is
+              missing from the page reads as a size that was never made.
+
+              Buttons iterate variants rather than option values, so
+              availability is exact per button with no lookup, and the
+              markup survives a product that ever gains a second option.
+            {%- endcomment -%}
+            {%- comment -%}
+              ── Size, as an age stepper (Sep 2026) ─────────────────
+              Still buttons, never a dropdown, and sold-out sizes stay
+              visible and selectable. Each stop carries a line figure
+              for its age stage (the bumchi pattern) so a parent reads
+              "crawling" before they read "9–12 m".
+
+              data-from / data-to are the size's age range in MONTHS,
+              parsed here once from the variant title, so the age picker
+              can match "6–9 m" to a variant cut "6-12m" without the
+              script re-parsing strings.
+            {%- endcomment -%}
+            {%- unless product.has_only_default_variant -%}
+              <fieldset class="sv-pdp__sizes">
+                <legend class="lab lab--grey sv-pdp__sizelab">Size <span class="sv-pdp__sizehint">(select age)</span></legend>
+
+
+                {%- comment -%}
+                  By default the stepper lists exactly the product's own
+                  sizes (owner's direction, Sep 2026). The "group" and "all"
+                  settings widen it to the age scale, with the bands the
+                  design is NOT made in greyed. Where one of the
+                  design's own sizes spans several bands ("0-6m" over 0–3
+                  and 3–6), the size replaces them — never a stop twice.
+
+                  Entries are built as "MMM|kind|ref" strings, zero-padded
+                  on the start month, so a plain `sort` orders bands and
+                  sizes together.
+                {%- endcomment -%}
+                {%- liquid
+                  assign step_mode = section.settings.step_run | default: 'own'
+                  assign v_ranges = ''
+                  assign groups = ','
+                  assign entries = ''
+                  for v in product.variants
+                    capture r
+                      render 'sv-age-range', label: v.title
+                    endcapture
+                    assign r = r | split: ','
+                    assign vf = r.first | plus: 0
+                    assign vt = r.last | plus: 0
+                    assign v_ranges = v_ranges | append: vf | append: '-' | append: vt | append: ';'
+                    if vf < 12
+                      assign g = '0'
+                    elsif vf < 36
+                      assign g = '1'
+                    elsif vf < 72
+                      assign g = '2'
+                    else
+                      assign g = '3'
+                    endif
+                    assign groups = groups | append: g | append: ','
+                    assign pad = vf | prepend: '00'
+                    assign pad = pad | slice: -3, 3
+                    assign entries = entries | append: pad | append: '|v|' | append: forloop.index0 | append: '~'
+                  endfor
+
+                  if step_mode != 'own'
+                    for band in bands
+                      assign b = band | strip
+                      if b == blank
+                        continue
+                      endif
+                      capture r
+                        render 'sv-age-range', label: b
+                      endcapture
+                      assign r = r | split: ','
+                      assign bf = r.first | plus: 0
+                      assign bt = r.last | plus: 0
+                      if bf < 12
+                        assign g = ',0,'
+                      elsif bf < 36
+                        assign g = ',1,'
+                      elsif bf < 72
+                        assign g = ',2,'
+                      else
+                        assign g = ',3,'
+                      endif
+                      if step_mode == 'group'
+                        unless groups contains g
+                          continue
+                        endunless
+                      endif
+                      assign covered = false
+                      assign vr_list = v_ranges | split: ';'
+                      for vr in vr_list
+                        assign vr_parts = vr | split: '-'
+                        assign xf = vr_parts.first | plus: 0
+                        assign xt = vr_parts.last | plus: 0
+                        if xf < bt and bf < xt
+                          assign covered = true
+                          break
+                        endif
+                      endfor
+                      if covered
+                        continue
+                      endif
+                      assign pad = bf | prepend: '00'
+                      assign pad = pad | slice: -3, 3
+                      assign entries = entries | append: pad | append: '|b|' | append: b | append: '~'
+                    endfor
+                  endif
+
+                  assign entries = entries | split: '~' | sort
+                  assign has_ghost = false
+                  if entries.size > product.variants.size
+                    assign has_ghost = true
+                  endif
+                -%}
+                <div class="sv-step" role="radiogroup" aria-label="Size" data-sv-step>
+                  {%- for entry in entries -%}
+                    {%- liquid
+                      assign parts = entry | split: '|'
+                      assign start_m = parts[0] | plus: 0
+                      if start_m < 3
+                        assign stage = 'newborn'
+                      elsif start_m < 6
+                        assign stage = 'swaddle'
+                      elsif start_m < 9
+                        assign stage = 'sit'
+                      elsif start_m < 12
+                        assign stage = 'crawl'
+                      elsif start_m < 18
+                        assign stage = 'toddle'
+                      elsif start_m < 24
+                        assign stage = 'toddle2'
+                      elsif start_m < 36
+                        assign stage = 'twos'
+                      elsif start_m < 48
+                        assign stage = 'walk'
+                      elsif start_m < 72
+                        assign stage = 'kid'
+                      else
+                        assign stage = 'big'
+                      endif
+                    -%}
+                    {%- if parts[1] == 'b' -%}
+                      {%- comment -%} A band this design is not made in: shown, never selectable. {%- endcomment -%}
+                      <span class="sv-step__opt is-none" title="Not made in {{ parts[2] | escape }}">
+                        <span class="sv-step__dot" aria-hidden="true"></span>
+                        <span class="sv-step__label">{{ parts[2] }}<span class="sv-visually-hidden"> — not made in this design</span></span>
+                        {% render 'sv-baby', stage: stage, class: 'sv-step__baby' %}
+                      </span>
+                    {%- else -%}
+                      {%- liquid
+                        assign vi = parts[2] | plus: 0
+                        assign v = product.variants[vi]
+                        capture r
+                          render 'sv-age-range', label: v.title
+                        endcapture
+                        assign r = r | split: ','
+                      -%}
+                      <button
+                        type="button"
+                        class="sv-step__opt sv-pdp__size{% if v.id == variant.id %} is-on{% endif %}{% unless v.available %} is-out{% endunless %}"
+                        role="radio"
+                        aria-checked="{% if v.id == variant.id %}true{% else %}false{% endif %}"
+                        data-sv-size
+                        data-variant-id="{{ v.id }}"
+                        data-available="{{ v.available }}"
+                        data-price="{{ v.price | money }}"
+                        data-compare="{% if v.compare_at_price > v.price %}{{ v.compare_at_price | money }}{% endif %}"
+                        data-title="{{ v.title | escape }}"
+                        data-label="{{ v.title | replace: '-', '–' | escape }}"
+                        data-from="{{ r.first }}"
+                        data-to="{{ r.last }}"
+                        {% unless v.available %}aria-describedby="{{ form_id }}-out"{% endunless %}
+                      >
+                        <span class="sv-step__dot" aria-hidden="true"></span>
+                        <span class="sv-step__label">{{ v.title | replace: '-', '–' }}</span>
+                        {% render 'sv-baby', stage: stage, class: 'sv-step__baby' %}
+                        {%- unless v.available -%}<span class="sv-step__tag" aria-hidden="true">sold out</span>{%- endunless -%}
+                      </button>
+                    {%- endif -%}
+                  {%- endfor -%}
+                </div>
+                {%- comment -%}
+                  Two different "no"s, said differently: a band the design is
+                  never made in (greyed, dashed) and a size that exists but is
+                  sold out right now (crossed out, still selectable). The note
+                  names only the cases this product actually has.
+                {%- endcomment -%}
+                {%- liquid
+                  assign has_soldout = false
+                  for v in product.variants
+                    unless v.available
+                      assign has_soldout = true
+                      break
+                    endunless
+                  endfor
+                -%}
+                {%- if has_ghost or has_soldout -%}
+                  <p class="sv-step__legend sv-fine">
+                    {%- if has_ghost -%}<span class="sv-step__key sv-step__key--none">Greyed: not made in this design</span>{%- endif -%}
+                    {%- if has_ghost and has_soldout -%}<span aria-hidden="true"> &middot; </span>{%- endif -%}
+                    {%- if has_soldout -%}<span class="sv-step__key sv-step__key--out">Crossed out: sold out right now</span>{%- endif -%}
+                  </p>
+                {%- endif -%}
+                <span id="{{ form_id }}-out" class="sv-visually-hidden">sold out</span>
+              </fieldset>
+            {%- endunless -%}
+
+            <div class="sv-pdp__actions">
+              <div class="sv-pdp__qty">
+                <label class="sv-visually-hidden" for="{{ form_id }}-qty">Quantity</label>
+                <button type="button" class="sv-pdp__qtybtn" data-sv-qty="-1" aria-label="Decrease quantity">&minus;</button>
+                <input
+                  id="{{ form_id }}-qty"
+                  class="sv-pdp__qtyinput"
+                  type="number"
+                  name="quantity"
+                  value="1"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  data-sv-qty-input
+                >
+                <button type="button" class="sv-pdp__qtybtn" data-sv-qty="1" aria-label="Increase quantity">+</button>
+              </div>
+
+              <button
+                type="submit"
+                class="btn sv-pdp__add"
+                data-sv-add
+                {% unless variant.available %}disabled{% endunless %}
+              >
+                <span data-sv-add-label>
+                  {%- if variant.available -%}Add to bag{%- else -%}Sold out{%- endif -%}
+                </span>
+              </button>
+            </div>
+
+            <p class="sv-pdp__formerr sv-fine" data-sv-error hidden role="status"></p>
+          </form>
+
+          {%- if design_code != blank -%}
+            <p class="sv-pdp__code sv-fine sv-fine--caps">Design {{ design_code }}</p>
+          {%- endif -%}
+
+          {%- comment -%}
+            ── The three must-know facts ──────────────────────────
+            Sizing, delivery, returns. ARCHITECTURE §6.8 elements 7, 8
+            and 9, and HANDOFF rule 6 forbids any of the three from
+            sitting inside a closed panel. They are plain paragraphs
+            here for exactly that reason.
+          {%- endcomment -%}
+          {%- comment -%}
+            ── Ask · Save · Share (the lunabee row) ────────────────
+            ARCHITECTURE §6.8 element 13 moved up beside Save and Share.
+            The WhatsApp prefill now carries the PAGE LINK as well as the
+            product and selected size, so the reply starts from the right
+            garment even when the message is forwarded; the script keeps
+            the size and the ?variant in step with the selection.
+
+            Save is a device-local wishlist (localStorage `sv_saved`,
+            product handles). No account needed, nothing sent anywhere.
+          {%- endcomment -%}
+          <div class="sv-pdp__row">
+            {%- if whatsapp != blank -%}
+              {%- capture wa_text -%}Hi, I'd like to ask about {{ product.title }} ({{ variant.title }}){% if design_code != blank %}, design {{ design_code }}{% endif %}. {{ share_url }}?variant={{ variant.id }}{%- endcapture -%}
+              <a
+                class="sv-pdp__rowbtn sv-pdp__rowbtn--wa"
+                href="https://wa.me/{{ whatsapp }}?text={{ wa_text | url_encode | replace: '+', '%20' }}"
+                rel="noopener"
+                target="_blank"
+                data-sv-wa
+                data-wa-base="https://wa.me/{{ whatsapp }}?text="
+                data-wa-product="{{ product.title | escape }}"
+                data-wa-code="{{ design_code | escape }}"
+                data-wa-url="{{ share_url }}"
+              >{% render 'sv-icon', name: 'whatsapp' %}<span>Ask us on WhatsApp</span></a>
+            {%- endif -%}
+            <button type="button" class="sv-pdp__rowbtn" data-sv-save data-handle="{{ product.handle }}" aria-pressed="false">
+              {% render 'sv-icon', name: 'heart' %}<span data-sv-save-label>Wishlist</span>
+            </button>
+            <button type="button" class="sv-pdp__rowbtn" data-sv-share-open aria-haspopup="dialog">
+              {% render 'sv-icon', name: 'share' %}<span>Share</span>
+            </button>
+          </div>
+
+          {%- comment -%}
+            ── Promise tiles ──────────────────────────────────────
+            Three short facts, each from the store's own data and each
+            true today. No "hygiene checked" style claim appears here
+            unless it is a process that actually happens.
+          {%- endcomment -%}
+          {%- assign threshold = shop.metafields.custom.free_shipping_threshold.value -%}
+          <ul class="sv-pdp__tiles" role="list">
+            {%- if threshold != blank -%}
+              <li class="sv-pdp__tile">
+                <span class="sv-pdp__tileicon">{% render 'sv-icon', name: 'truck' %}</span>
+                <span><strong>Free delivery</strong> on orders over {{ threshold | money_without_trailing_zeros }}</span>
+              </li>
+            {%- endif -%}
+            {%- if dispatch != blank -%}
+              <li class="sv-pdp__tile">
+                <span class="sv-pdp__tileicon">{% render 'sv-icon', name: 'clock' %}</span>
+                <span><strong>{{ dispatch }}</strong> of payment, from Thiruvananthapuram to every pincode</span>
+              </li>
+            {%- endif -%}
+            <li class="sv-pdp__tile">
+              <span class="sv-pdp__tileicon">{% render 'sv-icon', name: 'shield' %}</span>
+              <span><strong>Damaged or wrong item?</strong> Replaced or refunded in full, postage on us</span>
+            </li>
+          </ul>
+
+
+        </div>
+      </div>
+    </div>
+
+    {%- comment -%} ══ THE LEDGER ════════════════════════════════════ {%- endcomment -%}
+    <div class="sv-pdp__ledger">
+
+
+      {%- comment -%}
+        ── 02 · Fabric · Fit · Care ───────────────────────────────
+        Three labels, same order, every product (§6.8 element 10). They
+        stand open as columns; only the explanations fold.
+
+        Every part of this band is built before any of it is rendered, so
+        that a product carrying none of these fields emits no heading, no
+        numeral and no empty grid — HANDOFF rule 5. The whole band is one
+        of the things that "renders nothing rather than rendering empty".
+      {%- endcomment -%}
+
+      {%- comment -%}
+          Each cell's body is built FIRST and the cell is only rendered if
+          it came out with something in it.
+
+          §6.8 asks for the three labels in the same order on every product,
+          and the first build read that as "always render all three". On a
+          product with no fabric and no care text that produced a bare
+          FABRIC heading with nothing under it — which ARCHITECTURE rule 11
+          forbids outright: an absent field contributes nothing, no label,
+          no dash, no placeholder. A label over empty space tells a
+          customer nothing and reads as a broken page. Same order, yes;
+          same count, no.
+        {%- endcomment -%}
+        {%- capture cell_fabric -%}
+          {%- capture fabric_line -%}
+            {%- if fabric != blank -%}{{ fabric }}~{%- endif -%}
+            {%- if gsm != blank -%}{{ gsm }} GSM~{%- endif -%}
+            {%- if azo -%}azo-free declared~{%- endif -%}
+          {%- endcapture -%}
+          {%- assign fabric_parts = fabric_line | strip | split: '~' -%}
+          {%- for part in fabric_parts -%}
+            {%- unless forloop.first %} &middot; {% endunless -%}{{ part | strip }}
+          {%- endfor -%}
+        {%- endcapture -%}
+
+        {%- capture cell_fit -%}
+          {%- if fit_note != blank -%}{{ fit_note }}{%- endif -%}
+          {%- if product.variants.size > 1 -%}
+            {%- if fit_note != blank %} &middot; {% endif -%}
+            complete run, {{ product.variants.first.title }} to {{ product.variants.last.title }}
+          {%- endif -%}
+        {%- endcapture -%}
+
+        {%- capture cell_care -%}{{ care_first }}{%- endcapture -%}
+
+        {%- liquid
+          # An expander exists only where its source field does, so the
+          # expander rail can be empty on a product that has none.
+          assign has_expanders = false
+          if gsm != blank or azo or care != blank or shrinkage != blank or colourfastness != blank
+            assign has_expanders = true
+          endif
+        -%}
+
+      {%- comment -%}
+        ── Details, as accordions (Sep 2026, owner's direction) ─────
+        Description · Fabric · Fit · Care guide, each a <details> that
+        renders only when its field has content (HANDOFF rule 5). The
+        description opens by default so the page never lands on four
+        closed bars. Must-know facts are NOT in here: size, sizing note,
+        delivery, returns and the measurement table all stand open above.
+      {%- endcomment -%}
+      {%- if product.description != blank or cell_fabric != blank or cell_fit != blank or care != blank or has_expanders -%}
+      <section class="sv-pdp__band sv-pdp__band--acc">
+        <span class="num" aria-hidden="true"></span>
+        <h2 class="sv-pdp__h2">The details</h2>
+        <div class="sv-acc">
+          {%- if product.description != blank -%}
+            <details class="sv-acc__item" open>
+              <summary>Description</summary>
+              <div class="sv-acc__body sv-pdp__rte">{{ product.description }}</div>
+            </details>
+          {%- endif -%}
+
+          {%- if cell_fabric != blank or gsm != blank or azo or shrinkage != blank or colourfastness != blank -%}
+            <details class="sv-acc__item">
+              <summary>Fabric</summary>
+              <div class="sv-acc__body">
+                {%- if cell_fabric != blank -%}<p>{{ cell_fabric | strip }}</p>{%- endif -%}
+                {%- if gsm != blank -%}
+                  <p>
+                    <strong>What {{ gsm }} GSM means.</strong> GSM is grams per square metre &mdash;
+                    the weight of the fabric. {{ gsm }} is a mid-weight knit: substantial enough to
+                    hold its shape after washing, light enough for Kerala heat. Thin kidswear is
+                    often 120&ndash;140, which is why it goes shapeless after a few washes.
+                  </p>
+                {%- endif -%}
+                {%- if azo -%}
+                  <p>
+                    <strong>Azo-free.</strong> 112 azo dyes are prohibited in textiles under
+                    India&rsquo;s Environment (Protection) Act because they can release compounds
+                    that irritate skin. Our supplier provides a signed declaration for every batch.
+                    This is a legal standard, not a marketing claim.
+                  </p>
+                {%- endif -%}
+                {%- if shrinkage != blank or colourfastness != blank -%}
+                  <dl class="sv-pdp__dl">
+                    {%- if shrinkage != blank -%}<dt>Shrinkage</dt><dd>{{ shrinkage }}</dd>{%- endif -%}
+                    {%- if colourfastness != blank -%}<dt>Colourfastness</dt><dd>{{ colourfastness }}</dd>{%- endif -%}
+                  </dl>
+                {%- endif -%}
+              </div>
+            </details>
+          {%- endif -%}
+
+          {%- if cell_fit != blank -%}
+            <details class="sv-acc__item">
+              <summary>Fit</summary>
+              <div class="sv-acc__body"><p>{{ cell_fit | strip }}</p></div>
+            </details>
+          {%- endif -%}
+
+          {%- if care != blank -%}
+            <details class="sv-acc__item">
+              <summary>Care guide</summary>
+              <div class="sv-acc__body"><p>{{ care | newline_to_br }}</p></div>
+            </details>
+          {%- endif -%}
+        </div>
+      </section>
+      {%- endif -%}
+
+      {%- comment -%}
+        ── The numbers (after the details — owner's order, Sep 2026) ────────────────────────────────────────
+        The page's whole argument. Rendered from the json metafields
+        keyed by the product's own size strings; a missing key shows an
+        em dash, NEVER a guess (HANDOFF rule 5).
+
+        chest_cm stores the across measurement, armpit to armpit, and
+        the theme doubles it for display — DATA-MODEL §4 states this
+        explicitly, so the doubling lives here and the notebook figure
+        goes into Admin unchanged.
+      {%- endcomment -%}
+      <section class="sv-pdp__band" id="sv-pdp-measure-{{ section.id }}" tabindex="-1">
+        <span class="num" aria-hidden="true"></span>
+        <h2 class="sv-pdp__h2">
+          {%- if has_measurements or measure_note != blank or size_chart == blank -%}This garment&rsquo;s measurements{%- else -%}Size guide{%- endif -%}
+        </h2>
+
+        {%- if has_measurements -%}
+          <div class="sv-pdp__tablewrap">
+            <table class="sv-pdp__table">
+              <caption class="sv-visually-hidden">Chest and length in centimetres for each size of {{ product.title }}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Size</th>
+                  <th scope="col">Chest (cm)</th>
+                  <th scope="col">Length (cm)</th>
+                  <th scope="col">Availability</th>
+                </tr>
+              </thead>
+              <tbody>
+                {%- for v in product.variants -%}
+                  {%- liquid
+                    assign chest_val = chest_cm[v.title]
+                    assign length_val = length_cm[v.title]
+                  -%}
+                  <tr
+                    data-sv-row="{{ v.id }}"
+                    {% if v.id == variant.id %}class="is-on"{% endif %}
+                  >
+                    <th scope="row">{{ v.title }}</th>
+                    <td>{% if chest_val %}{{ chest_val | times: 2 }}{% else %}&mdash;{% endif %}</td>
+                    <td>{% if length_val %}{{ length_val }}{% else %}&mdash;{% endif %}</td>
+                    <td>{% if v.available %}In stock{% else %}Sold out{% endif %}</td>
+                  </tr>
+                {%- endfor -%}
+              </tbody>
+            </table>
+          </div>
+          <p class="sv-pdp__caption sv-fine">
+            Measurements are of the garment laid flat, measured across and
+            doubled &mdash; not of the body &mdash; and may vary by 1&ndash;2 cm
+            between styles. An em dash means we have not measured that size yet
+            and would rather say so than estimate.
+          </p>
+        {%- elsif measure_note != blank -%}
+          {%- comment -%}
+            Fallback. The per-size json is not populated yet, so the
+            free-text note renders verbatim rather than being parsed into
+            a table — DATA-MODEL §3.0.1 is explicit that a text blob must
+            not drive the chart, because it breaks silently the moment
+            someone types it differently.
+          {%- endcomment -%}
+          <div class="note sv-pdp__note">{{ measure_note | newline_to_br }}</div>
+          <p class="sv-pdp__caption sv-fine">
+            Measurements are of the garment laid flat, not of the body, and may
+            vary by 1&ndash;2 cm between styles.
+          </p>
+        {%- elsif size_chart == blank -%}
+          <p class="sv-pdp__caption sv-fine">
+            We have not published measurements for this design yet. Send us your
+            child&rsquo;s chest and height on WhatsApp and we will tell you which
+            size to order.
+          </p>
+        {%- endif -%}
+
+        {%- comment -%}
+          The product's size chart (custom.size_chart, an image set per
+          product in Admin). Shown here in the band, and the same image
+          opens full-size from the "Size chart" link by the size stepper.
+        {%- endcomment -%}
+        {%- if size_chart != blank -%}
+          <button type="button" class="sv-pdp__chartfig" data-sv-chart-open aria-label="Open the size chart full size">
+            {{
+              size_chart
+              | image_url: width: 1200
+              | image_tag:
+                widths: '480, 720, 960, 1200',
+                sizes: '(max-width: 880px) 92vw, 560px',
+                loading: 'lazy',
+                alt: size_chart.alt | default: 'Size chart' | escape
+            }}
+          </button>
+        {%- endif -%}
+      </section>
+
+      {%- comment -%}
+        ── Complete the set ────────────────────────────────────────
+        §6.8 element 14 specifies a checkbox cross-sell. Rendered here as
+        linked cards instead, deliberately: a checkbox adds a garment to
+        the bag without a size being chosen, and this is the one page
+        whose stated job is to stop exactly that. Each card carries its
+        own size run so the choice is informed before the jump.
+        Renders nothing when the metafield is empty.
+      {%- endcomment -%}
+      {%- if set_items.size > 0 -%}
+        <section class="sv-pdp__band">
+          <span class="num" aria-hidden="true"></span>
+          <h2 class="sv-pdp__h2">Completes the set</h2>
+          <p class="sv-pdp__lead">Add and save on the same parcel.</p>
+          <ul class="sv-pdp__set" role="list">
+            {%- for item in set_items -%}
+              {%- if item.handle == blank -%}{%- continue -%}{%- endif -%}
+              <li class="sv-pdp__setitem">
+                <a class="sv-pdp__setlink" href="{{ item.url }}">
+                  <div class="im r-product">
+                    {%- if item.featured_media -%}
+                      {{
+                        item.featured_media.preview_image
+                        | image_url: width: 600
+                        | image_tag:
+                          widths: '200, 300, 450, 600',
+                          sizes: '(max-width: 760px) 44vw, 220px',
+                          loading: 'lazy',
+                          alt: item.title | escape
+                      }}
+                    {%- endif -%}
+                  </div>
+                  <span class="sv-pdp__setname">{{ item.title }}</span>
+                  <span class="sv-pdp__setprice">{{ item.price | money }}</span>
+                </a>
+                {%- render 'sv-size-run', product: item -%}
+              </li>
+            {%- endfor -%}
+          </ul>
+        </section>
+      {%- endif -%}
+
+      {%- comment -%}
+        ── The filed record ────────────────────────────────────────
+        Legal Metrology (§6.8 element 11). Every value from a metafield;
+        the MRP from the variant itself. Set small and filed rather than
+        hidden, because it is a statutory disclosure and a closed panel
+        is not a disclosure.
+      {%- endcomment -%}
+      <aside class="sv-pdp__filed" aria-label="Product and manufacturer information">
+        <div class="sv-pdp__filedhead">
+          <span class="lab lab--grey">On record</span>
+          {%- if design_code != blank -%}
+            <span class="sv-pdp__filedref sv-fine sv-fine--caps">{{ design_code }}</span>
+          {%- endif -%}
+        </div>
+
+        <dl class="sv-pdp__legal sv-fine">
+          {%- if manufacturer != blank -%}
+            <div><dt>Manufactured and packed by</dt><dd>{{ manufacturer | newline_to_br }}</dd></div>
+          {%- endif -%}
+          {%- if country != blank -%}
+            <div><dt>Country of origin</dt><dd>{{ country }}</dd></div>
+          {%- endif -%}
+          {%- if product.type != blank -%}
+            <div><dt>Common name</dt><dd>{{ product.type }}</dd></div>
+          {%- endif -%}
+          {%- if net_quantity != blank -%}
+            <div><dt>Net quantity</dt><dd>{{ net_quantity }}</dd></div>
+          {%- endif -%}
+          <div><dt>MRP</dt><dd data-sv-mrp>{{ variant.price | money }} inclusive of all taxes</dd></div>
+          {%- if support_email != blank -%}
+            <div><dt>Customer care</dt><dd><a href="mailto:{{ support_email }}">{{ support_email }}</a></dd></div>
+          {%- endif -%}
+        </dl>
+      </aside>
+    </div>
+  </div>
+
+  {%- comment -%}
+    ── Sticky bar, mobile ──────────────────────────────────────────
+    §6.8 element 6. Outside the form and bound to it by the `form`
+    attribute, so there is one form and one source of truth for the
+    selected variant — never a duplicated mobile DOM.
+
+    Hidden until the real Add button scrolls out of view; the observer
+    lives in sv-product.js and is an IntersectionObserver, not a scroll
+    listener.
+  {%- endcomment -%}
+  {%- if size_chart != blank -%}
+    <dialog class="sv-chart" data-sv-chart aria-label="Size chart">
+      <form method="dialog" class="sv-chart__panel">
+        <button type="submit" class="sv-chart__x" aria-label="Close">{% render 'sv-icon', name: 'close' %}</button>
+        {{
+          size_chart
+          | image_url: width: 1400
+          | image_tag:
+            widths: '720, 1024, 1400',
+            sizes: '(max-width: 760px) 94vw, 640px',
+            loading: 'lazy',
+            alt: size_chart.alt | default: 'Size chart' | escape
+        }}
+      </form>
+    </dialog>
+  {%- endif -%}
+
+  {%- comment -%}
+    ── Age picker (the lunabee popup, adapted) ───────────────────────
+    Opens once for a visitor who lands on a product WITHOUT having
+    chosen an age — not arriving from an age collection, no ?variant in
+    the link, and nothing stored yet. The choice is kept on the device
+    (localStorage `sv_age`) and pre-selects the matching size on every
+    product after, where a "Shopping for … · change" line reopens it.
+
+    Single choice, unlike lunabee's multi-select: on a product page one
+    child is being dressed at a time, and one answer maps to one size.
+    Bands come from the section setting so they can follow the menu.
+  {%- endcomment -%}
+  {%- if section.settings.age_popup and product.has_only_default_variant == false -%}
+    <dialog class="sv-agepick" data-sv-age data-skip-collections="{{ section.settings.age_collections | escape }}" aria-labelledby="sv-age-h-{{ section.id }}">
+      <form method="dialog" class="sv-agepick__panel">
+        <h2 class="sv-agepick__h" id="sv-age-h-{{ section.id }}">What size are you shopping for?</h2>
+        <p class="sv-agepick__sub">Pick your child&rsquo;s age &mdash; we&rsquo;ll pre-select the right size on every design.</p>
+        <div class="sv-agepick__chips" role="radiogroup" aria-label="Age">
+          {%- for band in bands -%}
+            {%- assign b = band | strip -%}
+            {%- if b == blank -%}{%- continue -%}{%- endif -%}
+            <button type="button" class="sv-agepick__chip" role="radio" aria-checked="false" data-sv-age-band="{{ b | escape }}">{{ b }}</button>
+          {%- endfor -%}
+        </div>
+        <div class="sv-agepick__actions">
+          <button type="button" class="btn sv-agepick__ok" data-sv-age-ok disabled>Show my size</button>
+          <button type="button" class="btn btn--ghost sv-agepick__all" data-sv-age-all>Show all sizes</button>
+        </div>
+        <button type="button" class="sv-agepick__x" data-sv-age-all aria-label="Close">{% render 'sv-icon', name: 'close' %}</button>
+      </form>
+    </dialog>
+  {%- endif -%}
+
+  <div class="sv-pdp__bar" data-sv-bar hidden>
+    {%- if product.featured_image -%}
+      <span class="sv-pdp__barthumb">{{ product.featured_image | image_url: width: 120 | image_tag: loading: 'lazy', alt: '', widths: '60, 120', sizes: '56px' }}</span>
+    {%- endif -%}
+    <div class="sv-pdp__barinfo">
+      <span class="sv-pdp__barname">{{ product.title }}</span>
+      <span class="sv-pdp__barprice" data-sv-bar-price>{{ variant.price | money }}</span>
+    </div>
+    {%- comment -%}
+      Desktop only: a size select that drives the SAME size buttons (the
+      script calls their select()), so the form keeps one source of truth.
+      The stepper stays the primary control; this is a convenience once
+      it has scrolled away.
+    {%- endcomment -%}
+    {%- unless product.has_only_default_variant -%}
+      <label class="sv-visually-hidden" for="{{ form_id }}-barsize">Size</label>
+      <select id="{{ form_id }}-barsize" class="sv-pdp__barsize" data-sv-bar-size>
+        {%- for v in product.variants -%}
+          <option value="{{ v.id }}" {% if v.id == variant.id %}selected{% endif %}>{{ v.title | replace: '-', '–' }}{% unless v.available %} — sold out{% endunless %}</option>
+        {%- endfor -%}
+      </select>
+    {%- endunless -%}
+    <button
+      type="submit"
+      form="{{ form_id }}"
+      class="btn sv-pdp__baradd"
+      data-sv-bar-add
+      {% unless variant.available %}disabled{% endunless %}
+    >
+      <span data-sv-bar-label>{% if variant.available %}Add to bag{% else %}Sold out{% endif %}</span>
+    </button>
+  </div>
+</section>
+
+<script src="{{ 'sv-product.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "SV Product",
+  "tag": "section",
+  "class": "sv-pdp-section",
+  "settings": [
+    {
+      "type": "select",
+      "id": "step_run",
+      "label": "Size stepper shows",
+      "options": [
+        {
+          "value": "own",
+          "label": "Only this design's sizes"
+        },
+        {
+          "value": "group",
+          "label": "Whole age group, others greyed"
+        },
+        {
+          "value": "all",
+          "label": "Every age band, others greyed"
+        }
+      ],
+      "default": "own",
+      "info": "Default lists exactly the sizes added to each product. The other two also show ages the design isn't made in, greyed."
+    },
+    {
+      "type": "header",
+      "content": "Age picker popup"
+    },
+    {
+      "type": "checkbox",
+      "id": "age_popup",
+      "label": "Ask for the child's age on first visit",
+      "default": true
+    },
+    {
+      "type": "textarea",
+      "id": "age_bands",
+      "label": "Age choices",
+      "info": "Comma-separated, e.g. 0–3 m, 3–6 m, 2–3 y. Use m for months and y for years.",
+      "default": "0–3 m, 3–6 m, 6–9 m, 9–12 m, 12–18 m, 18–24 m, 2–3 y, 3–4 y, 4–5 y, 5–6 y, 6–7 y, 7–8 y"
+    },
+    {
+      "type": "text",
+      "id": "age_collections",
+      "label": "Age collections (no popup when arriving from these)",
+      "info": "Collection handles, comma-separated.",
+      "default": "newborn-0-12-months,toddler-1-3-years,kids-3-6-years,big-kids-6-8-years"
+    }
+  ],
+  "presets": [
+    {
+      "name": "SV Product"
+    }
+  ]
+}
+{% endschema %}

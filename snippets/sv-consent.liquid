@@ -1,0 +1,191 @@
+{%- comment -%}
+  Brand skin for Shopify's own cookie-consent banner and its "Manage
+  preferences" dialog (owner's direction, Sep 2026). Nothing renders from
+  this snippet: it exists for its {% stylesheet %}, which Shopify bundles
+  into the theme's compiled stylesheet on every page.
+
+  The banner is Shopify's markup, injected at runtime with its own <style>
+  tag placed AFTER ours, so every rule here is prefixed `html body` to win
+  on specificity rather than on order. The WORDS come from Admin →
+  Settings → Customer privacy → Cookie banner; only the look lives here.
+
+  Consent rule kept: Accept and Decline are the same size and weight of
+  presence — Decline is outlined, never shrunk to a text link.
+{%- endcomment -%}
+
+{% stylesheet %}
+  /* ── banner: a floating card, bottom-left on desktop ─────────────── */
+  html body .shopify-pc__banner__dialog {
+    left: 24px;
+    right: auto;
+    bottom: 24px;
+    width: min(440px, calc(100vw - 32px));
+    padding: 26px 26px 22px;
+    border-radius: var(--r-card, 24px);
+    background-color: var(--card, #fffdf8);
+    border: 1px solid var(--cream-2, #f2ede1);
+    box-shadow: var(--sh-l, 0 30px 80px -28px rgba(26, 26, 26, 0.28));
+    font-family: var(--sans, 'Jost', system-ui, sans-serif);
+  }
+
+  html body .shopify-pc__banner__wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+  }
+
+  html body .shopify-pc__banner__dialog h2 {
+    margin: 0 0 8px;
+    font-family: var(--serif, 'EB Garamond', Georgia, serif);
+    font-size: 1.45rem;
+    font-weight: 500;
+    line-height: 1.15;
+    color: var(--ink, #1a1a1a);
+  }
+
+  html body .shopify-pc__banner__dialog p {
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--grey, #7c776d);
+  }
+
+  html body .shopify-pc__banner__dialog a {
+    color: var(--emerald, #14524a);
+    text-underline-offset: 3px;
+  }
+
+  /* Buttons: Accept filled emerald, Decline outlined — equal size, side
+     by side; Manage preferences a quiet link on its own line above. */
+  html body .shopify-pc__banner__btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  html body .shopify-pc__banner__dialog button {
+    margin: 0;
+    padding: 13px 16px;
+    border-radius: 999px;
+    font-family: var(--sans, 'Jost', system-ui, sans-serif);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  html body .shopify-pc__banner__dialog button:focus-visible {
+    box-shadow: 0 0 0 3px var(--tan, #c6a15b);
+  }
+
+  html body .shopify-pc__banner__dialog button.shopify-pc__banner__btn-manage-prefs {
+    grid-column: 1 / -1;
+    order: -1;
+    justify-self: start;
+    padding: 0 0 2px;
+    border-radius: 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: var(--emerald, #14524a);
+  }
+
+  html body .shopify-pc__banner__dialog button.shopify-pc__banner__btn-accept {
+    background: var(--emerald, #14524a);
+    border: 1px solid var(--emerald, #14524a);
+    color: var(--cream, #fbf7ef);
+  }
+
+  html body .shopify-pc__banner__dialog button.shopify-pc__banner__btn-accept:hover {
+    background: var(--emerald-d, #0e3b34);
+    border-color: var(--emerald-d, #0e3b34);
+  }
+
+  html body .shopify-pc__banner__dialog button.shopify-pc__banner__btn-decline {
+    background: transparent;
+    border: 1px solid var(--emerald, #14524a);
+    color: var(--emerald, #14524a);
+  }
+
+  html body .shopify-pc__banner__dialog button.shopify-pc__banner__btn-decline:hover {
+    background: var(--emerald, #14524a);
+    color: var(--cream, #fbf7ef);
+  }
+
+  /* Phones: full width with the page gutter, lifted clear of the
+     mobile bottom bar (sv-footer publishes its height as --sv-bbar). */
+  @media (max-width: 880px) {
+    html body .shopify-pc__banner__dialog {
+      left: 16px;
+      right: 16px;
+      bottom: calc(var(--sv-bbar, 0px) + 12px);
+      width: auto;
+      max-height: calc(100dvh - var(--sv-bbar, 0px) - 32px);
+      padding: 22px 20px 18px;
+      border-radius: 20px;
+    }
+  }
+
+  /* ── "Manage preferences" dialog ─────────────────────────────────── */
+  html body .shopify-pc__prefs__overlay {
+    background: rgba(26, 26, 26, 0.5);
+  }
+
+  html body .shopify-pc__prefs__dialog {
+    border-radius: var(--r-card, 24px);
+    background: var(--card, #fffdf8);
+    color: var(--ink, #1a1a1a);
+    font-family: var(--sans, 'Jost', system-ui, sans-serif);
+    box-shadow: var(--sh-l, 0 30px 80px -28px rgba(26, 26, 26, 0.28));
+    overflow: hidden;
+  }
+
+  html body .shopify-pc__prefs__dialog header {
+    background: var(--cream, #fbf7ef);
+    border-bottom: 1px solid var(--cream-2, #f2ede1);
+  }
+
+  html body .shopify-pc__prefs__dialog h2,
+  html body .shopify-pc__prefs__dialog h3 {
+    font-family: var(--serif, 'EB Garamond', Georgia, serif);
+    font-weight: 500;
+    color: var(--ink, #1a1a1a);
+  }
+
+  html body .shopify-pc__prefs__dialog p {
+    color: var(--grey, #7c776d);
+    line-height: 1.6;
+  }
+
+  html body .shopify-pc__prefs__dialog label {
+    font-weight: 600;
+    color: var(--ink, #1a1a1a);
+  }
+
+  html body .shopify-pc__prefs__header-actions button {
+    border-radius: 999px;
+    font-family: var(--sans, 'Jost', system-ui, sans-serif);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid var(--emerald, #14524a);
+    background: transparent;
+    color: var(--emerald, #14524a);
+  }
+
+  html body .shopify-pc__prefs__header-actions button:hover {
+    background: var(--emerald, #14524a);
+    color: var(--cream, #fbf7ef);
+  }
+
+  html body .shopify-pc__prefs__header-actions #shopify-pc__prefs__header-save {
+    background: var(--emerald, #14524a);
+    color: var(--cream, #fbf7ef);
+  }
+
+  html body .shopify-pc__prefs__option {
+    border-color: var(--cream-2, #f2ede1);
+  }
+{% endstylesheet %}

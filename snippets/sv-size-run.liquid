@@ -1,0 +1,98 @@
+{% doc %}
+  The size promise, computed at render — DATA-MODEL.md §7.1.
+
+  "Every size, always" is the brand's central claim, so it is computed from
+  inventory on every render and never stored. Always visible, never behind
+  hover: mobile has no hover, and size availability is a purchase decision.
+
+  ── The denominator is this product's own variant count, not five ──────
+  DATA-MODEL §7.1 hard-codes 5, written when the size run was fixed at five
+  canonical strings. The live catalogue does not match that: the size guide
+  runs S1–S9 (0–6m to 7–8y) and the products carry three to five variants
+  each. Against that data a hard 5 renders "3 of 5 sizes available" on a
+  frock that was only ever made in three — a false claim on the one page
+  whose job is to prevent a wrong order.
+
+  Counting against the product's own run is true under either scheme: it
+  still reads "All 5 sizes available" for a five-size design, and it stays
+  honest for every other. If the five-size rule is ever enforced across the
+  catalogue this needs no change.
+
+  Renders NOTHING for a product with no variants.
+
+  @param {object} product - the product to count
+  @param {string} [class] - extra classes on the line
+
+  @example
+  {% render 'sv-size-run', product: product %}
+{% enddoc %}
+
+{%- liquid
+  assign total = product.variants.size
+  assign in_stock = 0
+  for v in product.variants
+    if v.available
+      assign in_stock = in_stock | plus: 1
+    endif
+  endfor
+-%}
+
+{%- if total > 0 -%}
+  {%- if in_stock == 0 -%}
+    <p class="sv-run sv-run--out {{ class }}">
+      {%- if total == 1 -%}Sold out{%- else -%}Sold out in every size{%- endif -%}
+    </p>
+  {%- elsif in_stock == total -%}
+    <p class="sv-run sv-run--full {{ class }}">
+      {%- if total == 1 -%}In stock{%- else -%}All {{ total }} sizes available{%- endif -%}
+    </p>
+  {%- else -%}
+    <p class="sv-run sv-run--partial {{ class }}">{{ in_stock }} of {{ total }} sizes available</p>
+  {%- endif -%}
+{%- endif -%}
+
+{% stylesheet %}
+  /* Three states, three weights of the same line. The full state is the
+     claim, so it carries the gold mark; partial is plain ink; sold out is
+     the warm grey, stated without alarm. */
+  [data-sv] .sv-run {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    max-width: none;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+
+  .sv-run::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--tan);
+  }
+
+  [data-sv] .sv-run--partial {
+    color: var(--grey);
+  }
+
+  .sv-run--partial::before {
+    background: var(--grey);
+    opacity: 0.5;
+  }
+
+  [data-sv] .sv-run--out {
+    color: var(--grey);
+  }
+
+  .sv-run--out::before {
+    background: transparent;
+    border: 1px solid var(--grey);
+    opacity: 0.6;
+  }
+{% endstylesheet %}

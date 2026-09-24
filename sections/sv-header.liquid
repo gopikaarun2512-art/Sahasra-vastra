@@ -1,0 +1,752 @@
+{% doc %}
+  Header — ARCHITECTURE.md §6.2 · T-051, T-008, T-045 (text-roll).
+
+  Re-skinned (Sep 2026, owner's direction): every page now wears the
+  homepage's pill nav — the emblem standing alone, the link capsule, the
+  Catalogue pill and the search/cart roundels — so the chrome is ONE design
+  on both grounds. Values are copied from sv-hero-video's pill nav; only
+  the pills wear the brand emerald here (owner's direction, Sep 2026)
+  rather than the hero's dark film glass.
+
+  Scroll state still comes from an IntersectionObserver on a zero-height
+  sentinel via sv-motion.js ([data-header]/[data-header-sentinel]); the
+  pills carry their own ground, so the header bar itself stays transparent
+  in both states. No scroll listeners anywhere.
+
+  Navigation renders whatever menu Shopify holds. Menus are business data
+  and belong to the store owner.
+{% enddoc %}
+
+{%- liquid
+  assign menu = linklists[section.settings.menu]
+-%}
+
+{%- comment -%}
+  The skip link is rendered in layout/theme.liquid, not here — it must be the
+  first focusable element in the document.
+{%- endcomment -%}
+
+{%- comment -%}
+  Site typography — ONE pair on every page (owner's direction, 22 Sep
+  2026): Georgia for headings, prices and display text; the device's
+  own system font for everything else (San Francisco on Apple, Segoe UI
+  on Windows, Roboto on Android). Tried and rejected the same day: Jost +
+  EB Garamond, then Inter. Set here because this header renders first on
+  every template.
+
+  · --serif: Georgia (Mac, iOS, Windows). Android has no Georgia, so
+    Gelasio — a metric-compatible Georgia design, OFL, one variable woff2
+    in assets — sits behind it and downloads only where Georgia is missing.
+  · --sans and Horizon's body/subheading/accent variables all point at
+    the system stack, so collection, search and blog pages match the
+    rebuilt ones. No text font is downloaded at all.
+  · sv-system.css still names Jost/EB Garamond; these :root values
+    override it because this rule comes later in the document.
+{%- endcomment -%}
+<style>
+  @font-face {
+    font-family: 'Gelasio';
+    src: url("{{ 'sv-gelasio.woff2' | asset_url }}") format('woff2');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Gelasio';
+    src: url("{{ 'sv-gelasio-italic.woff2' | asset_url }}") format('woff2');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+  }
+  :root {
+    --sv-system: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --sv-georgia: Georgia, 'Gelasio', 'Times New Roman', serif;
+    --sans: var(--sv-system);
+    --serif: var(--sv-georgia);
+    --font-body--family: var(--sv-system);
+    --font-subheading--family: var(--sv-system);
+    --font-accent--family: var(--sv-system);
+    --font-heading--family: var(--sv-georgia);
+  }
+  /* Browsers give form controls their own font (Arial); zero specificity,
+     so any control that names a font still wins. */
+  :where(button, input, select, textarea) {
+    font-family: inherit;
+  }
+</style>
+
+<div data-header-sentinel aria-hidden="true"></div>
+
+<header class="sv-header" data-header data-sv>
+  <div class="sv-header__inner w w--wide">
+    {%- comment -%}
+      The mark stands alone — no pill, no ground (hero rule). Below 64px
+      the 24-petal emblem blurs; the 8-path simple variant is the same
+      mark drawn for small sizes (brand system §2).
+    {%- endcomment -%}
+    <a class="sv-header__mark" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+      <img src="{{ 'emblem-colour.svg' | asset_url }}" alt="" width="68" height="68">
+    </a>
+
+    {%- if menu.links.size > 0 -%}
+      <nav class="sv-header__pill" aria-label="{{ menu.title | escape }}">
+        {%- for link in menu.links -%}
+          <div class="sv-header__item">
+            {%- comment -%}
+              aria-label repeats the visible label exactly (WCAG 2.5.3); the
+              text-roll splits it across two spans and the duplicated span
+              carries aria-hidden.
+            {%- endcomment -%}
+            <a class="sv-header__link" href="{{ link.url }}" aria-label="{{ link.title | escape }}" {% if link.current %}aria-current="page"{% endif %}>
+              <span class="roll">
+                <span>{{ link.title }}</span>
+                <span aria-hidden="true">{{ link.title }}</span>
+              </span>
+            </a>
+
+            {%- if link.links.size > 0 -%}
+              {%- comment -%}
+                Shop by Age carries a third level, and stacking every size
+                under every age made a panel taller than the window. The
+                ages become a column and the sizes fly out beside the one
+                being read — one age's run at a time, the whole list never
+                more than a glance deep. A menu without a third level is
+                untouched and stays the plain column it always was.
+              {%- endcomment -%}
+              {%- liquid
+                assign split = false
+                for child in link.links
+                  if child.links.size > 0
+                    assign split = true
+                    break
+                  endif
+                endfor
+              -%}
+              <ul class="sv-header__sub{% if split %} sv-header__sub--split{% endif %}">
+                {%- for child in link.links -%}
+                  <li class="sv-header__group{% if forloop.first %} is-first{% endif %}">
+                    <a class="sv-header__sub-link" href="{{ child.url }}">
+                      {{ child.title }}
+                      {%- if child.links.size > 0 -%}
+                        <svg class="sv-header__caret" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg>
+                      {%- endif -%}
+                    </a>
+                    {%- if child.links.size > 0 -%}
+                      <div class="sv-header__flyout">
+                        <p class="sv-header__flyout-head">{{ child.title }}</p>
+                        <ul class="sv-header__chips" aria-label="{{ child.title | escape }}">
+                          {%- for grandchild in child.links -%}
+                            <li><a class="sv-header__chip" href="{{ grandchild.url }}">{{ grandchild.title }}</a></li>
+                          {%- endfor -%}
+                        </ul>
+                      </div>
+                    {%- endif -%}
+                  </li>
+                {%- endfor -%}
+              </ul>
+            {%- endif -%}
+          </div>
+        {%- endfor -%}
+      </nav>
+    {%- endif -%}
+
+    <div class="sv-header__side">
+      {%- comment -%}
+        Mobile navigation. <details> is a native disclosure: keyboard
+        operable, announced by screen readers, no JavaScript.
+      {%- endcomment -%}
+      <details class="sv-header__drawer">
+        <summary class="sv-header__roundbtn" aria-label="{{ 'accessibility.menu' | t | default: 'Menu' }}">
+          {% render 'sv-icon', name: 'menu', class: 'sv-header__glyph sv-header__glyph--open' %}
+          {% render 'sv-icon', name: 'close', class: 'sv-header__glyph sv-header__glyph--close' %}
+        </summary>
+
+        <nav class="sv-header__sheet" aria-label="{{ menu.title | escape }}">
+          <ul class="sv-header__sheet-list">
+            {%- for link in menu.links -%}
+              <li>
+                <a class="act sv-header__sheet-link" href="{{ link.url }}">{{ link.title }}</a>
+                {%- if link.links.size > 0 -%}
+                  <ul class="sv-header__sheet-sub">
+                    {%- for child in link.links -%}
+                      <li>
+                        <a class="sv-header__sheet-child" href="{{ child.url }}">{{ child.title }}</a>
+                        {%- if child.links.size > 0 -%}
+                          <ul class="sv-header__chips sv-header__chips--sheet" aria-label="{{ child.title | escape }}">
+                            {%- for grandchild in child.links -%}
+                              <li><a class="sv-header__chip" href="{{ grandchild.url }}">{{ grandchild.title }}</a></li>
+                            {%- endfor -%}
+                          </ul>
+                        {%- endif -%}
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+                {%- endif -%}
+              </li>
+            {%- endfor -%}
+            {%- comment -%}
+              The sheet is the phone's full navigation, so the account
+              entry lives here too — the label says which door it is.
+            {%- endcomment -%}
+            <li>
+              <a class="act sv-header__sheet-link" href="{{ routes.root_url | append: 'pages/wishlist' | replace: '//', '/' }}">Wishlist</a>
+            </li>
+            <li>
+              <a class="act sv-header__sheet-link" href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}">
+                {%- if customer -%}
+                  {{ 'accessibility.account' | t | default: 'Account' }}
+                {%- else -%}
+                  {{ 'actions.log_in' | t | default: 'Sign in' }}
+                {%- endif -%}
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </details>
+
+      {%- if section.settings.cta_label != blank -%}
+        <a class="sv-header__cta" href="{{ section.settings.cta_url | default: routes.all_products_collection_url }}">{{ section.settings.cta_label }}</a>
+      {%- endif -%}
+
+      <a class="sv-header__roundbtn" href="{{ routes.search_url }}" aria-label="{{ 'accessibility.search' | t | default: 'Search' }}">
+        {% render 'sv-icon', name: 'search' %}
+      </a>
+
+      {%- comment -%}
+        Account entry (new customer accounts: routes.account_url and
+        routes.account_login_url both land on the hosted passwordless
+        pages at account.sahasravastra.com). Desktop only — on phones the
+        bottom bar already owns Account, and a fourth roundel would crowd
+        the row.
+      {%- endcomment -%}
+      <a class="sv-header__roundbtn sv-header__roundbtn--account" href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}" aria-label="{% if customer %}{{ 'accessibility.account' | t | default: 'Account' }}{% else %}{{ 'actions.log_in' | t | default: 'Sign in' }}{% endif %}">
+        {% render 'sv-icon', name: 'account' %}
+      </a>
+
+      {%- comment -%} Wishlist, beside the cart. Desktop, like Account — phones reach it from the menu sheet. {%- endcomment -%}
+      {% render 'sv-saved-link', class: 'sv-header__roundbtn sv-header__roundbtn--account' %}
+
+      <a class="sv-header__roundbtn" href="{{ routes.cart_url }}" aria-label="{{ 'accessibility.cart_count' | t: count: cart.item_count }}">
+        {% render 'sv-icon', name: 'cart' %}
+        {%- if cart.item_count > 0 -%}
+          <span class="sv-header__count" aria-hidden="true">{{ cart.item_count }}</span>
+        {%- endif -%}
+      </a>
+    </div>
+  </div>
+</header>
+
+<script>
+  (() => {
+    const header = document.querySelector('.sv-header');
+    const side = header && header.querySelector('.sv-header__side');
+    const inner = header && header.querySelector('.sv-header__inner');
+    if (!side || !inner || !('ResizeObserver' in window)) return;
+    const set = () => {
+      header.style.setProperty('--sv-side-reserve', '0px');
+      if (!window.matchMedia('(min-width: 1080px)').matches) return;
+      /* With the reserve at 0 the padding is .w's gutter; how far does the
+         cluster reach into the column from there? */
+      const box = inner.getBoundingClientRect();
+      const reach = box.right - (side.getBoundingClientRect().left - 16);
+      if (reach > 0) header.style.setProperty('--sv-side-reserve', reach + 'px');
+    };
+    const ro = new ResizeObserver(set);
+    ro.observe(side);
+    ro.observe(document.documentElement);
+    set();
+  })();
+</script>
+
+{% stylesheet %}
+  /* Colour and spacing are tokens only. The pill values mirror
+     sv-hero-video's nav: Jost 600 / 0.76rem / 0.14em, 999px capsules,
+     54px roundels — one chrome, both grounds. */
+
+  /* The whole header group sticks (announcement + pills), matching the
+     homepage's fixed chrome. Sticky sits on the GROUP: the header alone is
+     trapped inside #header-group's own height and would scroll away. On
+     the homepage the group is empty (the hero hides both members), so the
+     sticky wrapper is inert there. */
+  #header-group {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+  }
+
+  /* A standing cream wash — over the page top it vanishes into the ivory
+     ground, over scrolled content it keeps text from threading between
+     the pills. Unconditional: the scroll sentinel sticks with the group,
+     so a toggled state could never fire. No backdrop-filter here — a
+     filter would make the header the containing block for the drawer's
+     position:fixed sheet. */
+  [data-sv].sv-header {
+    background: rgba(251, 247, 239, 0.96);
+    padding: var(--a) 0;
+  }
+
+  .sv-header__inner {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--a);
+  }
+
+  .sv-header__mark {
+    display: block;
+    justify-self: start;
+  }
+
+  .sv-header__mark img {
+    /* Matches the capsule's height, per the owner. Horizon's global
+       max-width cap resolves circularly in the shrink-to-fit grid cell
+       and collapsed the mark — released explicitly. */
+    width: 68px;
+    height: 68px;
+    max-width: none;
+    display: block;
+    transition: transform 0.7s var(--e);
+  }
+
+  .sv-header__mark:hover img {
+    transform: rotate(120deg) scale(1.06);
+  }
+
+  /* The capsule, in the brand emerald. */
+  .sv-header__pill {
+    display: none;
+    justify-self: center;
+    align-items: center;
+    gap: 2px;
+    padding: 7px;
+    border-radius: 999px;
+    background: var(--emerald);
+    border: 1px solid rgba(251, 247, 239, 0.22);
+  }
+
+  .sv-header__item {
+    position: relative;
+  }
+
+  [data-sv] .sv-header__link {
+    display: block;
+    font-family: var(--sans);
+    font-weight: 600;
+    /* Matches the hero nav, which is set to the hero cards' text size. */
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1.15;
+    color: var(--cream);
+    text-decoration: none;
+    padding: 15px 24px;
+    border-radius: 999px;
+    transition: background 0.3s ease, color 0.3s ease;
+    white-space: nowrap;
+  }
+
+  [data-sv] .sv-header__link:hover,
+  [data-sv] .sv-header__link:focus-visible {
+    background: var(--cream);
+    color: var(--ink);
+  }
+
+  [data-sv] .sv-header__link:hover .roll > span,
+  [data-sv] .sv-header__link:focus-visible .roll > span {
+    transform: translateY(-1.15em);
+  }
+
+  /* Dropdown: the hero's dark panel. Disclosure, not animation —
+     focus-within keeps it keyboard reachable. */
+  .sv-header__sub {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 70;
+    min-width: max-content;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 22px;
+    background: var(--emerald);
+    border: 1px solid rgba(251, 247, 239, 0.22);
+  }
+
+  .sv-header__item:hover .sv-header__sub,
+  .sv-header__item:focus-within .sv-header__sub {
+    display: block;
+  }
+
+  .sv-header__sub-link {
+    display: block;
+    padding: 11px 18px;
+    border-radius: 14px;
+    color: var(--cream);
+    text-decoration: none;
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .sv-header__sub-link:hover,
+  .sv-header__sub-link:focus-visible {
+    background: rgba(251, 247, 239, 0.16);
+  }
+
+  /* Two panes: ages down the left, the read age's sizes beside them.
+     The flyout is a sibling of the age link, positioned out of the
+     column, so nothing in the left list moves as it opens. */
+  .sv-header__sub--split {
+    padding-right: 10px;
+  }
+
+  .sv-header__group {
+    position: relative;
+  }
+
+  .sv-header__sub-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .sv-header__caret {
+    inline-size: 12px;
+    block-size: 12px;
+    opacity: 0.6;
+    flex: none;
+  }
+
+  .sv-header__flyout {
+    display: none;
+    position: absolute;
+    top: -10px;
+    left: 100%;
+    margin-left: 10px;
+    z-index: 71;
+    width: max-content;
+    /* Wide enough for a whole age's run on one line — three sizes for
+       Toddler, four for Newborn — so a panel never breaks a set across
+       two rows and reads as two groups. */
+    max-width: 480px;
+    padding: 14px 16px 16px;
+    border-radius: 20px;
+    background: var(--emerald);
+    border: 1px solid rgba(251, 247, 239, 0.22);
+  }
+
+  /* Hover or keyboard focus opens an age; with neither, the first age is
+     already open so the panel never reads as half-built. */
+  .sv-header__group:hover > .sv-header__flyout,
+  .sv-header__group:focus-within > .sv-header__flyout,
+  .sv-header__sub--split:not(:hover):not(:focus-within) .sv-header__group.is-first > .sv-header__flyout {
+    display: block;
+  }
+
+  .sv-header__group:hover > .sv-header__sub-link,
+  .sv-header__group:focus-within > .sv-header__sub-link,
+  .sv-header__sub--split:not(:hover):not(:focus-within) .sv-header__group.is-first > .sv-header__sub-link {
+    background: rgba(251, 247, 239, 0.16);
+  }
+
+  .sv-header__flyout-head {
+    margin: 0 0 10px;
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(251, 247, 239, 0.62);
+  }
+
+  /* Third level: size chips under their age row. The panel is sized by
+     its widest row, so chips wrap inside a capped width rather than
+     stretching it. */
+  /* [data-sv] lifts these past sv-system's §02 list reset (0,1,1). */
+  [data-sv] .sv-header__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: 280px;
+    margin: 0;
+    padding: 0 18px 12px;
+    list-style: none;
+  }
+
+  [data-sv] .sv-header__chip {
+    display: block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(251, 247, 239, 0.4);
+    color: var(--cream);
+    text-decoration: none;
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  [data-sv] .sv-header__chip:hover,
+  [data-sv] .sv-header__chip:focus-visible {
+    background: var(--cream);
+    color: var(--ink);
+  }
+
+  /* On the cream sheet the chips take ink. */
+  [data-sv] .sv-header__chips--sheet {
+    max-width: none;
+    padding: 0 0 var(--a);
+  }
+
+  [data-sv] .sv-header__chips--sheet .sv-header__chip {
+    border-color: var(--line, rgba(26, 26, 26, 0.2));
+    color: var(--ink);
+  }
+
+  [data-sv] .sv-header__chips--sheet .sv-header__chip:hover {
+    background: var(--emerald);
+    color: var(--cream);
+  }
+
+  /* The right cluster: Catalogue pill and the roundels. On desktop it
+     leaves the .w grid and anchors to the bar's own corner (owner's
+     call, Sep 2026): the roundels hug the top-right of the SCREEN, not
+     the content column, and the social float below matches — 14px here
+     + 54px roundel and 16px + 50px mark share one centre line. */
+  .sv-header__side {
+    display: flex;
+    align-items: center;
+    gap: var(--a);
+    justify-self: end;
+  }
+  @media (min-width: 1080px) {
+    [data-sv].sv-header {
+      position: relative;
+    }
+    .sv-header__side {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+
+  [data-sv] .sv-header__cta {
+    display: none;
+    align-items: center;
+    height: 54px;
+    padding-inline: 28px;
+    border-radius: 999px;
+    background: var(--emerald);
+    border: 1px solid rgba(251, 247, 239, 0.22);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.76rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cream);
+    text-decoration: none;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  [data-sv] .sv-header__cta:hover {
+    background: var(--cream);
+    color: var(--ink);
+  }
+
+  .sv-header__roundbtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 999px;
+    background: var(--emerald);
+    border: 1px solid rgba(251, 247, 239, 0.22);
+    color: var(--cream);
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s ease;
+  }
+
+  .sv-header__roundbtn:hover {
+    background: var(--emerald-d);
+  }
+
+  /* Phones reach the account through the bottom bar and the menu sheet. */
+  .sv-header__roundbtn--account {
+    display: none;
+  }
+
+  .sv-header__roundbtn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sv-header__count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: var(--a);
+    text-align: center;
+    border-radius: 999px;
+    background: var(--tan);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 0.65rem;
+    line-height: var(--a);
+  }
+
+  /* ── mobile drawer ─────────────────────────────────────────────────── */
+  .sv-header__drawer > summary {
+    list-style: none;
+  }
+
+  .sv-header__drawer > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sv-header__drawer:not([open]) .sv-header__glyph--close,
+  .sv-header__drawer[open] .sv-header__glyph--open {
+    display: none;
+  }
+
+  /* The open sheet is fixed at z-index 80; the summary must ride above it
+     or the close button paints underneath its own overlay. */
+  .sv-header__drawer[open] > summary {
+    z-index: 90;
+  }
+
+  .sv-header__sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: var(--cream);
+    padding: var(--f) var(--b) var(--d);
+    overflow-y: auto;
+  }
+
+  .sv-header__sheet-list > li + li {
+    margin-top: var(--b);
+  }
+
+  .sv-header__sheet-link {
+    display: inline-block;
+  }
+
+  .sv-header__sheet-sub {
+    margin-top: var(--a);
+  }
+
+  .sv-header__sheet-child {
+    display: block;
+    padding: var(--a) 0;
+    color: var(--grey);
+    text-decoration: none;
+    font-family: var(--sans);
+  }
+
+  .sv-header__sheet-child:hover {
+    color: var(--ink);
+  }
+
+  /* ── desktop ───────────────────────────────────────────────────────── */
+  @media (min-width: 1080px) {
+    .sv-header__drawer {
+      display: none;
+    }
+
+    .sv-header__pill {
+      display: flex;
+    }
+
+    [data-sv] .sv-header__cta {
+      display: flex;
+    }
+
+    .sv-header__roundbtn--account {
+      display: flex;
+    }
+  }
+
+  /* Narrow desktop: the full row does not fit beside the emblem, so the
+     labels tighten and the Catalogue pill steps out. Upper bound sized
+     to the full row's own width — raised to 1480 when Saved joined the
+     cluster, measured so the pill never meets the roundels. */
+  /* The right cluster is absolutely placed (it hugs the screen corner),
+     so nothing stops the centred pill from sliding under it. Reserve its
+     width on the inner grid instead — only as much as the cluster
+     actually intrudes into the .w column, measured by the script below
+     as --sv-side-reserve (0 on wide screens) — so the pill never
+     overlaps, however many roundels the cluster holds
+     (Saved joined it in Sep 2026 and caused a 147px overlap at 1280). */
+  @media (min-width: 1080px) {
+    /* Never less than .w's own gutter (--c at this width). */
+    .sv-header__inner {
+      padding-right: max(var(--c), var(--sv-side-reserve, 0px));
+    }
+  }
+
+  /* Desktop layout starts at 1080, not 880 (Sep 2026): measured, the full
+     link row + emblem + roundel cluster needs ~1080px even compacted —
+     at 900 the pill ran 163px under the roundels. 880–1079 now wears
+     the menu-sheet layout. */
+  @media (min-width: 1080px) and (max-width: 1480px) {
+    [data-sv] .sv-header__link {
+      padding: 13px 13px;
+      /* Steps down from the 0.85rem base, in step with the hero nav. */
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+    }
+
+    [data-sv] .sv-header__cta {
+      display: none;
+    }
+
+    .sv-header__roundbtn {
+      width: 46px;
+      height: 46px;
+    }
+
+    .sv-header__mark img {
+      width: 54px;
+      height: 54px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Header",
+  "tag": "section",
+  "enabled_on": {
+    "groups": [
+      "header"
+    ]
+  },
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu",
+      "info": "Edit the menu itself in Content → Menus. The theme renders whatever it holds."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Pill button label",
+      "default": "Catalogue"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "Pill button link",
+      "info": "Defaults to the all-products catalogue when left empty."
+    }
+  ]
+}
+{% endschema %}

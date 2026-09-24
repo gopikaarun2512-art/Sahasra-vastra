@@ -1,0 +1,415 @@
+{% doc %}
+  Shop by age — the first thing the curtain brings up over the film.
+
+  The homepage opens on the film hero, which §08b of sv-system.css pins;
+  this section is the page that arrives over it, and the first question
+  it answers is the first question every parent shopping for a child
+  has: how old? Four ages, four circles, and under each circle the size
+  runs it splits into — a visitor lands on the exact shelf in two taps
+  without ever reading a menu.
+
+  ── Shape ─────────────────────────────────────────────────────────────
+  cat    one block per age band: a circular photograph, the name, the
+         range, then the subdivision chips. Circles rather than cards:
+         the mock the owner supplied uses them, they read as portraits
+         rather than products, and they cannot be mistaken for the
+         product grid that follows one page deeper.
+  subs   up to five label+link pairs per band, each its own setting —
+         explicit pairs rather than a parsed textarea, so Admin can
+         retarget one chip without re-typing the rest, and a blank pair
+         simply doesn't render.
+
+  ── Rules kept ────────────────────────────────────────────────────────
+  Tokens only; type comes from sv-system.css primitives. Motion per
+  §08 — transform and opacity, IntersectionObserver, no scroll
+  listeners; armed by sv-motion-gate as the FIRST child so nothing is
+  painted visible and then pulled to opacity 0, and with script off the
+  section is a complete static document. Links come from Admin settings,
+  never typed here.
+{% enddoc %}
+
+{%- comment -%}
+  The id is an anchor, not decoration: the hero's "Shop by age" card
+  links to #shop-by-age so the card lands on this band rather than
+  tipping the visitor into All products, which answers none of the
+  question the card asks.
+{%- endcomment -%}
+<section id="shop-by-age" class="sv-age sv-amb-host" data-sv>
+
+  {%- render 'sv-motion-gate' -%}
+
+  {%- comment -%}
+    Ambient ground — promoted to the system (§08c + snippets/sv-ambient)
+    once the owner asked for it to run through the page. The host class
+    on the root and the .w column carry the layering contract.
+  {%- endcomment -%}
+  {%- render 'sv-ambient' -%}
+
+  <div class="w w--wide">
+
+    <header class="sv-age__head">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="eyebrow sv-age__eyebrow" data-sv-motion>{{ section.settings.eyebrow }}</p>
+      {%- endif -%}
+      {%- comment -%}
+        The heading is optional — the owner runs this strip on the
+        eyebrow alone. The document keeps its h2 either way: a landmark
+        a sighted visitor doesn't need is still the one a screen-reader
+        user navigates by.
+      {%- endcomment -%}
+      {%- if section.settings.title != blank -%}
+        <h2 class="sv-age__title" data-sv-motion>{{ section.settings.title }}</h2>
+      {%- else -%}
+        <h2 class="sv-visually-hidden">{{ section.settings.eyebrow | default: 'Shop by age' }}</h2>
+      {%- endif -%}
+    </header>
+
+    <div class="sv-age__grid">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign cat_url = block.settings.link
+          if cat_url == blank
+            assign cat_url = routes.all_products_collection_url
+          endif
+        -%}
+        <div class="sv-age__cat" data-sv-motion style="--i: {{ forloop.index0 }}" {{ block.shopify_attributes }}>
+
+          <a class="sv-age__disc" href="{{ cat_url }}" style="--sv-fy: {{ block.settings.focus | default: 20 }}%" aria-label="{{ block.settings.title | escape }}{% if block.settings.range != blank %}, {{ block.settings.range | escape }}{% endif %}">
+            {%- if block.settings.image -%}
+              <img
+                src="{{ block.settings.image | image_url: width: 480 }}"
+                srcset="{{ block.settings.image | image_url: width: 300 }} 300w, {{ block.settings.image | image_url: width: 480 }} 480w, {{ block.settings.image | image_url: width: 720 }} 720w"
+                sizes="(max-width: 760px) 40vw, 240px"
+                alt="{{ block.settings.image.alt | default: block.settings.title | escape }}"
+                width="{{ block.settings.image.width }}"
+                height="{{ block.settings.image.height }}"
+                loading="lazy"
+              >
+            {%- else -%}
+              {%- comment -%} §06's placeholder field, in the round. {%- endcomment -%}
+              <span class="im sv-age__ph" aria-hidden="true"></span>
+            {%- endif -%}
+          </a>
+
+          <h3 class="sv-age__name"><a href="{{ cat_url }}">{{ block.settings.title }}</a></h3>
+
+          {%- if block.settings.range != blank -%}
+            <p class="lab lab--grey sv-age__range">{{ block.settings.range }}</p>
+          {%- endif -%}
+
+          {%- capture subs -%}
+            {%- for i in (1..5) -%}
+              {%- assign lkey = 'sub_' | append: i | append: '_label' -%}
+              {%- assign ukey = 'sub_' | append: i | append: '_url' -%}
+              {%- assign slabel = block.settings[lkey] -%}
+              {%- if slabel != blank -%}
+                {%- assign surl = block.settings[ukey] | default: cat_url -%}
+                <li>
+                  <a class="sv-age__sub" href="{{ surl }}" aria-label="{{ block.settings.title | escape }}, {{ slabel | escape }}">{{ slabel }}</a>
+                </li>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endcapture -%}
+          {%- if subs != blank -%}
+            <ul class="sv-age__subs">{{ subs }}</ul>
+          {%- endif -%}
+
+        </div>
+      {%- endfor -%}
+    </div>
+
+  </div>
+
+  {%- comment -%}
+    Motion driver — sv-about's, verbatim in shape. Reveals once and
+    unobserves; the hidden state exists only under `.sv-motion-ready`,
+    which the gate at the top adds, so a failed script leaves the
+    section fully readable.
+  {%- endcomment -%}
+  <script>
+    (() => {
+      const root = document.currentScript.closest('.sv-age');
+      if (!root) return;
+      const targets = root.querySelectorAll('[data-sv-motion]');
+      if (!('IntersectionObserver' in window) ||
+          matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        targets.forEach(el => el.classList.add('sv-vis'));
+        return;
+      }
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('sv-vis');
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+      targets.forEach(el => io.observe(el));
+
+      /* Fail-safe. A tab loaded in the background defers observer
+         callbacks; anything already on screen shortly after load is
+         shown outright, the observer still governs the rest. */
+      setTimeout(() => {
+        targets.forEach(el => {
+          const r = el.getBoundingClientRect();
+          if (r.top < innerHeight && r.bottom > 0) el.classList.add('sv-vis');
+        });
+      }, 1200);
+    })();
+  </script>
+</section>
+
+{% stylesheet %}
+  /* Tokens only. Specificity note: the §02 reset is (0,1,1), so every
+     rule that must beat it is written .sv-age .sv-age__* at (0,2,0). */
+
+  /* The ambient ground and its layering contract live in sv-system.css
+     §08c (.sv-amb-host on the root, .w lifted above the layer). */
+
+  /* Compact by request: the default section breath (--g, 160px) read as
+     dead ivory at full width, and the band below sits close so the two
+     read as one page. Double class outranks §02's section[data-sv] at
+     (0,1,1). */
+  [data-sv].sv-age {
+    padding: var(--d) 0 var(--b);
+  }
+
+  .sv-age .sv-age__head {
+    text-align: center;
+    margin-bottom: var(--c);
+  }
+  .sv-age .sv-age__title {
+    margin-top: var(--a);
+  }
+  /* The base .eyebrow is .66rem warm grey — sized for a corner label,
+     not a centred line introducing a section. Stepped up to read. */
+  .sv-age .sv-age__eyebrow {
+    justify-content: center;
+    margin-bottom: 0;
+    font-size: .92rem;
+    font-weight: 500;
+    letter-spacing: .26em;
+    color: var(--emerald);
+  }
+  /* .eyebrow's gold dash sits before the text; centred it needs a twin
+     after, or the line reads pushed left. */
+  .sv-age .sv-age__eyebrow::after {
+    content: "";
+    width: 44px;
+    height: 1px;
+    background: var(--tan);
+  }
+
+  .sv-age .sv-age__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--c);
+  }
+
+  .sv-age .sv-age__cat {
+    text-align: center;
+  }
+
+  .sv-age .sv-age__disc {
+    display: block;
+    width: min(100%, 240px);
+    margin: 0 auto;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--sh-s);
+    background: linear-gradient(150deg, #F5F0E2, #E9E1CD 55%, #DCD2B8);
+    transition: transform var(--std) var(--e), box-shadow var(--std) var(--e);
+  }
+  .sv-age .sv-age__disc:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sh);
+  }
+  .sv-age .sv-age__disc img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Portraits carry the face in their upper third; a centred crop takes
+       the top of the head off. The crop window anchors near the top of
+       the photograph instead, per-band tunable from Admin. */
+    object-position: 50% var(--sv-fy, 20%);
+    transition: transform var(--slow) var(--e);
+  }
+  .sv-age .sv-age__disc:hover img {
+    transform: scale(1.05);
+  }
+  .sv-age .sv-age__ph {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+  }
+
+  .sv-age .sv-age__name {
+    margin-top: var(--a);
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+  }
+  .sv-age .sv-age__name a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .sv-age .sv-age__name a:hover {
+    color: var(--emerald);
+  }
+
+  /* .lab--grey is a corner label; as a line under a name it needs ink
+     and a step up to read. */
+  .sv-age .sv-age__range {
+    margin-top: 8px;
+    font-size: .74rem;
+    font-weight: 500;
+    letter-spacing: .22em;
+    color: var(--ink);
+    opacity: .75;
+  }
+
+  .sv-age .sv-age__subs {
+    margin-top: var(--a);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .sv-age .sv-age__sub {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: .66rem;
+    font-weight: 400;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 7px 14px;
+    border: 1px solid rgba(198, 161, 91, .45);
+    border-radius: 999px;
+    transition: background-color var(--micro) var(--e),
+                color var(--micro) var(--e),
+                border-color var(--micro) var(--e);
+  }
+  .sv-age .sv-age__sub:hover {
+    background: var(--emerald);
+    border-color: var(--emerald);
+    color: var(--cream);
+  }
+
+  @media (max-width: 980px) {
+    .sv-age .sv-age__grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--d) var(--b);
+    }
+  }
+
+  /* Motion — armed by the gate, released by the driver. The circles
+     arrive as a run, each a beat after the last, per §08's stagger. */
+  .sv-age.sv-motion-ready [data-sv-motion] {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity .85s var(--entrance), transform .85s var(--entrance);
+    transition-delay: calc(var(--i, 0) * var(--stagger));
+  }
+  .sv-age.sv-motion-ready [data-sv-motion].sv-vis {
+    opacity: 1;
+    transform: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Shop by Age",
+  "tag": "section",
+  "class": "sv-age-mount",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Start with the age" },
+    { "type": "text", "id": "title", "label": "Heading", "info": "Leave blank to run the strip on the eyebrow alone (a hidden heading keeps the page's structure for screen readers).", "default": "Shop by age" }
+  ],
+  "blocks": [
+    {
+      "type": "category",
+      "name": "Age band",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Photograph", "info": "Square crop; shown in a circle." },
+        {
+          "type": "range",
+          "id": "focus",
+          "label": "Portrait focus",
+          "info": "Where the circle's crop window sits on the photo: 0 is the very top, 100 the bottom.",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "unit": "%",
+          "default": 20
+        },
+        { "type": "text", "id": "title", "label": "Name", "default": "Newborn" },
+        { "type": "text", "id": "range", "label": "Range", "default": "0–12 months" },
+        { "type": "url", "id": "link", "label": "Link" },
+        { "type": "header", "content": "Subdivisions" },
+        { "type": "paragraph", "content": "Up to five. A blank label drops the pair; a blank link falls back to the band's own link." },
+        { "type": "text", "id": "sub_1_label", "label": "Chip 1 · label" },
+        { "type": "url", "id": "sub_1_url", "label": "Chip 1 · link" },
+        { "type": "text", "id": "sub_2_label", "label": "Chip 2 · label" },
+        { "type": "url", "id": "sub_2_url", "label": "Chip 2 · link" },
+        { "type": "text", "id": "sub_3_label", "label": "Chip 3 · label" },
+        { "type": "url", "id": "sub_3_url", "label": "Chip 3 · link" },
+        { "type": "text", "id": "sub_4_label", "label": "Chip 4 · label" },
+        { "type": "url", "id": "sub_4_url", "label": "Chip 4 · link" },
+        { "type": "text", "id": "sub_5_label", "label": "Chip 5 · label" },
+        { "type": "url", "id": "sub_5_url", "label": "Chip 5 · link" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "SV Shop by Age",
+      "blocks": [
+        {
+          "type": "category",
+          "settings": {
+            "title": "Newborn",
+            "range": "0–12 months",
+            "sub_1_label": "0–3 m",
+            "sub_2_label": "3–6 m",
+            "sub_3_label": "6–9 m",
+            "sub_4_label": "9–12 m"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Toddler",
+            "range": "1–3 years",
+            "sub_1_label": "12–18 m",
+            "sub_2_label": "18–24 m",
+            "sub_3_label": "2–3 y"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Kids",
+            "range": "3–6 years",
+            "sub_1_label": "3–4 y",
+            "sub_2_label": "4–5 y",
+            "sub_3_label": "5–6 y"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Big kids",
+            "range": "6–8 years",
+            "sub_1_label": "6–7 y",
+            "sub_2_label": "7–8 y"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

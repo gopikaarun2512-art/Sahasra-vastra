@@ -1,0 +1,26 @@
+{%- comment -%}
+  Parses a size or age-band label into its age range in MONTHS and
+  prints "from,to" — nothing else, no whitespace. Used by capture:
+
+    {%- capture r -%}{% render 'sv-age-range', label: v.title %}{%- endcapture -%}
+    {%- assign r = r | split: ',' -%}  → r.first = from, r.last = to
+
+  Handles "6-9m", "6–9 m", "0-3 months", "2-3y", "2–3 years", "1-2 Y".
+  A label with a y is read as years throughout ("1-2y" → 12,24).
+  Unparseable labels print "0,0".
+{%- endcomment -%}
+{%- liquid
+  assign t = label | downcase | replace: '–', '-' | replace: '—', '-' | remove: ' ' | replace: 'months', 'm' | replace: 'month', 'm' | replace: 'mos', 'm' | replace: 'years', 'y' | replace: 'year', 'y' | replace: 'yrs', 'y'
+  assign in_years = false
+  if t contains 'y'
+    assign in_years = true
+  endif
+  assign nums = t | remove: 'm' | remove: 'y' | split: '-'
+  assign from_m = nums.first | plus: 0
+  assign to_m = nums.last | plus: 0
+  if in_years
+    assign from_m = from_m | times: 12
+    assign to_m = to_m | times: 12
+  endif
+  echo from_m | append: ',' | append: to_m
+-%}

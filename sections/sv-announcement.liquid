@@ -1,0 +1,83 @@
+{% doc %}
+  Announcement bar — ARCHITECTURE.md §6.1.
+
+  ONE static line. Never rotating: the delivery cost is too valuable to share
+  a slot, and extra costs appearing late is half of fixable cart abandonment.
+  There is no `text` setting by design — see the note below.
+
+  Wording: CONTENT.md §02.1. Figures: shop metafields, never typed.
+{% enddoc %}
+
+{%- comment -%}
+  Why no free-text `text` setting, against ARCHITECTURE.md §6.1's setting list:
+  a text field is precisely where a hard-coded "₹39" enters the theme and then
+  drifts from `delivery_charge_kerala`. TASK-02 criterion 12 forbids exactly
+  that. The line is composed from the metafields instead. Reported as a
+  deviation rather than resolved silently.
+{%- endcomment -%}
+
+{%- capture line -%}
+  {%- render 'sv-announcement-line', class: 'sv-fine sv-fine--caps sv-announcement__line', link_url: section.settings.link_url -%}
+{%- endcapture -%}
+{%- assign line_stripped = line | strip -%}
+
+{%- comment -%}
+  Renders nothing when it has nothing true to say. An empty bar is worse than
+  no bar, and a half-populated one shows only the half it has. The line itself
+  is composed in snippets/sv-announcement-line.liquid, shared with the
+  homepage hero's floating chrome (Phase 1.1).
+{%- endcomment -%}
+{%- if section.settings.show and line_stripped != blank -%}
+  <aside class="sv-announcement" data-sv>
+    <div class="w">{{ line_stripped }}</div>
+  </aside>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Colour and spacing are tokens; the type comes from the .sv-fine primitive
+     added in sv-system.css v1.2, which renders the line in sentence case as
+     CONTENT.md §02.1 writes it, rather than the uppercase .lab was forcing. */
+  [data-sv].sv-announcement {
+    background: var(--emerald);
+    padding: var(--a) 0;
+  }
+
+  /* [data-sv] p caps paragraphs at 56ch for readable body measure. The bar is
+     chrome, not body copy: it must span the container or text-align:center
+     centres it inside a 393px box sitting hard left. The compound selector is
+     needed because [data-sv] p (0,1,1) outranks a bare class (0,1,0). */
+  [data-sv].sv-announcement .sv-announcement__line {
+    display: block;
+    max-width: none;
+    text-align: center;
+    color: var(--cream);
+    text-decoration: none;
+  }
+
+  a.sv-announcement__line:hover {
+    opacity: 0.8;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Announcement",
+  "tag": "section",
+  "enabled_on": { "groups": ["header"] },
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show",
+      "label": "Show the announcement bar",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "link_url",
+      "label": "Link (optional)",
+      "info": "The delivery figures are read from the shop metafields free_shipping_threshold and delivery_charge_kerala. Edit them in Settings → Custom data → Shop."
+    }
+  ],
+  "presets": [{ "name": "SV Announcement" }]
+}
+{% endschema %}

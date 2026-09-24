@@ -1,0 +1,27 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+/*
+ * ------------------------------------------------------------
+ * Sahasra Vastra — Size Guide redesign (Sep 2026).
+ *
+ * The measuring journey: gold thread, four numbered stops, the chart,
+ * the WhatsApp hand-off. Assigned to the Size Guide page via its
+ * template suffix in Admin.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "sv-size-guide",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

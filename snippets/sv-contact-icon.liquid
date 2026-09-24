@@ -1,0 +1,101 @@
+{% doc %}
+  Contact — the small line marks.
+
+  Same contract as `sv-report-icon`, and deliberately so: the two support
+  pages are read by the same person on the same afternoon and must draw
+  in one hand. A 48-unit box, no fills, and no stroke declared here — the
+  section's stylesheet owns the colour, the weight and the draw, so one
+  rule governs every mark at once. Gold accents carry `.sv-ct-gold`.
+
+  Paths are kept to a few segments each so the 260-unit dash length the
+  section assumes covers the longest of them.
+
+  @param {string} art - which mark. Unknown values fall through to a
+    neutral circle, so a reason added in the editor before its drawing
+    exists renders a mark rather than an empty box.
+{% enddoc %}
+
+{%- case art -%}
+
+  {%- when 'size' -%}
+    {%- comment -%} A tape measure laid across a garment — the two numbers we ask for. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M6 18 L42 18 L42 30 L6 30 Z"/>
+      <path d="M14 18 L14 24"/>
+      <path d="M22 18 L22 27"/>
+      <path d="M30 18 L30 24"/>
+      <path class="sv-ct-gold" d="M38 18 L38 27"/>
+    </svg>
+
+  {%- when 'transit' -%}
+    {%- comment -%} A parcel already on the road — the question is where, not whether. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M12 14 L27 14 L27 32 L12 32 Z"/>
+      <path d="M27 20 L35 20 L40 26 L40 32 L27 32"/>
+      <circle cx="17" cy="36" r="3.4"/>
+      <circle cx="34" cy="36" r="3.4"/>
+      <path class="sv-ct-gold" d="M4 22 L10 22 M2 28 L10 28"/>
+    </svg>
+
+  {%- when 'stock' -%}
+    {%- comment -%} A hanger with one piece left on it — small lots, asked after often. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M24 10 C 20 10, 20 16, 24 17 L24 21"/>
+      <path d="M24 21 L8 32 L40 32 L24 21"/>
+      <path class="sv-ct-gold" d="M8 32 L8 37 L40 37 L40 32"/>
+    </svg>
+
+  {%- when 'wrong' -%}
+    {%- comment -%} An opened packet with the seal broken — this one leaves the page. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M9 20 L24 13 L39 20 L39 37 L24 43 L9 37 Z"/>
+      <path d="M9 20 L24 27 L39 20"/>
+      <path class="sv-ct-gold" d="M24 5 L24 11 M33 8 L30 13 M15 8 L18 13"/>
+    </svg>
+
+  {%- when 'other' -%}
+    {%- comment -%} A speech mark with a question inside it. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M8 13 L40 13 L40 33 L21 33 L13 40 L13 33 L8 33 Z"/>
+      <path class="sv-ct-gold" d="M20 20 C 20 16, 28 16, 28 20 C 28 23, 24 23, 24 26"/>
+      <path d="M24 29.5 L24 30"/>
+    </svg>
+
+  {%- when 'chat' -%}
+    {%- comment -%} Two marks, one answering the other — the channel that actually works. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M5 11 L30 11 L30 27 L15 27 L9 32 L9 27 L5 27 Z"/>
+      <path class="sv-ct-gold" d="M18 22 L43 22 L43 36 L39 36 L39 41 L33 36 L18 36 Z"/>
+    </svg>
+
+  {%- when 'mail' -%}
+    {%- comment -%} An envelope, open at the fold. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M5 13 L43 13 L43 36 L5 36 Z"/>
+      <path class="sv-ct-gold" d="M5 13 L24 26 L43 13"/>
+      <path d="M5 36 L18 24 M43 36 L30 24"/>
+    </svg>
+
+  {%- when 'door' -%}
+    {%- comment -%} A door with no handle on your side — an office, by appointment. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <path d="M11 7 L37 7 L37 41 L11 41 Z"/>
+      <path d="M17 7 L17 41"/>
+      <circle class="sv-ct-gold" cx="22" cy="24" r="1.8"/>
+      <path d="M6 41 L42 41"/>
+    </svg>
+
+  {%- when 'clock' -%}
+    {%- comment -%} The reply promise, and the only clock on the page. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <circle cx="24" cy="24" r="17"/>
+      <path class="sv-ct-gold" d="M24 13 L24 24 L32 28"/>
+    </svg>
+
+  {%- else -%}
+    {%- comment -%} The fallback: a mark, never an empty box. {%- endcomment -%}
+    <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+      <circle cx="24" cy="24" r="15"/>
+    </svg>
+
+{%- endcase -%}

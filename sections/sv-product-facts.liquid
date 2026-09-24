@@ -1,0 +1,132 @@
+{%- comment -%}
+  Returns · delivery by region — its own section so it can sit last on
+  the product page, just above the footer (owner's direction, Sep 2026).
+  Styles are in assets/sv-product.css §21 (loaded by sv-product, which
+  is always on this template). The delivery zones are this section's
+  blocks; shop metafields override them where they exist.
+{%- endcomment -%}
+
+<section class="sv-pdp-facts" data-sv>
+  <div class="w">
+      <div class="sv-pdp__facts sv-pdp__facts--row">
+
+        {%- comment -%}
+          ── Delivery ─────────────────────────────────────────
+          ARCHITECTURE §6.8 element 8 asks for a date rather than a
+          duration. It cannot honestly be one here, for two reasons
+          found in the live store: Liquid has no access to the
+          visitor's state, so any single date would be a guess at
+          which zone they are in; and the published Shipping Policy
+          says in terms "we are not able to guarantee a delivery
+          date". So: the dispatch promise, which IS a commitment,
+          from its shop metafield — then the zones, named.
+
+          Zone figures come from shop metafields where they exist and
+          from the section's own blocks otherwise. There is no
+          `default:` filter anywhere below, and no figure is written
+          into this template: a default is a hard-coded business
+          value in disguise and keeps rendering the stale number
+          after Admin is corrected (sv-credentials.liquid).
+        {%- endcomment -%}
+        {%- render 'sv-returns-line', class: 'sv-pdp__fact', show_label: true -%}
+
+        {%- comment -%}
+          The dispatch promise is a tile above, so this is the detail
+          behind it: per-zone time and charge. A <details> because the
+          headline fact is already standing open; this is lookup.
+        {%- endcomment -%}
+        <details class="sv-pdp__exp sv-pdp__fact" open>
+          <summary>Delivery time and charges by region</summary>
+          <div class="sv-pdp__expbody">
+          <p class="sv-pdp__factbody">Delivery is counted from dispatch, not from the day you order.</p>
+
+          {%- if section.blocks.size > 0 -%}
+            <ul class="sv-pdp__zones" role="list">
+              {%- for block in section.blocks -%}
+                {%- if block.type != 'zone' -%}{%- continue -%}{%- endif -%}
+                {%- liquid
+                  assign days = block.settings.days
+                  assign charge_rupees = block.settings.charge
+
+                  # Shop metafields win where they exist — the business
+                  # constants layer is the source of truth, and these
+                  # blocks are the stand-in until it is complete.
+                  assign days_key = 'delivery_days_' | append: block.settings.metafield_key
+                  assign charge_key = 'delivery_charge_' | append: block.settings.metafield_key
+                  assign mf_days = shop.metafields.custom[days_key].value
+                  assign mf_charge = shop.metafields.custom[charge_key].value
+                  if mf_days != blank
+                    assign days = mf_days
+                  endif
+                  if mf_charge != blank
+                    assign charge_rupees = mf_charge
+                  endif
+
+                  # Both sources hold rupees as a number, so the symbol
+                  # comes from Shopify's currency formatting and a typed
+                  # "₹" never appears anywhere in the theme.
+                  assign charge = ''
+                  if charge_rupees != blank
+                    assign charge = charge_rupees | times: 100 | round | money_without_trailing_zeros
+                  endif
+                -%}
+                {%- if block.settings.name != blank and days != blank -%}
+                  <li {{ block.shopify_attributes }}>
+                    <span class="sv-pdp__zonename">{{ block.settings.name }}</span>
+                    <span class="sv-pdp__zonedays">{{ days }}</span>
+                    {%- if charge != blank -%}<span class="sv-pdp__zonecost">{{ charge }}</span>{%- endif -%}
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+
+          {%- comment -%}
+            The free-delivery threshold, from the one metafield that
+            already holds it. sv-announcement-line.liquid documents
+            the shape: a `money` metafield's .value is already in the
+            subunit, so the money filter takes it raw.
+          {%- endcomment -%}
+          </div>
+        </details>
+      </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "SV Returns & delivery",
+  "tag": "div",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Delivery zones show beside the returns policy. Where the matching shop metafield exists (custom.delivery_days_kerala, custom.delivery_charge_kerala and so on) it overrides what is typed here, so Admin stays the source of truth."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "zone",
+      "name": "Delivery zone",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Zone", "info": "As it reads to a customer, e.g. Kerala" },
+        { "type": "text", "id": "days", "label": "Delivery time", "info": "Counted from dispatch, e.g. 2 to 4 working days" },
+        { "type": "number", "id": "charge", "label": "Shipping charge, in rupees", "info": "Digits only — the currency symbol comes from Shopify's own formatting. Leave empty to show the zone without a price." },
+        {
+          "type": "select",
+          "id": "metafield_key",
+          "label": "Shop metafield to read instead",
+          "options": [
+            { "value": "kerala", "label": "Kerala" },
+            { "value": "south", "label": "South India" },
+            { "value": "rest", "label": "Rest of India" },
+            { "value": "remote", "label": "Remote areas" }
+          ],
+          "default": "kerala"
+        }
+      ]
+    }
+  ],
+  "presets": [{ "name": "SV Returns & delivery" }]
+}
+{% endschema %}

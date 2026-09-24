@@ -1,0 +1,38 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+/*
+ * ------------------------------------------------------------
+ * Sahasra Vastra — Gate 3.
+ *
+ * Horizon's `footer` and `footer-utilities` sections are replaced by
+ * `sv-footer`, which renders the footer menu from Shopify navigation and the
+ * statutory block from shop metafields.
+ *
+ * Deliberately dropped with Horizon's sections, and reported: the email
+ * signup (not in CONTENT.md §03, and no list is configured), the social-links
+ * block (its five URLs pointed at platform home pages, not the brand's
+ * accounts), and "Powered by Shopify".
+ * ------------------------------------------------------------
+ */
+{
+  "type": "footer",
+  "name": "t:names.footer",
+  "sections": {
+    "sv_footer": {
+      "type": "sv-footer",
+      "settings": {
+        "menu": "sv-footer",
+        "instagram_url": "https://www.instagram.com/sahasravastraofficial/",
+        "facebook_url": "https://www.facebook.com/profile.php?id=61593089104841"
+      }
+    }
+  },
+  "order": ["sv_footer"]
+}

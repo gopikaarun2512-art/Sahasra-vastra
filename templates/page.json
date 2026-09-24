@@ -1,0 +1,27 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+/*
+ * ------------------------------------------------------------
+ * Sahasra Vastra — brand styling pass (Sep 2026).
+ *
+ * Horizon's `main-page` (sans title block + unstyled RTE) is replaced by
+ * `sv-page`: serif title over a gold rule, measured column, styled lists,
+ * tables and links. Content still comes from Admin untouched.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "sv-page",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

@@ -1,0 +1,404 @@
+{% doc %}
+  Footer — ARCHITECTURE.md §3.2 · T-052 (oversized mark), T-100 (statutory
+  footer), T-099 (one floating cluster).
+
+  Navigation renders from a Shopify menu, never a hard-coded list. Every
+  business value reads from a shop metafield; an absent one renders nothing.
+
+  Wording: CONTENT.md §03.
+{% enddoc %}
+
+{%- liquid
+  assign menu = linklists[section.settings.menu]
+  assign whatsapp = shop.metafields.custom.whatsapp_number.value
+-%}
+
+<footer class="sv-footer panel-dark" data-sv>
+  {%- comment -%} T-052 — the mark, oversized, bleeding off the edge. {%- endcomment -%}
+  {% render 'sv-petal', class: 'sv-footer__mark' %}
+
+  <div class="w sv-footer__inner">
+    {%- comment -%}
+      Ivory lockup, inlined for the same font reason as the header. The
+      oversized petal above is decoration bleeding off the corner (T-052);
+      this is the identity.
+    {%- endcomment -%}
+    <a class="sv-footer__brandmark" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+      {%- comment -%}
+        The hero's treatment, repeated: the colour lockup with the wordmark
+        and rule forced to ivory in CSS. The mark keeps its gold.
+      {%- endcomment -%}
+      {% render 'sv-lockup', class: 'sv-footer__lockup' %}
+    </a>
+
+    {%- if menu.links.size > 0 -%}
+      {%- comment -%}
+        Two-level menu → headed columns (Shop · Customer Service · My
+        Account · About). A childless top-level link falls back to a
+        one-link column so a flat menu still renders.
+      {%- endcomment -%}
+      <nav class="sv-footer__nav" aria-label="{{ menu.title | escape }}">
+        {%- for group in menu.links -%}
+          <div class="sv-footer__col">
+            {%- if group.links.size > 0 -%}
+              <p class="sv-footer__colhead">{{ group.title }}</p>
+              <ul class="sv-footer__list">
+                {%- for link in group.links -%}
+                  <li><a class="sv-footer__link" href="{{ link.url }}">{{ link.title }}</a></li>
+                {%- endfor -%}
+              </ul>
+            {%- else -%}
+              <ul class="sv-footer__list">
+                <li><a class="sv-footer__link" href="{{ group.url }}">{{ group.title }}</a></li>
+              </ul>
+            {%- endif -%}
+          </div>
+        {%- endfor -%}
+      </nav>
+    {%- endif -%}
+
+    {% render 'sv-credentials' %}
+
+    <p class="sv-fine sv-footer__copyright">&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}</p>
+  </div>
+</footer>
+
+{%- comment -%}
+  T-099 — one floating cluster, in one place, nothing else floating.
+  .float in sv-system.css hides every child but the last below 880px, so a
+  single WhatsApp control is already the mobile state. Instagram and
+  Facebook restored at the owner's direction (they were dropped in Phase
+  1.8); order matters — WhatsApp last stays the mobile survivor. The
+  pre-typed WhatsApp message is fixed copy from the build decisions,
+  URL-encoded.
+{%- endcomment -%}
+{%- liquid
+  assign instagram = section.settings.instagram_url
+  assign facebook = section.settings.facebook_url
+-%}
+{%- if whatsapp != blank or instagram != blank or facebook != blank -%}
+  <div class="float">
+    {%- if instagram != blank -%}
+      <a class="sv-float--instagram" href="{{ instagram }}" rel="noopener" target="_blank" aria-label="Instagram">
+        {% render 'sv-icon', name: 'instagram' %}
+      </a>
+    {%- endif -%}
+    {%- if facebook != blank -%}
+      <a class="sv-float--facebook" href="{{ facebook }}" rel="noopener" target="_blank" aria-label="Facebook">
+        {% render 'sv-icon', name: 'facebook' %}
+      </a>
+    {%- endif -%}
+    {%- if whatsapp != blank -%}
+      <a class="sv-float--whatsapp" href="https://wa.me/{{ whatsapp }}?text=Hi%20Sahasra%20Vastra%2C%20I%20have%20a%20question%20about%20" rel="noopener" target="_blank" aria-label="Chat with us on WhatsApp">
+        {% render 'sv-icon', name: 'whatsapp' %}
+      </a>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{%- comment -%}
+  Phase 1.9 — the mobile bottom bar: Home · Shop by age · Orders · Cart ·
+  Account. Phones only. It publishes its height as --sv-bbar on <body> so
+  the WhatsApp float and the homepage film hero clear it. Plain links —
+  nothing here needs JavaScript.
+{%- endcomment -%}
+<nav class="sv-bottombar" data-sv aria-label="Shortcuts">
+  <a class="sv-bottombar__link" href="{{ routes.root_url }}" {% if request.page_type == 'index' %}aria-current="page"{% endif %}>
+    {% render 'sv-icon', name: 'home' %}
+    <span>Home</span>
+  </a>
+  <a class="sv-bottombar__link" href="{{ routes.root_url }}#shop-by-age">
+    {% render 'sv-icon', name: 'hanger' %}
+    <span>Shop by age</span>
+  </a>
+  <a class="sv-bottombar__link" href="{{ routes.account_url }}">
+    {% render 'sv-icon', name: 'orders' %}
+    <span>Orders</span>
+  </a>
+  <a class="sv-bottombar__link" href="{{ routes.cart_url }}" {% if request.page_type == 'cart' %}aria-current="page"{% endif %}>
+    <span class="sv-bottombar__glyph">
+      {% render 'sv-icon', name: 'cart' %}
+      {%- if cart.item_count > 0 -%}
+        <span class="sv-bottombar__count" aria-hidden="true">{{ cart.item_count }}</span>
+      {%- endif -%}
+    </span>
+    <span>Cart</span>
+  </a>
+  <a class="sv-bottombar__link" href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}">
+    {% render 'sv-icon', name: 'account' %}
+    <span>Account</span>
+  </a>
+</nav>
+
+{%- comment -%}
+  Renders nothing; rendering it is what makes the storefront bundle its
+  {% stylesheet %} — the brand skin for Shopify's cookie banner. The
+  footer is on every page, so the skin is too.
+{%- endcomment -%}
+{%- render 'sv-consent' -%}
+
+{% stylesheet %}
+  /* Colour and spacing are tokens only; type comes from sv-system.css
+     primitives. The footer is the one emerald moment on most templates. */
+  /* Thin footer: one band, not a destination. Equal padding above and
+     below so the lockup sits dead-centre in the green. */
+  [data-sv].sv-footer {
+    position: relative;
+    overflow: hidden;
+    background: var(--emerald);
+    color: var(--cream);
+    padding: var(--b) 0;
+  }
+
+  /* Oversized mark, bleeding off the bottom-left corner. Decorative. */
+  .sv-footer__mark {
+    position: absolute;
+    left: calc(var(--c) * -1);
+    bottom: calc(var(--d) * -1);
+    width: var(--g);
+    height: auto;
+    color: var(--cream);
+    opacity: 0.08;
+    pointer-events: none;
+  }
+
+  /* Full-bleed content: the .w cap is lifted so the band uses the whole
+     viewport, keeping only the edge padding. */
+  [data-sv].sv-footer .sv-footer__inner {
+    position: relative;
+    display: grid;
+    gap: var(--a);
+    max-width: none;
+  }
+
+  /* One face in the footer: the serif the site speaks in. */
+  [data-sv].sv-footer,
+  [data-sv].sv-footer .sv-footer__link,
+  [data-sv].sv-footer .act,
+  [data-sv].sv-footer .sv-fine {
+    font-family: var(--serif);
+  }
+
+  .sv-footer__brandmark {
+    display: block;
+    justify-self: start;
+  }
+
+  .sv-footer__lockup {
+    display: block;
+    width: 300px;
+    /* See sv-header.liquid: Horizon's global svg max-width cap. */
+    max-width: none;
+    height: auto;
+  }
+
+  /* As on the hero: the mark, rule and divider keep their colour, the
+     wordmark reads in ivory. CSS wins over the SVG's fill attributes. */
+  .sv-footer__lockup text {
+    fill: var(--cream);
+  }
+
+  /* Headed columns: Shop · Customer Service · My Account · About. */
+  .sv-footer__nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--b) var(--c);
+  }
+
+  .sv-footer__colhead {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 0.68rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--cream);
+    margin-bottom: var(--a);
+  }
+
+  .sv-footer__list {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* Policy and page links sit at full ivory, never greyed to near-invisible. */
+  .sv-footer__link {
+    color: var(--cream);
+    text-decoration: none;
+    font-family: var(--sans);
+  }
+
+  .sv-footer__link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  /* The statutory line and copyright sit centred under the columns. */
+  [data-sv].sv-footer .sv-credentials,
+  [data-sv].sv-footer .sv-footer__copyright {
+    text-align: center;
+    margin-inline: auto;
+  }
+
+  [data-sv].sv-footer .sv-credentials {
+    margin-top: var(--b);
+  }
+
+  .sv-footer__copyright {
+    color: var(--cream);
+    opacity: 0.62;
+  }
+
+  @media (min-width: 880px) {
+    /* Lockup left, the four columns beside it; the statutory line and
+       copyright run centred underneath the full width. */
+    [data-sv].sv-footer .sv-footer__inner {
+      grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+      column-gap: var(--d);
+      align-items: start;
+    }
+
+    .sv-footer__brandmark {
+      grid-column: 1;
+      align-self: center;
+      justify-self: center;
+    }
+
+    .sv-footer__nav {
+      grid-column: 2;
+    }
+
+    [data-sv].sv-footer .sv-credentials,
+    [data-sv].sv-footer .sv-footer__copyright {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* The floats wear each platform's own livery — the recognised marks, not
+     the brand palette. Glyphs stay pure white as the platforms draw them. */
+  .float a.sv-float--instagram {
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%);
+    color: #fff;
+    /* The app icon is a rounded square, not a roundel. */
+    border-radius: 14px;
+  }
+  .float a.sv-float--facebook {
+    background: #1877f2;
+    color: #fff;
+  }
+  .float a.sv-float--whatsapp {
+    background: #25d366;
+    color: #fff;
+  }
+  .float a.sv-float--instagram svg,
+  .float a.sv-float--whatsapp svg {
+    width: 26px;
+    height: 26px;
+  }
+  .float a.sv-float--facebook svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* ── mobile bottom bar (Phase 1.9) ─────────────────────────────────────
+     Phones only. The body takes --sv-bbar (read by the film hero) and
+     enough bottom padding that no page content ends underneath the bar. */
+  .sv-bottombar { display: none; }
+
+  @media (max-width: 879px) {
+    body {
+      --sv-bbar: calc(60px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: var(--sv-bbar);
+    }
+
+    [data-sv].sv-bottombar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 75;
+      height: var(--sv-bbar);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--cream);
+      border-top: 1px solid rgba(26, 26, 26, 0.1);
+    }
+
+    .sv-bottombar__link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      /* 5 columns at 320px are 64px wide × 60px tall — over the 44px
+         touch-target floor everywhere. */
+      min-height: 44px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .sv-bottombar__link svg {
+      width: 21px;
+      height: 21px;
+    }
+    .sv-bottombar__link span:last-child {
+      font-family: var(--sans);
+      font-weight: 400;
+      font-size: 0.56rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .sv-bottombar__link[aria-current='page'] {
+      color: var(--emerald);
+    }
+
+    .sv-bottombar__glyph { position: relative; display: block; }
+    .sv-bottombar__count {
+      position: absolute;
+      top: -5px;
+      right: -9px;
+      min-width: 15px;
+      text-align: center;
+      border-radius: 999px;
+      background: var(--emerald);
+      color: var(--cream);
+      font-family: var(--sans);
+      font-size: 0.58rem;
+      line-height: 15px;
+      padding-inline: 3px;
+    }
+
+    /* Phase 1.9 — the WhatsApp float rides above the bar, never under it. */
+    .float {
+      bottom: calc(var(--sv-bbar, 0px) + 14px);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Footer",
+  "tag": "section",
+  "enabled_on": { "groups": ["footer"] },
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "footer",
+      "info": "Edit the menu itself in Content → Menus. Statutory values come from the shop metafields in Settings → Custom data → Shop."
+    },
+    {
+      "type": "text",
+      "id": "instagram_url",
+      "label": "Instagram URL",
+      "info": "Full profile link, e.g. https://instagram.com/yourhandle. WhatsApp comes from the shop metafield and stays the only one shown on mobile."
+    },
+    {
+      "type": "text",
+      "id": "facebook_url",
+      "label": "Facebook URL"
+    }
+  ]
+}
+{% endschema %}

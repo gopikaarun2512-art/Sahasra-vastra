@@ -1,0 +1,1612 @@
+{% doc %}
+  Report a problem — the claim desk.
+
+  Replaces the generic `sv-page` frame for /pages/report-a-problem, which
+  rendered 600 words of Admin RTE in a 760px column. That framing was
+  wrong for this page in a way it is not wrong for About Us: nobody reads
+  this one. They arrive angry, on a phone, inside a 24-hour window,
+  holding a video file they do not know how to send. The page has to be
+  a task, not an essay.
+
+  So it is built as a flow:
+
+    window   the 24-hour deadline as the first thing on the page
+    triage   four claim types; choosing one prefills every send route
+             and narrows the kit below to what that claim actually needs
+    kit      the three things to send, tickable, held in localStorage so
+             leaving for WhatsApp and coming back does not reset them
+    film     the unboxing rule, scroll-scrubbed rather than described —
+             it is the single reason most claims fail
+    routes   WhatsApp / email / large file, each carrying the order
+             number and the claim type the visitor has already given us
+    next     what happens after, on a rail that draws as it is read
+    why      the honest paragraph, in the page's one emerald moment
+
+  Content lives in schema blocks rather than the Admin RTE because the
+  triage, the kit filtering, the anchors and the HowTo JSON-LD all need
+  structure the RTE cannot carry. Every string, label and toggle is a
+  theme-editor setting — nothing here is hard-coded copy.
+
+  Motion contract, per sv-system.css §08: transform and opacity only,
+  with two bounded exceptions that file already allows (the disclosure's
+  height, and stroke-dashoffset on the line art, which is neither a
+  layout property nor unbounded). Scroll-linked motion is CSS
+  scroll-driven where the browser has it and IntersectionObserver
+  steps where it does not. Nothing on the page needs an animation to
+  finish in order to be readable, and every route out — WhatsApp, email,
+  the policy links — is a plain anchor that works with script disabled.
+{% enddoc %}
+
+{%- liquid
+  assign wa = section.settings.whatsapp | remove: ' ' | remove: '+' | remove: '-'
+  assign mail = section.settings.email
+  assign bg = section.settings.bg_motion
+
+  comment
+    Blocks are a flat list; each kind is counted first so a section can be
+    skipped whole rather than rendering an empty frame around nothing.
+  endcomment
+  assign n_claim = 0
+  assign n_need = 0
+  assign n_frame = 0
+  assign n_route = 0
+  assign n_step = 0
+  for block in section.blocks
+    case block.type
+      when 'claim'
+        assign n_claim = n_claim | plus: 1
+      when 'need'
+        assign n_need = n_need | plus: 1
+      when 'frame'
+        assign n_frame = n_frame | plus: 1
+      when 'route'
+        assign n_route = n_route | plus: 1
+      when 'step'
+        assign n_step = n_step | plus: 1
+    endcase
+  endfor
+
+  comment
+    The opening line of every prefilled message. Built once here so the
+    WhatsApp deep link, the mailto body and the script all agree.
+  endcomment
+  assign opener = section.settings.prefill_opener
+-%}
+
+{{ 'sv-report.css' | asset_url | stylesheet_tag }}
+
+<section class="sv-rp sv-rp--bg-{{ bg }}" data-sv data-sv-report
+         style="--sv-rp-frames:{{ n_frame }}">
+
+  {%- render 'sv-motion-gate' -%}
+
+
+  {%- comment -%}
+    ── The ground ────────────────────────────────────────────────────
+    Decorative only: aria-hidden, pointer-events none, carries no
+    content. A slow weave, two drifting lights and the brand petal —
+    the same vocabulary as the FAQ, so the two support pages read as
+    one pair rather than two designs.
+  {%- endcomment -%}
+  {%- unless bg == 'off' -%}
+    <div class="sv-rp__bg" aria-hidden="true">
+      <div class="sv-rp__weave"></div>
+      <div class="sv-rp__glow sv-rp__glow--a"></div>
+      <div class="sv-rp__glow sv-rp__glow--b"></div>
+      {%- for i in (1..5) -%}
+        <svg class="sv-rp__petal sv-rp__petal--{{ i }}" viewBox="-14 -86 28 92" focusable="false">
+          <path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z"/>
+        </svg>
+      {%- endfor -%}
+    </div>
+  {%- endunless -%}
+
+  <div class="w sv-rp__inner">
+
+    {%- comment -%}
+      ── The thread ──────────────────────────────────────────────────
+      One gold stitch running the height of the flow, drawn as the page
+      is read. Scroll-driven where the browser has it; the --read
+      custom property the script keeps is the fallback, and under
+      reduced motion it simply sits at its measured position. It is
+      ornament — if it never moves, nothing is lost.
+    {%- endcomment -%}
+    <svg class="sv-rp__thread" aria-hidden="true" focusable="false"
+         viewBox="0 0 12 1000" preserveAspectRatio="none">
+      <path d="M6 0 C 11 120, 1 240, 6 360 C 11 480, 1 600, 6 720 C 11 840, 1 940, 6 1000"/>
+    </svg>
+
+    {%- comment -%} ── Masthead ────────────────────────────────────── {%- endcomment -%}
+    <header class="sv-rp__head" data-sv-motion>
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+      {%- endif -%}
+
+      {%- comment -%}
+        Line reveal, by line — §08 permits no finer grain. The spans are
+        always in the markup; only the motion-ready class turns them
+        into a mask, so the title is never left hidden if script fails.
+      {%- endcomment -%}
+      <h1 class="sv-rp__title">
+        <span class="sv-rp__line"><span>{{ section.settings.title_a }}</span></span>
+        {%- if section.settings.title_b != blank -%}
+          <span class="sv-rp__line"><span>{{ section.settings.title_b }}</span></span>
+        {%- endif -%}
+      </h1>
+
+      {%- if section.settings.lead != blank -%}
+        <p class="sv-rp__lead lead">{{ section.settings.lead }}</p>
+      {%- endif -%}
+
+      {%- comment -%}
+        ── The window ────────────────────────────────────────────────
+        The deadline was a bold word inside a sentence. It is the one
+        fact that decides whether a claim is payable, so it gets the
+        arc, the scale and the first position on the page.
+
+        The arc is stroke-dashoffset on a single circle — bounded,
+        compositor-friendly, and inert with motion reduced.
+      {%- endcomment -%}
+      <div class="sv-rp__window">
+        <div class="sv-rp__dial" aria-hidden="true">
+          <svg viewBox="0 0 120 120" focusable="false">
+            <circle class="sv-rp__dialtrack" cx="60" cy="60" r="52"/>
+            <circle class="sv-rp__dialarc" cx="60" cy="60" r="52"/>
+          </svg>
+          <span class="sv-rp__dialnum">{{ section.settings.window_value }}</span>
+        </div>
+        <div class="sv-rp__windowtext">
+          <p class="lab">{{ section.settings.window_label }}</p>
+          <p class="sv-rp__windowline">{{ section.settings.window_line }}</p>
+          {%- if section.settings.window_note != blank -%}
+            <p class="sv-rp__windownote sv-fine">{{ section.settings.window_note }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+
+      {%- comment -%}
+        The action, at the top. T-099 allows one floating cluster per
+        site and the footer already owns it, so this is an in-flow
+        button — never a second float.
+      {%- endcomment -%}
+      <div class="sv-rp__actions">
+        <a class="btn sv-rp__go" data-sv-wa
+           href="https://wa.me/{{ wa }}?text={{ opener | url_encode }}"
+           rel="noopener" target="_blank">{{ section.settings.cta_primary }}</a>
+        <a class="act sv-rp__alt" href="#{{ section.settings.routes_slug }}">
+          {{ section.settings.cta_secondary }}
+        </a>
+      </div>
+    </header>
+
+    {%- comment -%}
+      ── 01 · Triage ─────────────────────────────────────────────────
+      Four buttons, not four bullets. Choosing one is the only input
+      the page asks for, and it pays for itself three times: it names
+      the claim in every prefilled message, it narrows the kit below to
+      what that claim needs, and it tells the visitor in one tap that
+      their situation is one we cover.
+
+      They are <button>s inside a list, so keyboard and screen-reader
+      users get the same affordance. With script off they are inert —
+      which is why nothing below them is hidden by default.
+    {%- endcomment -%}
+    {%- if n_claim > 0 -%}
+      <section class="sv-rp__sec sv-rp__triage" id="{{ section.settings.triage_slug }}" data-sv-motion
+               aria-labelledby="sv-rp-triage-h">
+        <h2 class="sv-rp__h" id="sv-rp-triage-h">{{ section.settings.triage_title }}</h2>
+        {%- if section.settings.triage_note != blank -%}
+          <p class="sv-rp__note-lead sv-read">{{ section.settings.triage_note }}</p>
+        {%- endif -%}
+
+        <ul class="sv-rp__claims" role="list">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'claim' -%}
+              {%- liquid
+                assign slug = block.settings.slug | default: block.id | handle
+                assign wa_text = block.settings.wa_text | default: block.settings.label
+              -%}
+              <li class="sv-rp__claimwrap" {{ block.shopify_attributes }}>
+                <button class="sv-rp__claim" type="button"
+                        data-sv-claim="{{ slug }}"
+                        data-sv-needs="{{ block.settings.needs | escape }}"
+                        data-sv-text="{{ wa_text | escape }}"
+                        aria-pressed="false">
+                  <span class="sv-rp__claimart" aria-hidden="true">
+                    {%- render 'sv-report-icon', art: block.settings.art -%}
+                  </span>
+                  <span class="sv-rp__claimlab">{{ block.settings.label }}</span>
+                  {%- if block.settings.detail != blank -%}
+                    <span class="sv-rp__claimdet">{{ block.settings.detail }}</span>
+                  {%- endif -%}
+                  <span class="sv-rp__claimtick" aria-hidden="true">
+                    <svg viewBox="-14 -86 28 92" focusable="false">
+                      <path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z"/>
+                    </svg>
+                  </span>
+                </button>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+
+        {%- if section.settings.triage_exclusion != blank -%}
+          <div class="note sv-rp__exclusion">{{ section.settings.triage_exclusion }}</div>
+        {%- endif -%}
+      </section>
+    {%- endif -%}
+
+    {%- comment -%}
+      ── 02 · The kit ────────────────────────────────────────────────
+      "What to send us" was a static <ol>. It is the actual task, so it
+      is tickable, it counts, and it remembers — a visitor who leaves
+      for their camera roll and comes back finds their place.
+
+      The ticks are aria role=checkbox on buttons rather than real
+      inputs: there is no form, nothing posts, and a checkbox that
+      submits nowhere inside a <form> would be a lie about what the
+      page does.
+    {%- endcomment -%}
+    {%- if n_need > 0 -%}
+      <section class="sv-rp__sec sv-rp__kit" id="{{ section.settings.kit_slug }}" data-sv-motion
+               aria-labelledby="sv-rp-kit-h">
+        <h2 class="sv-rp__h" id="sv-rp-kit-h">{{ section.settings.kit_title }}</h2>
+        {%- if section.settings.kit_note != blank -%}
+          <p class="sv-rp__note-lead sv-read">{{ section.settings.kit_note }}</p>
+        {%- endif -%}
+
+        <div class="sv-rp__kitgrid">
+          <ol class="sv-rp__needs" data-sv-needs>
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'need' -%}
+                {%- assign nslug = block.settings.slug | default: block.id | handle -%}
+                <li class="sv-rp__need" data-sv-need="{{ nslug }}"
+                    data-sv-for="{{ block.settings.claims | escape }}"
+                    {{ block.shopify_attributes }}>
+                  <button class="sv-rp__tick" type="button" role="checkbox" aria-checked="false"
+                          data-sv-tick="{{ nslug }}">
+                    <span class="sv-rp__tickmark" aria-hidden="true">
+                      <svg viewBox="-14 -86 28 92" focusable="false">
+                        <path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z"/>
+                      </svg>
+                    </span>
+                    <span class="sv-visually-hidden">{{ section.settings.tick_label }}</span>
+                  </button>
+
+                  <div class="sv-rp__needbody">
+                    <p class="sv-rp__needlab sv-read-lab">{{ block.settings.label }}</p>
+                    {%- if block.settings.detail != blank -%}
+                      <div class="sv-rp__needdet sv-read">{{ block.settings.detail }}</div>
+                    {%- endif -%}
+
+                    {%- comment -%}
+                      The hint is a real <details>, so it works with no
+                      script at all. Where the browser has
+                      interpolate-size the open and close are animated;
+                      where it does not, it simply snaps — which is what
+                      <details> has always done.
+                    {%- endcomment -%}
+                    {%- if block.settings.hint != blank -%}
+                      <details class="sv-rp__hint">
+                        <summary class="sv-rp__hintsum">
+                          <span>{{ block.settings.hint_label | default: 'Where do I find this?' }}</span>
+                        </summary>
+                        <div class="sv-rp__hintbody sv-read">{{ block.settings.hint }}</div>
+                      </details>
+                    {%- endif -%}
+                  </div>
+                </li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ol>
+
+          {%- comment -%}
+            ── The gauge ───────────────────────────────────────────────
+            The ring, the order-number field and the armed button. The
+            field is not a form control in the posting sense — it exists
+            so the order number can ride along in the WhatsApp and email
+            links, which is the one thing that actually speeds a claim up
+            at our end.
+          {%- endcomment -%}
+          <aside class="sv-rp__gauge" data-sv-gauge>
+            <div class="sv-rp__ring" aria-hidden="true">
+              <svg viewBox="0 0 120 120" focusable="false">
+                <circle class="sv-rp__ringtrack" cx="60" cy="60" r="50"/>
+                <circle class="sv-rp__ringarc" cx="60" cy="60" r="50"/>
+              </svg>
+              <span class="sv-rp__ringnum" data-sv-count>0/{{ n_need }}</span>
+            </div>
+
+            <p class="sv-rp__gaugestate" data-sv-state role="status">
+              {{ section.settings.gauge_waiting }}
+            </p>
+
+            <div class="sv-rp__field">
+              <label class="sv-rp__fieldlab sv-read-lab" for="sv-rp-order">
+                {{ section.settings.order_label }}
+              </label>
+              <input class="sv-rp__input" id="sv-rp-order" type="text" inputmode="text"
+                     autocomplete="off" spellcheck="false"
+                     placeholder="{{ section.settings.order_placeholder | escape }}"
+                     data-sv-order>
+              <p class="sv-rp__fieldnote sv-fine">{{ section.settings.order_note }}</p>
+            </div>
+
+            <a class="btn sv-rp__go sv-rp__go--gauge" data-sv-wa
+               href="https://wa.me/{{ wa }}?text={{ opener | url_encode }}"
+               rel="noopener" target="_blank">{{ section.settings.cta_primary }}</a>
+          </aside>
+        </div>
+      </section>
+    {%- endif -%}
+
+  </div>
+
+  {%- comment -%}
+    ── 03 · The film ─────────────────────────────────────────────────
+    The unboxing rule, shown rather than described. It sits outside the
+    measured column because it is the one full-bleed moment on the page.
+
+    The stage is sticky and the scrub below it supplies the scroll
+    length. Where the browser has scroll-driven animations the frames
+    cross-fade continuously and reverse on the way back up, with no
+    script at all; where it does not, the script steps them with an
+    observer. Under reduced motion the whole thing unstacks into four
+    plain captioned figures — which is the same information, told
+    without movement.
+  {%- endcomment -%}
+  {%- if n_frame > 0 -%}
+    <section class="sv-rp__film" id="{{ section.settings.film_slug }}"
+             aria-labelledby="sv-rp-film-h">
+      <div class="sv-rp__filmtrack">
+        <div class="w sv-rp__filminner">
+
+          <div class="sv-rp__filmcopy">
+            <p class="eyebrow">{{ section.settings.film_eyebrow }}</p>
+            <h2 class="sv-rp__h sv-rp__filmh" id="sv-rp-film-h">{{ section.settings.film_title }}</h2>
+
+            <ol class="sv-rp__caps" data-sv-caps>
+              {%- assign fi = 0 -%}
+              {%- for block in section.blocks -%}
+                {%- if block.type == 'frame' -%}
+                  {%- assign fi = fi | plus: 1 -%}
+                  <li class="sv-rp__cap{% if fi == 1 %} is-on{% endif %}"
+                      data-sv-cap="{{ fi }}" {{ block.shopify_attributes }}>
+                    <span class="num sv-rp__capnum">{{ fi }}</span>
+                    <span class="sv-rp__captitle">{{ block.settings.caption }}</span>
+                    {%- if block.settings.detail != blank -%}
+                      <span class="sv-rp__capdet sv-read">{{ block.settings.detail }}</span>
+                    {%- endif -%}
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ol>
+
+            <div class="sv-rp__pips" data-sv-pips aria-hidden="true">
+              {%- for i in (1..n_frame) -%}
+                <i class="{% if forloop.first %}on{% endif %}"></i>
+              {%- endfor -%}
+            </div>
+          </div>
+
+          <div class="sv-rp__stage">
+            {%- assign si = 0 -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'frame' -%}
+                {%- assign si = si | plus: 1 -%}
+                {%- comment -%}
+                  A photograph wins over the drawing when one is set, and
+                  the drawing stays as the fallback rather than being
+                  replaced — so a frame whose image has not been uploaded
+                  yet still renders a scene rather than a hole, and the
+                  sequence can be filled in one frame at a time.
+
+                  alt is empty by design: the figcaption below already
+                  names the frame, and the caption list beside the stage
+                  carries the same words again. A third reading of it
+                  would be noise in a screen reader, not help.
+                {%- endcomment -%}
+                <figure class="sv-rp__scene{% if block.settings.image != blank %} sv-rp__scene--img{% endif %}{% if si == 1 %} is-on{% endif %}"
+                        data-sv-scene="{{ si }}" style="--sv-rp-i:{{ si }}">
+                  {%- if block.settings.image != blank -%}
+                    {%- comment -%}
+                      ── Loading ──────────────────────────────────────
+                      The first frame is not lazy. Once the sequence
+                      pins it is the whole screen, and a lazy image only
+                      begins loading as it nears the viewport — which on
+                      this page is the same moment it is needed, so it
+                      arrived visibly late every time.
+
+                      Frames two to four stay lazy. They are absolutely
+                      positioned inside the same stage, so the browser
+                      starts fetching them as soon as that stage enters
+                      the viewport — roughly a full viewport of scroll
+                      before the scrub reaches them, and each is about
+                      100KB over a warm CDN.
+
+                      ── sizes ────────────────────────────────────────
+                      Measured rather than guessed. The old 46vw was
+                      wrong at every width and made the browser pick a
+                      larger file than it could ever use:
+
+                        .w caps at 1220 with 48px of padding  → 1124
+                        filminner is 5fr 7fr with a 72px gap  → 1052
+                        the stage is the 7fr column           → ~614px
+
+                      So above 1220 the stage is a fixed 614px and does
+                      not scale with the viewport at all. Below 881 it
+                      unstacks to the full column, and below 760 the
+                      page padding drops to 28px a side.
+                    {%- endcomment -%}
+                    {%- liquid
+                      assign img_loading = 'lazy'
+                      assign img_priority = 'auto'
+                      if si == 1
+                        assign img_loading = 'eager'
+                        assign img_priority = 'high'
+                      endif
+                    -%}
+                    {{
+                      block.settings.image
+                      | image_url: width: 1600
+                      | image_tag:
+                        loading: img_loading,
+                        fetchpriority: img_priority,
+                        decoding: 'async',
+                        sizes: '(min-width: 1220px) 614px, (min-width: 881px) calc(58.3vw - 98px), (min-width: 761px) calc(100vw - 96px), calc(100vw - 56px)',
+                        widths: '400, 600, 800, 1000, 1200, 1600',
+                        class: 'sv-rp__photo',
+                        alt: ''
+                    }}
+                  {%- else -%}
+                    {%- render 'sv-report-scene', art: block.settings.art -%}
+                  {%- endif -%}
+                  <figcaption class="sv-visually-hidden">{{ block.settings.caption }}</figcaption>
+                </figure>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+
+        </div>
+      </div>
+
+      {%- comment -%}
+        The scroll length. One viewport per frame — the sticky track
+        above it holds while this passes. It carries nothing, so on a
+        narrow screen and under reduced motion it collapses to zero and
+        the stage becomes an ordinary stack.
+      {%- endcomment -%}
+      <div class="sv-rp__scrub" aria-hidden="true"></div>
+
+      {%- if section.settings.film_note != blank -%}
+        <div class="w sv-rp__filmfoot" data-sv-motion>
+          <div class="note sv-rp__filmnote">{{ section.settings.film_note }}</div>
+        </div>
+      {%- endif -%}
+    </section>
+  {%- endif -%}
+
+  <div class="w sv-rp__inner sv-rp__inner--b">
+
+    {%- comment -%}
+      ── 04 · Routes ─────────────────────────────────────────────────
+      Three ways to reach us, each carrying whatever the visitor has
+      already told the page. Every one is a plain anchor with a working
+      href before script touches it.
+
+      There is deliberately no upload form here. Shopify's contact form
+      cannot take a 400MB video, and offering a field that silently
+      fails on the file the whole claim depends on would be worse than
+      offering nothing.
+    {%- endcomment -%}
+    {%- if n_route > 0 -%}
+      <section class="sv-rp__sec sv-rp__routes" id="{{ section.settings.routes_slug }}" data-sv-motion
+               aria-labelledby="sv-rp-routes-h">
+        <h2 class="sv-rp__h" id="sv-rp-routes-h">{{ section.settings.routes_title }}</h2>
+        {%- if section.settings.routes_note != blank -%}
+          <p class="sv-rp__note-lead sv-read">{{ section.settings.routes_note }}</p>
+        {%- endif -%}
+
+        <ul class="sv-rp__routelist" role="list">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'route' -%}
+              {%- liquid
+                assign kind = block.settings.kind
+                assign href = ''
+
+                comment
+                  The opener is encoded on its own line. Chained onto the
+                  append it would encode the scheme and the number too,
+                  and wa.me would be handed one long literal.
+                endcomment
+                assign opener_enc = opener | url_encode
+
+                case kind
+                  when 'whatsapp'
+                    assign href = 'https://wa.me/' | append: wa | append: '?text=' | append: opener_enc
+                  when 'email'
+                    assign href = 'mailto:' | append: mail
+                  else
+                    assign href = block.settings.url
+                endcase
+              -%}
+              <li class="sv-rp__route sv-rp__route--{{ kind }}{% if block.settings.primary %} is-primary{% endif %}"
+                  {{ block.shopify_attributes }}>
+                <span class="sv-rp__routeart" aria-hidden="true">
+                  {%- render 'sv-report-icon', art: kind -%}
+                </span>
+
+                <h3 class="sv-rp__routeh">{{ block.settings.title }}</h3>
+                {%- if block.settings.body != blank -%}
+                  <div class="sv-rp__routebody sv-read">{{ block.settings.body }}</div>
+                {%- endif -%}
+
+                {%- if kind == 'note' -%}
+                  {%- comment -%}
+                    A route with nowhere to click — the large-file
+                    advice. It keeps the card so the three read as one
+                    row rather than two cards and a paragraph.
+                  {%- endcomment -%}
+                {%- elsif href != blank -%}
+                  <a class="{% if block.settings.primary %}btn{% else %}btn btn--ghost{% endif %} sv-rp__routego"
+                     {% if kind == 'whatsapp' %}data-sv-wa{% elsif kind == 'email' %}data-sv-mail{% endif %}
+                     href="{{ href }}"
+                     {% if kind != 'email' %}rel="noopener" target="_blank"{% endif %}>
+                    {{ block.settings.cta | default: 'Open' }}
+                  </a>
+                {%- endif -%}
+
+                {%- if kind == 'email' -%}
+                  <p class="sv-rp__copy">
+                    <span class="sv-rp__copyval" data-sv-copyval>{{ mail }}</span>
+                    <button class="sv-rp__copybtn" type="button" data-sv-copy="{{ mail }}" hidden>
+                      <span data-sv-copytext>{{ section.settings.copy_label }}</span>
+                    </button>
+                  </p>
+                {%- endif -%}
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </section>
+    {%- endif -%}
+
+    {%- comment -%}
+      ── 05 · What happens next ──────────────────────────────────────
+      A rail rather than a bulleted list, because the value of this
+      section is that it is a sequence with times attached. The
+      connecting line scales with scroll where the browser has
+      scroll-driven animation, and is simply drawn where it does not.
+    {%- endcomment -%}
+    {%- if n_step > 0 -%}
+      <section class="sv-rp__sec sv-rp__next" id="{{ section.settings.next_slug }}" data-sv-motion
+               aria-labelledby="sv-rp-next-h">
+        <h2 class="sv-rp__h" id="sv-rp-next-h">{{ section.settings.next_title }}</h2>
+
+        <ol class="sv-rp__rail">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'step' -%}
+              <li class="sv-rp__stop" {{ block.shopify_attributes }}>
+                <span class="sv-rp__stopdot" aria-hidden="true"></span>
+                {%- if block.settings.meta != blank -%}
+                  <span class="lab sv-rp__stopmeta">{{ block.settings.meta }}</span>
+                {%- endif -%}
+                <h3 class="sv-rp__stoph">{{ block.settings.title }}</h3>
+                {%- if block.settings.body != blank -%}
+                  <div class="sv-rp__stopbody sv-read">{{ block.settings.body }}</div>
+                {%- endif -%}
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ol>
+
+        {%- if section.settings.next_note != blank -%}
+          <div class="note sv-rp__nextnote">{{ section.settings.next_note }}</div>
+        {%- endif -%}
+      </section>
+    {%- endif -%}
+
+  </div>
+
+  {%- comment -%}
+    ── 06 · Why ──────────────────────────────────────────────────────
+    The one inverted moment the system allows per page (§07). It goes
+    to the video paragraph because that paragraph is the page arguing
+    its own case, and it is the best writing on the site.
+  {%- endcomment -%}
+  {%- if section.settings.why_quote != blank or section.settings.why_body != blank -%}
+    <aside class="sv-rp__why panel-dark" data-sv-motion aria-labelledby="sv-rp-why-h">
+      <div class="w n sv-rp__whyinner">
+        <p class="lab">{{ section.settings.why_label }}</p>
+        <h2 class="sv-rp__whyh" id="sv-rp-why-h">{{ section.settings.why_title }}</h2>
+        {%- if section.settings.why_quote != blank -%}
+          <div class="pull sv-rp__pull">
+            <p>{{ section.settings.why_quote }}</p>
+          </div>
+        {%- endif -%}
+        {%- if section.settings.why_body != blank -%}
+          <div class="sv-rp__whybody">{{ section.settings.why_body }}</div>
+        {%- endif -%}
+      </div>
+    </aside>
+  {%- endif -%}
+
+  {%- comment -%}
+    ── 07 · The small print ──────────────────────────────────────────
+    The page is a summary and says so. These links are the reason it is
+    allowed to be one.
+  {%- endcomment -%}
+  {%- if section.settings.fine != blank -%}
+    <div class="w sv-rp__inner sv-rp__fine" data-sv-motion>
+      <div class="sv-rp__finebody sv-read">{{ section.settings.fine }}</div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%}
+    ── HowTo ─────────────────────────────────────────────────────────
+    The kit and the routes are literally a procedure, so the page is
+    eligible for HowTo rather than the FAQPage the FAQ emits. Built from
+    the real blocks, so it can never drift from what is on screen.
+  {%- endcomment -%}
+  {%- if n_need > 0 -%}
+    {%- capture howto_steps -%}
+      {%- assign hi = 0 -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'need' -%}
+          {%- assign hi = hi | plus: 1 -%}
+          {%- if hi > 1 %},{% endif -%}
+          {
+            "@type": "HowToStep",
+            "position": {{ hi }},
+            "name": {{ block.settings.label | strip_html | json }},
+            "text": {{ block.settings.detail | strip_html | strip_newlines | json }}
+          }
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"HowTo","name":{{ section.settings.title_a | append: ' ' | append: section.settings.title_b | strip_html | json }},"description":{{ section.settings.lead | strip_html | json }},"step":[{{ howto_steps | strip_newlines }}]}
+    </script>
+  {%- endif -%}
+
+  <script>
+    (function () {
+      var root = document.currentScript.closest('[data-sv-report]');
+      if (!root) return;
+
+      var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      root.classList.add('sv-rp--js');
+
+      /* ── Sticky offset ──────────────────────────────────────────────
+         The gauge parks under the header group, and a pasted anchor has
+         to land clear of it. That height is not knowable in CSS — it
+         changes with the announcement bar and between breakpoints — so
+         it is measured. The CSS fallback value stands until it is. */
+      var chrome = document.getElementById('header-group');
+      function setStick() {
+        if (!chrome) return;
+        var h = Math.round(chrome.getBoundingClientRect().height);
+        if (h > 0) root.style.setProperty('--stick', h + 'px');
+      }
+      setStick();
+      window.addEventListener('resize', setStick);
+
+      var WA    = {{ wa | json }};
+      var MAIL  = {{ mail | json }};
+      var OPEN  = {{ opener | json }};
+      var SUBJ  = {{ section.settings.mail_subject | json }};
+      var STATE = {
+        waiting: {{ section.settings.gauge_waiting | json }},
+        part:    {{ section.settings.gauge_part | json }},
+        ready:   {{ section.settings.gauge_ready | json }}
+      };
+
+      var store = {
+        get: function (k) { try { return window.localStorage.getItem('sv-rp:' + k); } catch (e) { return null; } },
+        set: function (k, v) { try { window.localStorage.setItem('sv-rp:' + k, v); } catch (e) {} },
+        del: function (k) { try { window.localStorage.removeItem('sv-rp:' + k); } catch (e) {} }
+      };
+
+      /* ── Shared state ───────────────────────────────────────────────
+         One object, one writer. Everything that can change a link —
+         the claim, the ticks, the order number — funnels through
+         paint(), so the WhatsApp deep link at the top of the page and
+         the one in the gauge can never disagree. */
+      var claim = null;       /* { slug, text, needs } */
+      var order = '';
+      var ticked = Object.create(null);
+
+      var claimBtns = Array.prototype.slice.call(root.querySelectorAll('[data-sv-claim]'));
+      var needs     = Array.prototype.slice.call(root.querySelectorAll('[data-sv-need]'));
+      var tickBtns  = Array.prototype.slice.call(root.querySelectorAll('[data-sv-tick]'));
+      var waLinks   = Array.prototype.slice.call(root.querySelectorAll('[data-sv-wa]'));
+      var mailLinks = Array.prototype.slice.call(root.querySelectorAll('[data-sv-mail]'));
+      var countEl   = root.querySelector('[data-sv-count]');
+      var stateEl   = root.querySelector('[data-sv-state]');
+      var gauge     = root.querySelector('[data-sv-gauge]');
+      var orderEl   = root.querySelector('[data-sv-order]');
+
+      /* ── Message ────────────────────────────────────────────────────
+         Composed rather than templated, so an empty field simply drops
+         its clause instead of leaving "order number: " hanging. */
+      function message() {
+        var out = OPEN;
+        if (claim && claim.text) out += ' ' + claim.text + '.';
+        if (order) out += ' Order ' + order + '.';
+        return out;
+      }
+
+      function paint() {
+        var msg = message();
+        waLinks.forEach(function (a) {
+          a.href = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
+        });
+        mailLinks.forEach(function (a) {
+          var subject = SUBJ + (order ? ' — ' + order : '');
+          a.href = 'mailto:' + MAIL +
+            '?subject=' + encodeURIComponent(subject) +
+            '&body=' + encodeURIComponent(msg);
+        });
+      }
+
+      /* ── Triage ─────────────────────────────────────────────────────
+         Selecting a claim narrows the kit. A need with no claim list
+         belongs to every claim; one that names claims appears only for
+         those. Nothing is ever removed from the DOM — hidden items
+         come back the moment the claim changes or is cleared. */
+      function applyClaim(next) {
+        claim = next;
+        root.setAttribute('data-sv-picked', next ? next.slug : '');
+
+        claimBtns.forEach(function (b) {
+          var on = !!next && b.dataset.svClaim === next.slug;
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.classList.toggle('is-on', on);
+        });
+
+        needs.forEach(function (li) {
+          var only = (li.dataset.svFor || '').trim();
+          var show = true;
+          if (next && only) {
+            show = only.split(',').some(function (s) { return s.trim() === next.slug; });
+          }
+          li.hidden = !show;
+        });
+
+        tally();
+        paint();
+      }
+
+      /* A DOM change that reorders visible items is exactly what the
+         View Transitions API is for. Where it is absent — or motion is
+         reduced — the mutation simply happens, which is the same
+         result without the cross-fade. */
+      function transition(mutate) {
+        if (calm || !document.startViewTransition) { mutate(); return; }
+        try { document.startViewTransition(mutate); } catch (e) { mutate(); }
+      }
+
+      claimBtns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          var slug = b.dataset.svClaim;
+          var next = (claim && claim.slug === slug) ? null : {
+            slug: slug,
+            text: b.dataset.svText || '',
+            needs: b.dataset.svNeeds || ''
+          };
+          transition(function () { applyClaim(next); });
+          if (next) store.set('claim', slug); else store.del('claim');
+        });
+      });
+
+      /* ── The kit ────────────────────────────────────────────────────
+         Ticks are per-browser and survive the trip to WhatsApp and
+         back, which is the whole point: the camera roll is a different
+         app, and coming back to a reset list reads as lost work. */
+      tickBtns.forEach(function (b) {
+        var key = b.dataset.svTick;
+        if (store.get('tick:' + key) === '1') mark(b, true);
+
+        b.addEventListener('click', function () {
+          mark(b, b.getAttribute('aria-checked') !== 'true');
+          store.set('tick:' + key, ticked[key] ? '1' : '0');
+          tally();
+        });
+      });
+
+      function mark(b, on) {
+        ticked[b.dataset.svTick] = on;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.closest('[data-sv-need]').classList.toggle('is-done', on);
+      }
+
+      /* The ring is driven by a registered custom property, so the fill
+         interpolates rather than jumping. Where @property is absent the
+         value still lands — it simply arrives in one step. */
+      function tally() {
+        var live = needs.filter(function (li) { return !li.hidden; });
+        var done = live.filter(function (li) {
+          return ticked[li.dataset.svNeed];
+        }).length;
+        var total = live.length;
+
+        if (countEl) countEl.textContent = done + '/' + total;
+        if (gauge) {
+          gauge.style.setProperty('--sv-rp-p', total ? (done / total).toFixed(4) : 0);
+          gauge.classList.toggle('is-ready', total > 0 && done === total);
+        }
+
+        if (stateEl) {
+          var txt = !done ? STATE.waiting : (done === total ? STATE.ready : STATE.part);
+          /* role=status announces on change only; writing the same
+             string back would be silent anyway, but skipping it keeps
+             the node from churning on every unrelated tally. */
+          if (stateEl.textContent.trim() !== txt) stateEl.textContent = txt;
+        }
+      }
+
+      /* ── Order number ───────────────────────────────────────────────
+         Never sent anywhere by this page. It is held locally and
+         pasted into the message the visitor themselves sends. */
+      if (orderEl) {
+        var saved = store.get('order');
+        if (saved) { orderEl.value = saved; order = saved; }
+
+        orderEl.addEventListener('input', function () {
+          order = orderEl.value.trim();
+          store.set('order', order);
+          paint();
+        });
+      }
+
+      /* ── Copy ───────────────────────────────────────────────────────
+         Revealed only where the API exists, so the button is never a
+         control that cannot work. */
+      var copyBtn = root.querySelector('[data-sv-copy]');
+      if (copyBtn && navigator.clipboard && window.isSecureContext) {
+        copyBtn.hidden = false;
+        var copyText = copyBtn.querySelector('[data-sv-copytext]');
+        var was = copyText ? copyText.textContent : '';
+        copyBtn.addEventListener('click', function () {
+          navigator.clipboard.writeText(copyBtn.dataset.svCopy).then(function () {
+            if (!copyText) return;
+            copyText.textContent = {{ section.settings.copy_done | json }};
+            copyBtn.classList.add('is-done');
+            setTimeout(function () {
+              copyText.textContent = was;
+              copyBtn.classList.remove('is-done');
+            }, 2000);
+          }).catch(function () {});
+        });
+      }
+
+      /* Restore the claim last, so the kit is filtered before the
+         first tally rather than counting rows that are about to go. */
+      var priorClaim = store.get('claim');
+      if (priorClaim) {
+        var match = claimBtns.filter(function (b) { return b.dataset.svClaim === priorClaim; })[0];
+        if (match) {
+          applyClaim({ slug: priorClaim, text: match.dataset.svText || '', needs: match.dataset.svNeeds || '' });
+        } else {
+          tally();
+        }
+      } else {
+        tally();
+      }
+      paint();
+
+      /* ── The film ───────────────────────────────────────────────────
+         The stylesheet ships a readable baseline — a captioned drawing
+         over a numbered list — and the pinned sequence is opted into
+         from here, never assumed. Two mechanisms:
+
+           scrub   CSS scroll-driven, continuous and reversible. Its
+                   keyframes divide the range into four, which CSS
+                   cannot do arithmetically, so it is used only at the
+                   count those keyframes are written for.
+           step    an observer stepping sentinels across the scrub.
+                   Index-driven, so correct at any count.
+
+         Under reduced motion neither is added and the baseline stands.
+         The scrub needs no script beyond the class; the step path
+         builds its sentinels below. */
+      var film = root.querySelector('.sv-rp__film');
+      var supportsScrub = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()'));
+      var frames = film ? film.querySelectorAll('[data-sv-scene]').length : 0;
+
+      if (film && !calm && frames > 1) {
+        if (supportsScrub && frames === 4) {
+          root.classList.add('sv-rp--scrub');
+        } else if ('IntersectionObserver' in window) {
+          root.classList.add('sv-rp--step');
+
+          var scenes = Array.prototype.slice.call(film.querySelectorAll('[data-sv-scene]'));
+          var caps   = Array.prototype.slice.call(film.querySelectorAll('[data-sv-cap]'));
+          var pips   = Array.prototype.slice.call(film.querySelectorAll('[data-sv-pips] i'));
+          var scrub  = film.querySelector('.sv-rp__scrub');
+
+          if (scrub) {
+            var marks = [];
+            for (var i = 0; i < scenes.length; i++) {
+              var s = document.createElement('i');
+              s.className = 'sv-rp__mark';
+              s.setAttribute('aria-hidden', 'true');
+              scrub.appendChild(s);
+              marks.push(s);
+            }
+
+            var show = function (n) {
+              scenes.forEach(function (el, k) { el.classList.toggle('is-on', k === n); });
+              caps.forEach(function (el, k) { el.classList.toggle('is-on', k === n); });
+              pips.forEach(function (el, k) { el.classList.toggle('on', k === n); });
+            };
+
+            var spy = new IntersectionObserver(function (entries) {
+              entries.forEach(function (en) {
+                if (!en.isIntersecting) return;
+                var n = marks.indexOf(en.target);
+                if (n > -1) show(n);
+              });
+            }, { rootMargin: '-50% 0px -50% 0px', threshold: 0 });
+
+            marks.forEach(function (m) { spy.observe(m); });
+          }
+        }
+      }
+
+      /* ── Reveal on scroll ───────────────────────────────────────────
+         Same contract as sv-faq and sv-size-guide: fires once, then
+         unobserves, and a timer pins each entrance to its finished
+         state shortly after it should have arrived. Nothing on this
+         page may depend on a transition completing in order to be
+         read, and a throttled tab does not advance transitions. */
+      if (!calm && 'IntersectionObserver' in window) {
+        root.classList.add('sv-motion-ready');
+
+        var held = Array.prototype.slice.call(root.querySelectorAll('[data-sv-motion]'));
+
+        var pinEntrance = function (el) {
+          setTimeout(function () { el.classList.add('sv-settled'); }, 1800);
+        };
+
+        var reveal = function (el) {
+          if (el.classList.contains('sv-vis')) return;
+          el.classList.add('sv-vis');
+          mo.unobserve(el);
+          pinEntrance(el);
+        };
+
+        var mo = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) reveal(en.target); });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+
+        held.forEach(function (el) { mo.observe(el); });
+
+        /* The masthead is above the fold by definition. Waiting on an
+           observer to confirm what is already on screen buys nothing
+           but a chance of a blank hero. */
+        root.querySelectorAll('.sv-rp__head').forEach(reveal);
+
+        /* An observer reports a state, not every state an element
+           passed through. Scroll hard enough in one gesture and a
+           section can go from below the fold to above it without a
+           callback ever seeing it intersect — and it would then stay
+           invisible for good. The sweep closes that. */
+        var queued = false;
+        var sweep = function () {
+          queued = false;
+          var fold = window.innerHeight;
+          held.forEach(function (el) {
+            if (!el.classList.contains('sv-vis') &&
+                el.getBoundingClientRect().top < fold) reveal(el);
+          });
+        };
+
+        window.addEventListener('scroll', function () {
+          if (queued) return;
+          queued = true;
+          setTimeout(sweep, 180);
+        }, { passive: true });
+
+        setTimeout(sweep, 1200);
+      }
+
+      /* ── The thread ─────────────────────────────────────────────────
+         Ornament, so unlike the reveal it is allowed to lean on rAF:
+         if a frame never comes the stitch simply does not move and
+         nothing becomes unreadable. Skipped entirely where CSS is
+         already driving it. */
+      if (!supportsScrub) {
+        var inner = root.querySelector('.sv-rp__inner');
+        var ticking = false;
+
+        /* rAF must be called with window as its receiver — handing the
+           bare function reference around throws Illegal invocation. */
+        var frame = window.requestAnimationFrame
+          ? window.requestAnimationFrame.bind(window)
+          : function (fn) { return setTimeout(fn, 16); };
+
+        var track = function () {
+          ticking = false;
+          if (!inner) return;
+          var r = inner.getBoundingClientRect();
+          var seen = window.innerHeight - r.top;
+          var read = r.height > 0 ? seen / r.height : 0;
+          root.style.setProperty('--sv-rp-read', Math.max(0, Math.min(1, read)).toFixed(4));
+        };
+
+        window.addEventListener('scroll', function () {
+          if (ticking) return;
+          ticking = true;
+          frame(track);
+        }, { passive: true });
+
+        track();
+      }
+
+      /* ── Deep links ─────────────────────────────────────────────────
+         Support pastes /pages/report-a-problem#unboxing into a reply
+         and the customer lands on that section, flagged. */
+      function land() {
+        var id = decodeURIComponent(window.location.hash.slice(1));
+        if (!id) return;
+        var el = root.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(id) : id));
+        if (!el) return;
+        el.scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
+        el.classList.add('is-landed');
+        setTimeout(function () { el.classList.remove('is-landed'); }, 2200);
+      }
+      window.addEventListener('hashchange', land);
+      if (window.location.hash) setTimeout(land, 60);
+    })();
+  </script>
+
+</section>
+
+
+{% schema %}
+{
+  "name": "SV Report a problem",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Masthead"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Claims"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "title_a",
+      "label": "Title, first line",
+      "default": "Something wrong"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "title_b",
+      "label": "Title, second line",
+      "info": "Wrap a word in italics to set it in gold.",
+      "default": "<em>with your order?</em>"
+    },
+    {
+      "type": "textarea",
+      "id": "lead",
+      "label": "Lead",
+      "default": "We are sorry. Tell us quickly and we will put it right at our cost — a replacement or a full refund, whichever you prefer."
+    },
+    {
+      "type": "header",
+      "content": "The window"
+    },
+    {
+      "type": "text",
+      "id": "window_value",
+      "label": "The number",
+      "info": "Kept short — it is set at display size inside the dial.",
+      "default": "24"
+    },
+    {
+      "type": "text",
+      "id": "window_label",
+      "label": "Label",
+      "default": "Hours"
+    },
+    {
+      "type": "text",
+      "id": "window_line",
+      "label": "The line",
+      "default": "You have 24 hours from delivery or collection to report a problem."
+    },
+    {
+      "type": "textarea",
+      "id": "window_note",
+      "label": "Note",
+      "default": "Message us inside that window and the claim stands even if it takes us both a few days to settle it."
+    },
+    {
+      "type": "header",
+      "content": "Actions"
+    },
+    {
+      "type": "text",
+      "id": "cta_primary",
+      "label": "Primary action label",
+      "default": "Report it on WhatsApp"
+    },
+    {
+      "type": "text",
+      "id": "cta_secondary",
+      "label": "Secondary action label",
+      "default": "Other ways to reach us"
+    },
+    {
+      "type": "text",
+      "id": "whatsapp",
+      "label": "WhatsApp number (digits, with country code)",
+      "default": "918547629251"
+    },
+    {
+      "type": "text",
+      "id": "email",
+      "label": "Email address",
+      "default": "info@sahasravastra.com"
+    },
+    {
+      "type": "textarea",
+      "id": "prefill_opener",
+      "label": "Prefilled message opening",
+      "info": "Every WhatsApp and email link starts with this. The claim type and order number are added to it automatically when the visitor gives them.",
+      "default": "Hi Sahasra Vastra, I need to report a problem with my order."
+    },
+    {
+      "type": "text",
+      "id": "mail_subject",
+      "label": "Email subject",
+      "default": "Problem with my order"
+    },
+    {
+      "type": "header",
+      "content": "Triage"
+    },
+    {
+      "type": "text",
+      "id": "triage_title",
+      "label": "Heading",
+      "default": "What went wrong?"
+    },
+    {
+      "type": "text",
+      "id": "triage_slug",
+      "label": "Anchor slug",
+      "info": "Becomes /pages/report-a-problem#slug — keep it stable, support links depend on it.",
+      "default": "what-went-wrong"
+    },
+    {
+      "type": "textarea",
+      "id": "triage_note",
+      "label": "Note",
+      "default": "Tap the one that fits. It fills in your message for you and shows you exactly what we will need."
+    },
+    {
+      "type": "richtext",
+      "id": "triage_exclusion",
+      "label": "What we cannot accept",
+      "default": "<p>We cannot accept a change of mind, or a size that matches the published chart. That is why we ask you to measure a garment your child already wears before ordering — see our <a href=\"/pages/size-guide\">Size Guide</a>.</p>"
+    },
+    {
+      "type": "header",
+      "content": "What to send"
+    },
+    {
+      "type": "text",
+      "id": "kit_title",
+      "label": "Heading",
+      "default": "What to send us"
+    },
+    {
+      "type": "text",
+      "id": "kit_slug",
+      "label": "Anchor slug",
+      "default": "what-to-send"
+    },
+    {
+      "type": "textarea",
+      "id": "kit_note",
+      "label": "Note",
+      "default": "Tick these off as you gather them. We keep your place in this browser, so you can go to your camera roll and come back."
+    },
+    {
+      "type": "text",
+      "id": "tick_label",
+      "label": "Tick button label (for screen readers)",
+      "default": "Mark as ready"
+    },
+    {
+      "type": "text",
+      "id": "gauge_waiting",
+      "label": "Progress — nothing ticked",
+      "default": "Nothing ready yet. Take them in any order."
+    },
+    {
+      "type": "text",
+      "id": "gauge_part",
+      "label": "Progress — part way",
+      "default": "Almost. Message us anyway if you are stuck on one of them."
+    },
+    {
+      "type": "text",
+      "id": "gauge_ready",
+      "label": "Progress — complete",
+      "default": "All set. Send it now and we will reply within one working day."
+    },
+    {
+      "type": "text",
+      "id": "order_label",
+      "label": "Order number field label",
+      "default": "Your order number"
+    },
+    {
+      "type": "text",
+      "id": "order_placeholder",
+      "label": "Order number placeholder",
+      "default": "SV1234"
+    },
+    {
+      "type": "text",
+      "id": "order_note",
+      "label": "Order number note",
+      "info": "This field never sends anything anywhere. It only fills in the message the visitor sends themselves.",
+      "default": "Kept in this browser only, and added to your message so we can find you faster."
+    },
+    {
+      "type": "header",
+      "content": "The unboxing sequence"
+    },
+    {
+      "type": "text",
+      "id": "film_eyebrow",
+      "label": "Eyebrow",
+      "default": "The one thing we cannot waive"
+    },
+    {
+      "type": "text",
+      "id": "film_title",
+      "label": "Heading",
+      "default": "How to film the unboxing"
+    },
+    {
+      "type": "text",
+      "id": "film_slug",
+      "label": "Anchor slug",
+      "default": "unboxing"
+    },
+    {
+      "type": "richtext",
+      "id": "film_note",
+      "label": "Note under the sequence",
+      "default": "<p>One unbroken shot, start to finish. Half a minute of filming is what lets us settle a claim the same day instead of arguing about it.</p>"
+    },
+    {
+      "type": "header",
+      "content": "How to send it"
+    },
+    {
+      "type": "text",
+      "id": "routes_title",
+      "label": "Heading",
+      "default": "How to send it"
+    },
+    {
+      "type": "text",
+      "id": "routes_slug",
+      "label": "Anchor slug",
+      "default": "how-to-send"
+    },
+    {
+      "type": "textarea",
+      "id": "routes_note",
+      "label": "Note",
+      "default": "Whichever you choose, we get the same claim. Do not let a file size stop you from reporting a problem."
+    },
+    {
+      "type": "text",
+      "id": "copy_label",
+      "label": "Copy button label",
+      "default": "Copy"
+    },
+    {
+      "type": "text",
+      "id": "copy_done",
+      "label": "Copy button label once copied",
+      "default": "Copied"
+    },
+    {
+      "type": "header",
+      "content": "What happens next"
+    },
+    {
+      "type": "text",
+      "id": "next_title",
+      "label": "Heading",
+      "default": "What happens next"
+    },
+    {
+      "type": "text",
+      "id": "next_slug",
+      "label": "Anchor slug",
+      "default": "what-happens"
+    },
+    {
+      "type": "richtext",
+      "id": "next_note",
+      "label": "Note",
+      "default": "<p>Please keep the item, its tags and the original packaging until the claim is closed.</p>"
+    },
+    {
+      "type": "header",
+      "content": "Why we ask for a video"
+    },
+    {
+      "type": "text",
+      "id": "why_label",
+      "label": "Label",
+      "default": "Straight with you"
+    },
+    {
+      "type": "text",
+      "id": "why_title",
+      "label": "Heading",
+      "default": "Why we ask for a video"
+    },
+    {
+      "type": "textarea",
+      "id": "why_quote",
+      "label": "Pull quote",
+      "default": "It is the only way either of us can show what was actually inside the parcel when it arrived."
+    },
+    {
+      "type": "richtext",
+      "id": "why_body",
+      "label": "Body",
+      "default": "<p>With it we can settle most claims the same day and without argument. Without it we would have to build the cost of claims we cannot verify into our prices, and every honest customer would end up paying for that.</p>"
+    },
+    {
+      "type": "header",
+      "content": "The small print"
+    },
+    {
+      "type": "richtext",
+      "id": "fine",
+      "label": "Small print",
+      "default": "<p>This page is a summary. The complete terms are in our <a href=\"/policies/refund-policy\">Refund Policy</a>, and delivery matters are covered in our <a href=\"/policies/shipping-policy\">Shipping Policy</a>.</p><p>For a complaint about privacy or about how we have handled your personal information, please write to our Grievance Officer instead — the details are on our <a href=\"/policies/contact-information\">Contact Information</a> page.</p>"
+    },
+    {
+      "type": "header",
+      "content": "Background"
+    },
+    {
+      "type": "select",
+      "id": "bg_motion",
+      "label": "Background motion",
+      "info": "The drifting weave, lights and petals behind the page. Decorative only — nothing here is needed to make a claim.",
+      "options": [
+        { "value": "full", "label": "Full" },
+        { "value": "subtle", "label": "Subtle" },
+        { "value": "off", "label": "Off" }
+      ],
+      "default": "full"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "claim",
+      "name": "Claim type",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "It arrived damaged"
+        },
+        {
+          "type": "textarea",
+          "id": "detail",
+          "label": "Detail",
+          "default": "Torn, stained, or with a manufacturing defect."
+        },
+        {
+          "type": "select",
+          "id": "art",
+          "label": "Icon",
+          "options": [
+            { "value": "damaged", "label": "Torn seam" },
+            { "value": "wrong", "label": "Wrong item" },
+            { "value": "missing", "label": "Missing item" },
+            { "value": "tampered", "label": "Opened parcel" },
+            { "value": "late", "label": "Stalled delivery" },
+            { "value": "other", "label": "Something else" }
+          ],
+          "default": "damaged"
+        },
+        {
+          "type": "text",
+          "id": "slug",
+          "label": "Slug",
+          "info": "Lowercase, hyphenated. Used to match the 'Only for these claims' field on the items below.",
+          "default": "damaged"
+        },
+        {
+          "type": "text",
+          "id": "wa_text",
+          "label": "How this reads in the prefilled message",
+          "info": "Added after the opening line, as a sentence.",
+          "default": "The garment arrived damaged"
+        },
+        {
+          "type": "text",
+          "id": "needs",
+          "label": "Extra note (optional)"
+        }
+      ]
+    },
+    {
+      "type": "need",
+      "name": "Something to send",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Your order number"
+        },
+        {
+          "type": "richtext",
+          "id": "detail",
+          "label": "Detail",
+          "default": "<p>It begins with SV and is on your confirmation email and your packing slip.</p>"
+        },
+        {
+          "type": "text",
+          "id": "slug",
+          "label": "Slug",
+          "info": "Lowercase, hyphenated. Keep it stable — the tick is remembered against it.",
+          "default": "order-number"
+        },
+        {
+          "type": "text",
+          "id": "claims",
+          "label": "Only for these claims",
+          "info": "Comma-separated claim slugs. Leave blank to show for every claim."
+        },
+        {
+          "type": "text",
+          "id": "hint_label",
+          "label": "Hint link label",
+          "default": "Where do I find this?"
+        },
+        {
+          "type": "richtext",
+          "id": "hint",
+          "label": "Hint"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "name": "Unboxing frame",
+      "settings": [
+        {
+          "type": "text",
+          "id": "caption",
+          "label": "Caption",
+          "default": "Start filming before you open it"
+        },
+        {
+          "type": "textarea",
+          "id": "detail",
+          "label": "Detail",
+          "default": "Show the sealed parcel, all sides, before anything is cut."
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Photograph",
+          "info": "Optional. Upload one and it replaces the drawing for this frame. Landscape, ideally 4:3 or wider — it is cropped to fill. Leave empty to keep the drawing."
+        },
+        {
+          "type": "select",
+          "id": "art",
+          "label": "Drawing",
+          "info": "Used when no photograph is uploaded above.",
+          "options": [
+            { "value": "sealed", "label": "Sealed parcel" },
+            { "value": "label", "label": "Shipping label" },
+            { "value": "opening", "label": "Opening the packet" },
+            { "value": "contents", "label": "Everything out" }
+          ],
+          "default": "sealed"
+        }
+      ]
+    },
+    {
+      "type": "route",
+      "name": "Way to reach us",
+      "settings": [
+        {
+          "type": "select",
+          "id": "kind",
+          "label": "Kind",
+          "options": [
+            { "value": "whatsapp", "label": "WhatsApp" },
+            { "value": "email", "label": "Email" },
+            { "value": "link", "label": "Link" },
+            { "value": "note", "label": "Advice only, no link" }
+          ],
+          "default": "whatsapp"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "WhatsApp"
+        },
+        {
+          "type": "richtext",
+          "id": "body",
+          "label": "Body"
+        },
+        {
+          "type": "text",
+          "id": "cta",
+          "label": "Button label",
+          "default": "Open WhatsApp"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "URL",
+          "info": "Used only when the kind is Link."
+        },
+        {
+          "type": "checkbox",
+          "id": "primary",
+          "label": "Primary route",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "step",
+      "name": "What happens next — step",
+      "settings": [
+        {
+          "type": "text",
+          "id": "meta",
+          "label": "Timing",
+          "default": "Within 1 working day"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "We reply"
+        },
+        {
+          "type": "richtext",
+          "id": "body",
+          "label": "Body"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "SV Report a problem"
+    }
+  ]
+}
+{% endschema %}

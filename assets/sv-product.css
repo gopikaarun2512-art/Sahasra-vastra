@@ -1,0 +1,2045 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   SAHASRA VASTRA · PRODUCT
+   Consumed by sections/sv-product.liquid only.
+
+   Colour, spacing, motion and type all come from sv-system.css tokens and
+   primitives. There is no literal colour, no literal font stack and no
+   ad-hoc aspect-ratio in this file — if a value is needed that the system
+   does not have, that is a system decision, not a page decision.
+
+   Tier A (ARCHITECTURE §3.8): state changes only. No reveal classes, no
+   entrance transitions, nothing tied to scroll position. The only
+   transitions below are on :hover, [open] and the selected-size state.
+
+   ── Cascade notes, learned the hard way ────────────────────────────────
+   sv-system.css §02 scopes its reset and base type under [data-sv], which
+   makes those rules (0,1,1). A bare class here is (0,1,0) and loses. Every
+   rule that overrides base type is therefore written as a compound
+   [data-sv] .sv-pdp__x selector, deliberately, not by accident.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 01 · FRAME ───────────────────────────────────────────────────────
+   section[data-sv] ships var(--g) padding — 160px, right for a campaign
+   surface and far too much above a price. (0,2,0) beats it. */
+[data-sv].sv-pdp {
+  padding: var(--b) 0 var(--d);
+}
+
+.sv-pdp__crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55em;
+  margin-bottom: var(--b);
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--grey);
+}
+
+.sv-pdp__crumbs a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--micro) var(--e);
+}
+
+.sv-pdp__crumbs a:hover {
+  border-bottom-color: var(--tan);
+}
+
+.sv-pdp__crumbs [aria-current] {
+  color: var(--ink);
+}
+
+/* ── 02 · BUY ZONE ────────────────────────────────────────────────────
+   7:5, gallery leading. The grid is on an inner element and never on .w —
+   .w carries a max-width and inline padding, and a grid placed directly
+   on it resolves its tracks against max-content. */
+.sv-pdp__buy {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: var(--d);
+  align-items: start;
+}
+
+/* The column rides the page down. The offset clears the measured header;
+   header.js sets --header-height, and the fallback matches the 60px
+   declared in sections/header.liquid. */
+.sv-pdp__stick {
+  position: sticky;
+  top: calc(var(--header-height, 60px) + var(--b));
+  display: grid;
+  gap: var(--b);
+}
+
+/* ── 03 · GALLERY ─────────────────────────────────────────────────────
+   One list, two behaviours. Desktop: lead frame full width, the rest
+   two-up. Mobile: the same list becomes a snap row — no second DOM. */
+.sv-pdp__frames {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sv-pdp__frame--lead {
+  grid-column: 1 / -1;
+}
+
+.sv-pdp__frame .im {
+  box-shadow: var(--sh-s);
+}
+
+/* The disclosure sits on the gallery because the Terms tell buyers to
+   rely on the unedited photograph — a footnote below the fold would not
+   be where they are looking. */
+[data-sv] .sv-pdp__ai {
+  max-width: none;
+  margin-top: var(--a);
+  padding: 12px var(--a);
+  background: var(--cream-2);
+  border-left: 2px solid var(--tan);
+  color: var(--grey);
+}
+
+/* ── 04 · TITLE AND PRICE ─────────────────────────────────────────────
+   [data-sv] h1 is clamp(2.9rem, 7vw, 5.4rem) — a masthead size. A product
+   name sits beside a price and a size grid and takes a third of it. */
+[data-sv] .sv-pdp__title {
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  line-height: 1.1;
+  color: var(--emerald);
+}
+
+.sv-pdp__pricing {
+  display: grid;
+  gap: 4px;
+}
+
+[data-sv] .sv-pdp__price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  max-width: none;
+  font-family: var(--serif);
+  font-size: 1.85rem;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.sv-pdp__was {
+  font-size: 1.05rem;
+  color: var(--grey);
+  text-decoration-thickness: 1px;
+}
+
+/* Per-unit price is must-know (HANDOFF rule 6): it stands next to the
+   price, never inside a panel. */
+[data-sv] .sv-pdp__unit {
+  max-width: none;
+  font-family: var(--sans);
+  font-size: 0.84rem;
+  color: var(--ink);
+}
+
+[data-sv] .sv-pdp__saving {
+  max-width: none;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--emerald);
+}
+
+.sv-pdp__run {
+  margin-top: 2px;
+}
+
+/* ── 05 · COLOURWAYS ──────────────────────────────────────────────────
+   A colourway sold out in every size is struck through and still linked —
+   it is a real design, and hiding it makes the range look thinner. */
+.sv-pdp__colours {
+  display: grid;
+  gap: 10px;
+}
+
+.sv-pdp__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sv-pdp__swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 8px;
+  border: 1px solid var(--cream-2);
+  border-radius: 999px;
+  background: var(--card);
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color var(--micro) var(--e), color var(--micro) var(--e);
+}
+
+.sv-pdp__swatch:hover {
+  border-color: var(--tan);
+}
+
+.sv-pdp__swatch.is-current {
+  border-color: var(--emerald);
+  color: var(--emerald);
+}
+
+.sv-pdp__swatch.is-out .sv-pdp__swatchname {
+  text-decoration: line-through;
+  color: var(--grey);
+}
+
+.sv-pdp__dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--sv-swatch);
+  box-shadow: inset 0 0 0 1px rgba(26, 26, 26, 0.12);
+}
+
+/* ── 06 · SIZE ────────────────────────────────────────────────────────
+   Buttons, never a dropdown. Sold-out sizes stay visible and selectable:
+   selecting one is how a visitor learns it is gone, and the Add button
+   answers in the same beat. */
+.sv-pdp__sizes {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sv-pdp__sizelab {
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+/* Three across, fixed. auto-fill was tried first and gave four columns in
+   the decision column's width, which leaves a five-size run reading 4 + 1
+   — a stranded button that looks like an error. Three gives 3 + 2 for five
+   sizes and a square 3 × 3 for the nine-size run the size guide publishes. */
+.sv-pdp__sizegrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sv-pdp__size {
+  padding: 14px 10px;
+  background: var(--card);
+  border: 1px solid var(--cream-2);
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color var(--micro) var(--e),
+    background-color var(--micro) var(--e),
+    color var(--micro) var(--e);
+}
+
+.sv-pdp__size:hover {
+  border-color: var(--tan);
+}
+
+.sv-pdp__size.is-on {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: var(--cream);
+}
+
+.sv-pdp__size.is-out {
+  color: var(--grey);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  background: transparent;
+}
+
+.sv-pdp__size.is-out.is-on {
+  background: var(--cream-2);
+  border-color: var(--grey);
+  color: var(--grey);
+}
+
+/* ── 07 · ACTIONS ─────────────────────────────────────────────────────*/
+.sv-pdp__form {
+  display: grid;
+  gap: var(--a);
+}
+
+.sv-pdp__actions {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.sv-pdp__qty {
+  display: flex;
+  align-items: center;
+  flex: none;
+  border: 1px solid var(--cream-2);
+  border-radius: 2px;
+  background: var(--card);
+}
+
+.sv-pdp__qtybtn {
+  width: 40px;
+  align-self: stretch;
+  background: none;
+  border: 0;
+  font-family: var(--sans);
+  font-size: 1rem;
+  color: var(--ink);
+  cursor: pointer;
+  transition: color var(--micro) var(--e);
+}
+
+.sv-pdp__qtybtn:hover {
+  color: var(--emerald);
+}
+
+.sv-pdp__qtyinput {
+  width: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 0.86rem;
+  color: var(--ink);
+  /* The spinners duplicate the two buttons either side of the field. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.sv-pdp__qtyinput::-webkit-outer-spin-button,
+.sv-pdp__qtyinput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sv-pdp__add {
+  flex: 1;
+  text-align: center;
+  padding-inline: var(--b);
+}
+
+.sv-pdp__add[disabled] {
+  background: var(--cream-2);
+  color: var(--grey);
+  cursor: not-allowed;
+}
+
+[data-sv] .sv-pdp__formerr {
+  max-width: none;
+  color: var(--emerald);
+}
+
+.sv-pdp__code {
+  color: var(--grey);
+}
+
+/* ── 08 · THE THREE MUST-KNOW FACTS ───────────────────────────────────
+   Sizing, delivery, returns. Plain paragraphs, hairline-separated, never
+   collapsible — HANDOFF rule 6. */
+.sv-pdp__facts {
+  display: grid;
+  gap: var(--b);
+  padding-top: var(--b);
+  border-top: 1px solid rgba(198, 161, 91, 0.35);
+}
+
+.sv-pdp__fact > .lab {
+  display: block;
+  margin-bottom: 0.7em;
+}
+
+[data-sv] .sv-pdp__factbody {
+  max-width: 62ch;
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1.66;
+  color: var(--ink);
+}
+
+.sv-pdp__factbody strong {
+  font-weight: 500;
+}
+
+.sv-pdp__jump {
+  display: inline-block;
+  margin-top: 12px;
+}
+
+[data-sv] .sv-pdp__factnote {
+  max-width: none;
+  margin-top: 10px;
+  color: var(--grey);
+}
+
+/* Zones as a small ledger: name, time, price, ruled between. */
+.sv-pdp__zones {
+  margin-top: 12px;
+  display: grid;
+  gap: 0;
+}
+
+.sv-pdp__zones li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--a);
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cream-2);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.sv-pdp__zones li:last-child {
+  border-bottom: 0;
+}
+
+.sv-pdp__zonedays {
+  color: var(--grey);
+}
+
+.sv-pdp__zonecost {
+  min-width: 3.5em;
+  text-align: right;
+  color: var(--ink);
+}
+
+.sv-pdp__wa {
+  justify-self: start;
+}
+
+/* ── 09 · THE LEDGER ──────────────────────────────────────────────────
+   Below the buy zone the page becomes a document. Each band is numbered
+   in the serif numeral the rest of the site uses for narrative steps. */
+.sv-pdp__ledger {
+  margin-top: var(--d);
+  display: grid;
+  gap: var(--d);
+}
+
+.sv-pdp__band {
+  position: relative;
+  padding-top: var(--b);
+  border-top: 1px solid rgba(198, 161, 91, 0.35);
+}
+
+/* The measurement band is a jump target; a focus ring around the whole
+   band would be noise, but the target must still be programmatically
+   focusable so the jump moves the keyboard, not just the viewport. */
+.sv-pdp__band:focus {
+  outline: none;
+}
+
+.sv-pdp__band > .num {
+  display: block;
+  margin-bottom: 4px;
+}
+
+[data-sv] .sv-pdp__h2 {
+  font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+  color: var(--emerald);
+  margin-bottom: var(--a);
+}
+
+[data-sv] .sv-pdp__lead {
+  margin-bottom: var(--a);
+  font-size: 0.95rem;
+  color: var(--grey);
+}
+
+/* ── 10 · THE MEASUREMENT TABLE ───────────────────────────────────────
+   The size guide's card, verbatim: emerald caps head, ivory zebra,
+   raised surface. The selected row lights — a state change, which is all
+   Tier A allows, and the only motion on this page that means anything. */
+.sv-pdp__tablewrap {
+  max-width: 760px;
+}
+
+.sv-pdp__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  box-shadow: var(--sh-s);
+  border-radius: var(--r-img);
+  overflow: hidden;
+}
+
+.sv-pdp__table th[scope='col'] {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--cream);
+  background: var(--emerald);
+  padding: 12px var(--a);
+}
+
+.sv-pdp__table th[scope='row'] {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 0.86rem;
+  text-align: left;
+  color: var(--ink);
+}
+
+.sv-pdp__table td,
+.sv-pdp__table th[scope='row'] {
+  padding: 11px var(--a);
+  border-bottom: 1px solid var(--cream-2);
+  font-family: var(--sans);
+  font-size: 0.86rem;
+  color: var(--ink);
+  transition: background-color var(--micro) var(--e);
+}
+
+.sv-pdp__table tbody tr:nth-child(even) td,
+.sv-pdp__table tbody tr:nth-child(even) th[scope='row'] {
+  background: var(--cream);
+}
+
+.sv-pdp__table tbody tr:last-child td,
+.sv-pdp__table tbody tr:last-child th[scope='row'] {
+  border-bottom: 0;
+}
+
+.sv-pdp__table tbody tr.is-on td,
+.sv-pdp__table tbody tr.is-on th[scope='row'] {
+  background: rgba(198, 161, 91, 0.16);
+}
+
+.sv-pdp__table tbody tr.is-on th[scope='row'] {
+  box-shadow: inset 3px 0 0 var(--tan);
+}
+
+[data-sv] .sv-pdp__caption {
+  max-width: 68ch;
+  margin-top: var(--a);
+  color: var(--grey);
+}
+
+.sv-pdp__note {
+  white-space: normal;
+}
+
+/* ── 11 · FABRIC · FIT · CARE ─────────────────────────────────────────*/
+.sv-pdp__three {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--b);
+}
+
+.sv-pdp__cell > .lab {
+  display: block;
+  margin-bottom: 0.7em;
+}
+
+[data-sv] .sv-pdp__cellbody {
+  max-width: 34ch;
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* ── 12 · INLINE EXPANDERS ────────────────────────────────────────────
+   <details>, so they work with the script removed and keyboard-operate
+   for free. Nice-to-know only — §3.5 forbids sizing, delivery, returns
+   or the price threshold from ever appearing in here. */
+.sv-pdp__expanders {
+  margin-top: var(--c);
+  max-width: 760px;
+  border-top: 1px solid var(--cream-2);
+}
+
+.sv-pdp__exp {
+  border-bottom: 1px solid var(--cream-2);
+}
+
+.sv-pdp__exp summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--a);
+  padding: var(--a) 0;
+  list-style: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--ink);
+  transition: color var(--micro) var(--e);
+}
+
+.sv-pdp__exp summary::-webkit-details-marker {
+  display: none;
+}
+
+.sv-pdp__exp summary:hover {
+  color: var(--emerald);
+}
+
+/* The marker is drawn, not a font icon — icon fonts are banned. */
+.sv-pdp__exp summary::after {
+  content: '';
+  flex: none;
+  width: 11px;
+  height: 11px;
+  background:
+    linear-gradient(var(--tan), var(--tan)) center / 100% 1px no-repeat,
+    linear-gradient(var(--tan), var(--tan)) center / 1px 100% no-repeat;
+  transition: transform var(--std) var(--e);
+}
+
+.sv-pdp__exp[open] summary::after {
+  transform: rotate(90deg);
+  background: linear-gradient(var(--tan), var(--tan)) center / 100% 1px no-repeat;
+}
+
+.sv-pdp__expbody {
+  padding-bottom: var(--b);
+}
+
+[data-sv] .sv-pdp__expbody p {
+  max-width: 64ch;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.sv-pdp__dl {
+  display: grid;
+  gap: 8px;
+}
+
+.sv-pdp__dl dt {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tan);
+}
+
+.sv-pdp__dl dd {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+/* ── 13 · DESCRIPTION ─────────────────────────────────────────────────*/
+.sv-pdp__rte {
+  max-width: 62ch;
+}
+
+.sv-pdp__rte > * + * {
+  margin-top: var(--a);
+}
+
+[data-sv] .sv-pdp__rte p,
+[data-sv] .sv-pdp__rte li {
+  max-width: 62ch;
+  font-size: 0.98rem;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.sv-pdp__rte ul,
+.sv-pdp__rte ol {
+  padding-left: 1.5em;
+  display: grid;
+  gap: 6px;
+}
+
+.sv-pdp__rte ul {
+  list-style: disc;
+}
+
+.sv-pdp__rte ol {
+  list-style: decimal;
+}
+
+.sv-pdp__rte li::marker {
+  color: var(--tan);
+}
+
+.sv-pdp__rte a {
+  color: var(--emerald);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  text-decoration-color: var(--tan);
+}
+
+/* ── 14 · COMPLETE THE SET ────────────────────────────────────────────*/
+.sv-pdp__set {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--b);
+}
+
+.sv-pdp__setlink {
+  display: grid;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sv-pdp__setname {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.sv-pdp__setprice {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--grey);
+}
+
+.sv-pdp__setlink:hover .sv-pdp__setname {
+  color: var(--emerald);
+}
+
+/* ── 15 · THE FILED RECORD ────────────────────────────────────────────
+   Legal Metrology is a statutory disclosure, so it is set small and
+   recessed — never collapsed. A closed panel is not a disclosure. */
+.sv-pdp__filed {
+  padding: var(--b);
+  background: var(--cream-2);
+  border-radius: var(--r-img);
+}
+
+.sv-pdp__filedhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--a);
+  padding-bottom: 12px;
+  margin-bottom: var(--a);
+  border-bottom: 1px solid rgba(198, 161, 91, 0.4);
+}
+
+.sv-pdp__filedref {
+  color: var(--tan);
+}
+
+.sv-pdp__legal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--a) var(--b);
+  color: var(--grey);
+}
+
+.sv-pdp__legal dt {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tan);
+  margin-bottom: 4px;
+}
+
+.sv-pdp__legal dd {
+  color: var(--ink);
+}
+
+.sv-pdp__legal a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  text-decoration-color: var(--tan);
+}
+
+/* ── 16 · STICKY BAR · MOBILE ─────────────────────────────────────────
+   One form, bound by the form attribute — there is no second set of
+   controls and no duplicated DOM. Revealed by an IntersectionObserver on
+   the real Add button, never by a scroll position. */
+/* sv-footer.liquid already owns the bottom of a phone screen: .sv-bottombar
+   sits at bottom:0 at z-index 75 and publishes its own height, safe area
+   included, as --sv-bbar. This bar rides ON TOP of that rather than under
+   it — the first build put both at bottom:0 and the nav, winning on
+   z-index, covered Add to bag completely.
+
+   Its height is declared rather than left to its content so the two rules
+   that have to clear it — the body's bottom padding and the WhatsApp
+   float — can be written against a value that cannot drift. */
+:root {
+  --sv-pdpbar: 72px;
+}
+
+.sv-pdp__bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--sv-bbar, 0px);
+  /* Below the nav's 75, so the nav is never the thing that gets covered. */
+  z-index: 74;
+  display: flex;
+  align-items: center;
+  gap: var(--a);
+  min-height: var(--sv-pdpbar);
+  /* No safe-area padding here: the nav underneath already holds it. */
+  padding: 10px var(--b);
+  background: var(--card);
+  border-top: 1px solid var(--cream-2);
+  box-shadow: 0 -10px 30px -18px rgba(26, 26, 26, 0.3);
+}
+
+.sv-pdp__bar[hidden] {
+  display: none;
+}
+
+.sv-pdp__barinfo {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.sv-pdp__barname {
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  color: var(--grey);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sv-pdp__barprice {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.sv-pdp__baradd {
+  flex: none;
+  padding: 14px var(--b);
+}
+
+.sv-pdp__baradd[disabled] {
+  background: var(--cream-2);
+  color: var(--grey);
+}
+
+@media (max-width: 880px) {
+  /* Two rules that have to know this bar exists, and only while it is up.
+     sv-footer sets both against --sv-bbar alone; with the bar raised, each
+     needs the bar's height as well or the float lands on Add to bag and
+     the last of the filed record ends underneath it. */
+  body:has(.sv-pdp__bar:not([hidden])) {
+    padding-bottom: calc(var(--sv-bbar, 0px) + var(--sv-pdpbar));
+  }
+
+  body:has(.sv-pdp__bar:not([hidden])) .float {
+    bottom: calc(var(--sv-bbar, 0px) + var(--sv-pdpbar) + 14px);
+  }
+}
+
+/* Desktop keeps the bar too (Sep 2026, the lemoon/sweetlime pattern):
+   thumbnail, name, price, size select, add — see §19. */
+
+/* ── 17 · NARROW ──────────────────────────────────────────────────────*/
+@media (max-width: 880px) {
+  [data-sv].sv-pdp {
+    padding: var(--a) 0 var(--d);
+  }
+
+  .sv-pdp__buy {
+    grid-template-columns: 1fr;
+    gap: var(--c);
+  }
+
+  /* Nothing sticks on a phone: the bar is the persistent control. */
+  .sv-pdp__stick {
+    position: static;
+  }
+
+  /* The gallery becomes a snap row, bleeding to both edges so the frames
+     read as a strip rather than a boxed carousel. Same markup. */
+  .sv-pdp__frames {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin-inline: calc(var(--b) * -1);
+    padding-inline: var(--b);
+    scrollbar-width: none;
+  }
+
+  .sv-pdp__frames::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sv-pdp__frame,
+  .sv-pdp__frame--lead {
+    grid-column: auto;
+    flex: 0 0 78%;
+    scroll-snap-align: center;
+  }
+
+  .sv-pdp__ledger {
+    margin-top: var(--d);
+    gap: var(--c);
+  }
+
+  .sv-pdp__three {
+    grid-template-columns: 1fr;
+    gap: var(--a);
+  }
+
+  /* The chart scrolls in place rather than stretching the page — the same
+     answer sv-page and the policy pages give. */
+  .sv-pdp__tablewrap {
+    overflow-x: auto;
+  }
+
+  .sv-pdp__table {
+    min-width: 440px;
+  }
+
+  .sv-pdp__filed {
+    padding: var(--a);
+  }
+}
+
+@media (max-width: 420px) {
+  .sv-pdp__actions {
+    flex-wrap: wrap;
+  }
+
+  .sv-pdp__add {
+    flex: 1 0 100%;
+  }
+}
+
+/* ── 18 · REDUCED MOTION ──────────────────────────────────────────────
+   sv-system.css already flattens every transition globally under this
+   query. Stated here only for the one thing it cannot reach: the snap
+   row, which should not animate a programmatic scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .sv-pdp__frames {
+    scroll-behavior: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §19 · SEP 2026 REBUILD — from the owner's reference stores.
+   Every selector is scoped under [data-sv] where sv-system.css §02's
+   (0,1,1) reset would otherwise win (see the cascade-traps note).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 19a · GALLERY: thumbs · stage · arrows · zoom ──────────────────── */
+.sv-gal {
+  position: relative;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.sv-gal:not(:has(.sv-gal__thumbs)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+[data-sv] .sv-gal__thumbs {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: min(78vh, 760px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sv-gal__thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-img);
+  background: var(--cream-2);
+  overflow: hidden;
+  cursor: pointer;
+  opacity: 0.62;
+  transition: opacity var(--micro) var(--e), border-color var(--micro) var(--e);
+}
+
+.sv-gal__thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.sv-gal__thumb--ph {
+  cursor: default;
+}
+
+.sv-gal__thumb--ph .im {
+  display: block;
+}
+
+.sv-gal__thumb:hover,
+.sv-gal__thumb.is-on {
+  opacity: 1;
+}
+
+.sv-gal__thumb.is-on {
+  border-color: var(--ink);
+}
+
+/* The AI-imagery notice is a child of the gallery grid; without this it
+   lands in the 76px thumbnail track and wraps a word per line. It sits
+   under the main photo instead, where the Terms need it to be. */
+.sv-gal > .sv-pdp__ai {
+  grid-column: 2;
+  margin-top: 0;
+}
+
+.sv-gal > .sv-pdp__sizenote {
+  grid-column: 2;
+}
+
+.sv-gal:not(:has(.sv-gal__thumbs)) > .sv-pdp__ai,
+.sv-gal:not(:has(.sv-gal__thumbs)) > .sv-pdp__sizenote {
+  grid-column: 1;
+}
+
+.sv-gal__stage {
+  position: relative;
+  min-width: 0;
+}
+
+[data-sv] .sv-gal__track {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  border-radius: var(--r-img);
+}
+
+.sv-gal__track::-webkit-scrollbar,
+.sv-gal__thumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.sv-gal__track:focus-visible {
+  outline: 2px solid var(--tan);
+  outline-offset: 3px;
+}
+
+.sv-gal__slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+
+.sv-gal__slide .im {
+  cursor: crosshair;
+}
+
+.sv-gal__slide .im img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sv-gal__arrow {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--sh-s);
+  cursor: pointer;
+  transition: background var(--micro) var(--e);
+}
+
+.sv-gal__arrow:hover {
+  background: var(--cream);
+}
+
+.sv-gal__arrow svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sv-gal__arrow--prev { left: 14px; }
+.sv-gal__arrow--next { right: 14px; }
+
+[data-sv] .sv-gal__count {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(26, 26, 26, 0.55);
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.sv-gal__lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  border: 1px solid rgba(26, 26, 26, 0.35);
+  background: rgba(251, 247, 239, 0.3);
+}
+
+.sv-gal__lens[hidden],
+.sv-gal__zoom[hidden] {
+  display: none;
+}
+
+/* The zoom pane lies over the decision column, the sweetlime way: the
+   gallery is the first grid track, so 100% + the grid gap is exactly
+   where the column starts. */
+.sv-gal__zoom {
+  position: absolute;
+  top: 0;
+  left: calc(100% + var(--d));
+  z-index: 20;
+  width: calc((100% + var(--d)) * 5 / 7 - var(--d));
+  aspect-ratio: 4 / 5;
+  max-height: calc(100vh - 140px);
+  background-color: var(--card);
+  background-repeat: no-repeat;
+  border-radius: var(--r-img);
+  box-shadow: var(--sh);
+  pointer-events: none;
+}
+
+/* ── 19b · TITLE ROW + SHARE MENU ──────────────────────────────────── */
+.sv-pdp__stick {
+  position: sticky;
+}
+
+.sv-pdp__col {
+  position: relative;
+}
+
+.sv-pdp__titlerow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--a);
+}
+
+.sv-pdp__titlerow .sv-pdp__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.sv-pdp__iconbtn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-top: 4px;
+  border: 1px solid var(--cream-2);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color var(--micro) var(--e);
+}
+
+.sv-pdp__iconbtn:hover {
+  border-color: var(--tan);
+}
+
+.sv-pdp__iconbtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sv-share {
+  position: absolute;
+  z-index: 30;
+  width: 250px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--cream-2);
+  box-shadow: var(--sh);
+}
+
+.sv-share[hidden] {
+  display: none;
+}
+
+[data-sv] .sv-share__lab {
+  margin: 0 0 8px 6px;
+}
+
+[data-sv] .sv-share__list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-sv] .sv-share__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+[data-sv] .sv-share__link:hover,
+[data-sv] .sv-share__link:focus-visible {
+  background: var(--cream);
+}
+
+.sv-share__link svg {
+  width: 18px;
+  height: 18px;
+  color: var(--emerald);
+}
+
+/* ── 19c · SIZE AS AN AGE STEPPER ──────────────────────────────────── */
+[data-sv] .sv-pdp__sizehint {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+[data-sv] .sv-pdp__agenow {
+  margin: -2px 0 10px;
+  color: var(--grey);
+}
+
+.sv-pdp__agenow strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.sv-pdp__agechange {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--emerald);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* One row, a rule through the dots, scrolling sideways when a design
+   runs to many sizes rather than wrapping into a broken line. */
+.sv-step {
+  position: relative;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 2px 4px;
+}
+
+.sv-step::-webkit-scrollbar {
+  display: none;
+}
+
+.sv-step::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: var(--cream-2);
+}
+
+.sv-step:has(.sv-step__opt:only-child)::before {
+  display: none;
+}
+
+[data-sv] .sv-step__opt {
+  position: relative;
+  flex: 1 0 78px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  color: var(--grey);
+  font-family: var(--sans);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+[data-sv] .sv-step__opt:hover {
+  color: var(--ink);
+  border: 0;
+}
+
+.sv-step__dot {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid var(--cream-2);
+  background: var(--card);
+  transition: background var(--micro) var(--e), border-color var(--micro) var(--e);
+}
+
+.sv-step__label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.sv-step__baby {
+  width: 44px;
+  height: 44px;
+  opacity: 0.45;
+  transition: opacity var(--micro) var(--e), color var(--micro) var(--e);
+}
+
+[data-sv] .sv-step__opt.is-on {
+  background: none;
+  color: var(--ink);
+}
+
+.sv-step__opt.is-on .sv-step__dot {
+  background: var(--emerald);
+  border-color: var(--emerald);
+}
+
+.sv-step__opt.is-on .sv-step__label {
+  font-weight: 600;
+}
+
+/* A photographed stage reads larger than a line figure at the same box. */
+.sv-step__baby.sv-baby--photo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: grayscale(1);
+}
+
+.sv-step__opt.is-on .sv-step__baby.sv-baby--photo {
+  filter: none;
+}
+
+.sv-step__opt.is-on .sv-step__baby {
+  opacity: 1;
+  color: var(--emerald);
+}
+
+.sv-step__opt:focus-visible {
+  outline: none;
+}
+
+.sv-step__opt:focus-visible .sv-step__dot {
+  outline: 2px solid var(--tan);
+  outline-offset: 3px;
+}
+
+/* Sold out: struck label, hollow dot — still visible, still selectable. */
+.sv-step__opt.is-out .sv-step__label {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+[data-sv] .sv-step__opt.is-out.is-on {
+  background: none;
+  color: var(--grey);
+}
+
+.sv-step__opt.is-out.is-on .sv-step__dot {
+  background: var(--cream-2);
+  border-color: var(--grey);
+}
+
+/* A band the design is not made in: on the scale, not selectable. */
+.sv-step__opt.is-none {
+  cursor: default;
+  color: var(--grey);
+  opacity: 0.55;
+}
+
+.sv-step__opt.is-none .sv-step__dot {
+  border-style: dashed;
+  background: transparent;
+}
+
+.sv-step__opt.is-none .sv-step__baby {
+  opacity: 0.3;
+}
+
+.sv-step__tag {
+  margin-top: -2px;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey);
+}
+
+.sv-step__opt.is-out .sv-step__baby {
+  opacity: 0.3;
+}
+
+.sv-step__opt.is-out:not(.is-on) .sv-step__dot {
+  background: var(--cream-2);
+}
+
+[data-sv] .sv-step__legend {
+  margin: 8px 0 0;
+  color: var(--grey);
+}
+
+/* The bumchi note: must-know, so it stands open under the sizes. */
+.sv-pdp__sizenote {
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--cream-2);
+}
+
+[data-sv] .sv-pdp__sizenote p {
+  max-width: none;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+[data-sv] .sv-pdp__sizenote p + p {
+  margin-top: 6px;
+}
+
+.sv-pdp__sizenote a {
+  color: var(--emerald);
+  text-underline-offset: 3px;
+}
+
+/* ── 19d · ASK · SAVE · SHARE + TILES ──────────────────────────────── */
+.sv-pdp__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sv-pdp__row .sv-pdp__rowbtn--wa {
+  grid-column: 1 / -1;
+}
+
+/* Wide screens have the room for lunabee's single row. */
+@media (min-width: 1280px) {
+  .sv-pdp__row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .sv-pdp__row .sv-pdp__rowbtn--wa {
+    grid-column: auto;
+  }
+}
+
+[data-sv] .sv-pdp__rowbtn {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 50px;
+  padding: 0 18px;
+  border: 1px solid var(--cream-2);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--micro) var(--e), background var(--micro) var(--e);
+}
+
+[data-sv] .sv-pdp__rowbtn:hover {
+  border-color: var(--tan);
+}
+
+.sv-pdp__rowbtn svg {
+  width: 19px;
+  height: 19px;
+}
+
+.sv-pdp__rowbtn--wa svg {
+  color: #1f9d55;
+}
+
+[data-sv] .sv-pdp__rowbtn.is-on {
+  --sv-heart-fill: currentColor;
+  color: var(--emerald);
+  border-color: var(--emerald);
+}
+
+[data-sv] .sv-pdp__tiles {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sv-pdp__tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--cream-2);
+  font-family: var(--sans);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--grey);
+}
+
+.sv-pdp__tile strong {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sv-pdp__tileicon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--emerald);
+  color: var(--cream);
+  --card: var(--emerald);
+}
+
+.sv-pdp__tileicon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── 19e · ACCORDIONS (the details band) ───────────────────────────── */
+.sv-acc {
+  display: grid;
+  gap: 10px;
+  max-width: 820px;
+}
+
+.sv-acc__item {
+  border-radius: 14px;
+  background: var(--cream-2);
+}
+
+.sv-acc__item > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--a);
+  padding: 20px 24px;
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink);
+  list-style: none;
+  cursor: pointer;
+}
+
+.sv-acc__item > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sv-acc__item > summary::after {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(currentColor, currentColor) center / 14px 1.5px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 1.5px 14px no-repeat;
+  transition: transform var(--std) var(--e);
+}
+
+.sv-acc__item[open] > summary::after {
+  transform: rotate(45deg);
+}
+
+.sv-acc__body {
+  padding: 0 24px 22px;
+}
+
+[data-sv] .sv-acc__body p {
+  max-width: 68ch;
+  font-size: 0.94rem;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+[data-sv] .sv-acc__body p + p,
+.sv-acc__body > * + * {
+  margin-top: 0.9em;
+}
+
+/* Bands number themselves, so a band that renders nothing never leaves
+   a gap in the count (the old 01 → 03 jump). */
+.sv-pdp__ledger {
+  counter-reset: sv-band;
+}
+
+.sv-pdp__band > .num::before {
+  counter-increment: sv-band;
+  content: counter(sv-band, decimal-leading-zero);
+}
+
+/* ── 19f · AGE PICKER ──────────────────────────────────────────────── */
+.sv-agepick {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--sh-l);
+}
+
+.sv-agepick::backdrop {
+  background: rgba(26, 26, 26, 0.5);
+}
+
+.sv-agepick[open] {
+  animation: sv-agepick-in var(--std) var(--e);
+}
+
+@keyframes sv-agepick-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+.sv-agepick__panel {
+  position: relative;
+  padding: var(--c) var(--b) var(--b);
+  text-align: center;
+}
+
+[data-sv] .sv-agepick__h {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.5rem, 3.2vw, 2rem);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+[data-sv] .sv-agepick__sub {
+  max-width: none;
+  margin: 8px 0 var(--b);
+  color: var(--grey);
+  font-size: 0.92rem;
+}
+
+.sv-agepick__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sv-agepick__chip {
+  min-width: 96px;
+  padding: 12px 18px;
+  border: 1px solid var(--cream-2);
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color var(--micro) var(--e), background var(--micro) var(--e), color var(--micro) var(--e);
+}
+
+.sv-agepick__chip:hover {
+  border-color: var(--tan);
+}
+
+.sv-agepick__chip.is-on {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: var(--cream);
+}
+
+.sv-agepick__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: var(--b);
+}
+
+.sv-agepick__actions .btn {
+  padding: 16px 12px;
+  border-radius: 12px;
+}
+
+.sv-agepick__ok[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sv-agepick__x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--grey);
+  cursor: pointer;
+}
+
+.sv-agepick__x:hover {
+  background: var(--cream-2);
+  color: var(--ink);
+}
+
+.sv-agepick__x svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── 19g · STICKY BAR, DESKTOP ─────────────────────────────────────── */
+.sv-pdp__barthumb {
+  display: none;
+}
+
+.sv-pdp__barsize {
+  display: none;
+}
+
+@media (min-width: 881px) {
+  .sv-pdp__bar {
+    bottom: 0;
+    padding: 10px max(var(--b), calc((100vw - 1320px) / 2));
+  }
+
+  .sv-pdp__barthumb {
+    display: block;
+    flex: none;
+    width: 56px;
+    height: 56px;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .sv-pdp__barthumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sv-pdp__barname {
+    font-size: 0.92rem;
+    color: var(--ink);
+  }
+
+  .sv-pdp__barsize {
+    display: block;
+    min-width: 200px;
+    padding: 14px 40px 14px 16px;
+    border: 1px solid var(--cream-2);
+    border-radius: 999px;
+    background: var(--cream)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%231A1A1A' stroke-width='1.6' d='m7 10 5 5 5-5'/%3E%3C/svg%3E")
+      right 14px center / 16px no-repeat;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    color: var(--ink);
+    appearance: none;
+    cursor: pointer;
+  }
+
+  body:has(.sv-pdp__bar:not([hidden])) {
+    padding-bottom: 80px;
+  }
+
+  /* The social float lifts over the bar rather than sitting under it. */
+  body:has(.sv-pdp__bar:not([hidden])) .float {
+    bottom: calc(76px + 14px);
+    transition: bottom var(--std) var(--e);
+  }
+}
+
+/* ── 19h · NARROW ──────────────────────────────────────────────────── */
+@media (max-width: 880px) {
+  .sv-gal {
+    grid-template-columns: minmax(0, 1fr);
+    margin-inline: calc(var(--b) * -1);
+  }
+
+  /* [data-sv] to out-rank the desktop `[data-sv] .sv-gal__thumbs` grid,
+     or the rail stacks above the photo on phones. */
+  [data-sv] .sv-gal__thumbs {
+    display: none;
+  }
+
+  .sv-gal > .sv-pdp__ai,
+  .sv-gal > .sv-pdp__sizenote {
+    grid-column: 1;
+    margin-inline: var(--b);
+  }
+
+  [data-sv] .sv-gal__track {
+    border-radius: 0;
+  }
+
+  .sv-gal__arrow {
+    display: none;
+  }
+
+  .sv-gal__slide .im {
+    cursor: auto;
+    border-radius: 0;
+  }
+
+  .sv-share {
+    left: 0 !important;
+    right: 0;
+    width: auto;
+  }
+
+  .sv-acc__item > summary {
+    padding: 18px;
+  }
+
+  .sv-acc__body {
+    padding: 0 18px 18px;
+  }
+
+  .sv-agepick__panel {
+    padding: var(--c) var(--a) var(--a);
+  }
+
+  .sv-agepick__chip {
+    min-width: calc(33% - 8px);
+    padding: 12px 8px;
+  }
+}
+
+/* ── 20 · SHELVES + PRODUCT CARDS → assets/sv-card.css (shared with the
+   Saved page). Loaded by sv-product.liquid. */
+
+/* ── 21 · RETURNS | DELIVERY, SIDE BY SIDE ────────────────────────────
+   Out of the narrow decision column into a full-width row under the buy
+   zone (owner's direction, Sep 2026). Two columns on desktop, stacked
+   on a phone. */
+.sv-pdp__facts--row {
+  grid-template-columns: 1fr 1fr;
+  gap: var(--c);
+  margin-top: 0;
+  padding-top: var(--c);
+  align-items: start;
+}
+
+.sv-pdp__facts--row > .sv-pdp__exp {
+  margin: 0;
+  border-top: 0;
+}
+
+.sv-pdp__facts--row .sv-returns__body {
+  max-width: none;
+}
+
+/* As its own last section it needs its own air above the footer — and
+   must out-rank section[data-sv]'s 160px top and bottom (sv-system §02),
+   which left ~390px of blank above this row. */
+section[data-sv].sv-pdp-facts {
+  padding: 0 0 var(--d);
+}
+
+@media (max-width: 880px) {
+  .sv-pdp__facts--row {
+    grid-template-columns: 1fr;
+    gap: var(--b);
+    margin-top: 0;
+    padding-top: var(--b);
+  }
+}
+
+/* ── 22 · SIZE CHART ──────────────────────────────────────────────────*/
+.sv-pdp__sizes {
+  position: relative;
+}
+
+.sv-pdp__chartlink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--emerald);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.sv-pdp__chartfig {
+  display: block;
+  width: min(100%, 560px);
+  margin-top: var(--a);
+  padding: 0;
+  border: 1px solid var(--cream-2);
+  border-radius: var(--r-img);
+  background: none;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.sv-pdp__chartfig img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sv-chart {
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--card);
+  box-shadow: var(--sh-l);
+  overflow: auto;
+}
+
+.sv-chart::backdrop {
+  background: rgba(26, 26, 26, 0.55);
+}
+
+.sv-chart__panel {
+  position: relative;
+}
+
+.sv-chart__panel img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sv-chart__x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--sh-s);
+  cursor: pointer;
+}
+
+.sv-chart__x svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── 23 · PHONE RHYTHM ────────────────────────────────────────────────
+   One 48px step between every block on a phone (desktop is 72). */
+@media (max-width: 880px) {
+  [data-sv].sv-pdp {
+    padding-bottom: var(--c);
+  }
+
+  .sv-pdp__crumbs {
+    margin-bottom: var(--a);
+  }
+
+  .sv-pdp__ledger {
+    margin-top: var(--c);
+  }
+
+  section[data-sv].sv-pdp-facts {
+    padding-bottom: var(--c);
+  }
+
+  section[data-sv].sv-shelf {
+    padding-top: var(--c);
+  }
+}
+
+/* ── 24 · PRICE ROW ───────────────────────────────────────────────────
+   Price left; stock, size chart, "shopping for" stacked on the right. */
+.sv-pdp__pricerow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--a) var(--b);
+  flex-wrap: wrap;
+}
+
+.sv-pdp__meta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  text-align: right;
+}
+
+.sv-pdp__meta .sv-pdp__run,
+[data-sv] .sv-pdp__meta .sv-pdp__agenow {
+  margin: 0;
+}
+
+@media (max-width: 420px) {
+  .sv-pdp__meta {
+    justify-items: start;
+    text-align: left;
+  }
+}

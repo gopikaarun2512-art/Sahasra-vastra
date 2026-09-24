@@ -1,0 +1,656 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   SAHASRA VASTRA · DESIGN SYSTEM
+   One file. Every page consumes it. Nothing is redefined in a page.
+
+   If a page needs a value that is not here, that is a system decision,
+   not a page decision. Add it here or ask — never inline it.
+
+   Order:  tokens → typography → spacing → links → buttons → images →
+           cards → sections → motion → 3D → utilities → a11y
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* v1.7 — the curtain (§08b): a page that opens on the full film hero pins
+   it, and what follows slides up over the still frame. Sticky only —
+   no script, no scroll listener.
+   v1.4 — policy pages (/policies/*) dressed in the system; see §POLICY.
+   v1.3 — colour tokens reconciled to the logo files: Ivory #FBF7EF,
+   Gold #C6A15B, Ink #1A1A1A. The mark and the interface now match.
+   v1.2 — adds .sv-wordmark, .sv-fine, .sv-visually-hidden (§03b).
+   v1.1 — scoping fix. Tokens, :focus-visible and prefers-reduced-motion stay
+   global by design: tokens are inert, and the other two are accessibility.
+   Everything visual is scoped to [data-sv] or a class. */
+
+/* ── 01 · TOKENS ─────────────────────────────────────────────────────── */
+:root{
+  /* colour · ratio 70 ivory / 20 emerald / 8 ink / 2 gold */
+  /* v1.3 — reconciled against the logo files. The brand book values are
+     authoritative; #F4EFE5 and #B49B6C were drift introduced during
+     prototyping and would not have matched the mark sitting beside them. */
+  --cream:    #FBF7EF;   /* Ivory. the ground. never #FFF */
+  --cream-2:  #F2EDE1;   /* recessed panels */
+  --card:     #FFFDF8;   /* raised surfaces sit LIGHTER than the ground */
+  --ink:      #1A1A1A;   /* Ink. body */
+  --grey:     #7C776D;   /* secondary. warm, never neutral */
+  --tan:      #C6A15B;   /* Gold. rules, marks, active states. NEVER a button */
+  --emerald:  #14524A;   /* Emerald. chrome, footer, primary action */
+  --emerald-d:#0E3B34;   /* hover only */
+
+  /* type */
+  --serif: 'EB Garamond', Georgia, serif;   /* display face — one line to swap */
+  --sans:  'Jost', system-ui, sans-serif;
+
+  /* elevation */
+  --sh:   0 26px 66px -24px rgba(26,26,26,.20);
+  --sh-s: 0 10px 30px -14px rgba(26,26,26,.14);
+  --sh-l: 0 30px 80px -28px rgba(26,26,26,.28);
+  --r-img:  6px;
+  --r-card: 24px;
+
+  /* spacing · 8px base */
+  --a:16px; --b:28px; --c:48px; --d:72px; --f:110px; --g:160px;
+
+  /* motion */
+  --micro:150ms; --std:300ms; --slow:500ms;
+  --e:       cubic-bezier(.22,1,.36,1);
+  --entrance:cubic-bezier(0,0,.2,1);
+  --rise:16px; --stagger:60ms;
+}
+@media(max-width:768px){ :root{ --rise:12px } }
+
+/* ── 02 · BASE ───────────────────────────────────────────────────────────
+   SCOPED. Nothing here touches Horizon's own sections.
+
+   v1.1 · The original global reset (*{margin:0;padding:0}) and bare element
+   selectors were written for a standalone HTML page. Loaded into a theme they
+   hit every Horizon section, including cart and customer account. Everything
+   below is now either a class or scoped under [data-sv].
+
+   Any section built from Gate 3 onward carries data-sv on its root element:
+       <section class="..." data-sv> ... </section>
+   ──────────────────────────────────────────────────────────────────────── */
+[data-sv],[data-sv] *{box-sizing:border-box}
+[data-sv]{font-family:var(--sans);font-weight:300;font-size:17px;line-height:1.78;
+  color:var(--ink);background:var(--cream);-webkit-font-smoothing:antialiased}
+@media(max-width:760px){ [data-sv]{font-size:16px} }
+
+/* margin reset, scoped — never global */
+[data-sv] h1,[data-sv] h2,[data-sv] h3,[data-sv] h4,
+[data-sv] p,[data-sv] figure,[data-sv] ul,[data-sv] ol{margin:0;padding:0}
+[data-sv] ul,[data-sv] ol{list-style:none}
+
+/* ── 03 · TYPOGRAPHY ─────────────────────────────────────────────────── */
+/* Serif = names, prices, quotes, headings.  Sans caps = labels, actions. */
+[data-sv] h1,[data-sv] h2,[data-sv] h3,.display{font-family:var(--serif);font-weight:400;line-height:1.06;
+  letter-spacing:-.012em}
+[data-sv] h1{font-size:clamp(2.9rem,7vw,5.4rem)}
+[data-sv] h2{font-size:clamp(2rem,4.4vw,3.2rem)}
+[data-sv] h3{font-size:clamp(1.45rem,2.5vw,1.9rem)}
+[data-sv] em{font-style:italic}
+[data-sv] p{max-width:56ch;color:var(--grey)}
+[data-sv] p + p{margin-top:var(--b)}
+.lead{font-size:1.06rem}
+
+.lab{font-family:var(--sans);font-size:.66rem;font-weight:400;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--tan)}
+.lab--grey{color:var(--grey)}
+.eyebrow{display:flex;align-items:center;gap:var(--a);font-family:var(--sans);
+  font-size:.66rem;letter-spacing:.28em;text-transform:uppercase;color:var(--grey)}
+.eyebrow::before{content:"";width:44px;height:1px;background:var(--tan)}
+
+/* the one big sans moment per page */
+.big{font-family:var(--sans);font-weight:300;letter-spacing:-.03em;line-height:.92;
+  font-size:clamp(3.4rem,11.5vw,10rem);text-transform:uppercase;color:var(--ink)}
+.big em{font-style:normal;color:var(--tan)}
+
+/* numerals in a narrative */
+.num{font-family:var(--serif);font-size:clamp(2.6rem,5vw,4rem);line-height:.9;
+  color:var(--tan);opacity:.5}
+.num--lg{font-size:clamp(3rem,7vw,5.2rem);line-height:.86;opacity:.44}
+
+
+/* ── 03c · THE READING PASS · v1.5 ───────────────────────────────────────
+   The owner's readability settings, first made on the size guide and now
+   promoted to the system: ink rather than warm grey, regular rather than
+   300, and a higher size floor. Reading surfaces speak with one voice —
+   the size guide, the FAQ, every sv-page and /policies/*.
+
+   Deliberately NOT global. [data-sv] p stays grey 300 for the campaign
+   surfaces (hero, homepage rails, lookbook), where copy is short, large
+   and set against imagery. The pass is for pages people read. */
+.sv-read{font-size:clamp(1.02rem,1.1vw,1.1rem);font-weight:400;line-height:1.7;
+  color:var(--ink)}
+
+/* Labels under the pass: the size guide's step up in weight and colour,
+   at a scale that suits a page rather than a 1400px canvas. */
+.sv-read-lab{font-size:.78rem;font-weight:600;color:var(--ink);letter-spacing:.24em}
+
+/* ── 03b · MASTHEAD AND SMALL PRINT · v1.2 ───────────────────────────────
+   Added after Gate 3. The wordmark, the statutory line and the announcement
+   bar had no scale of their own and were borrowing .lab or body size — the
+   wordmark read under-scaled against a real masthead. These three are the
+   system's answer, not a section's. */
+
+/* the wordmark — serif, the one place it outsizes body copy in the chrome */
+.sv-wordmark{font-family:var(--serif);font-weight:400;line-height:1;
+  font-size:clamp(1.35rem,2.2vw,1.6rem);letter-spacing:-.01em;
+  text-decoration:none;color:inherit;white-space:nowrap}
+.sv-wordmark i{display:block;font-family:var(--sans);font-style:normal;
+  font-size:.5rem;letter-spacing:.4em;color:var(--tan);margin-top:6px}
+
+/* small print — statutory line, announcement bar, legal metrology */
+.sv-fine{font-family:var(--sans);font-weight:300;font-size:.76rem;
+  line-height:1.6;letter-spacing:.01em}
+.sv-fine--caps{font-size:.7rem;letter-spacing:.08em}
+
+/* v1.2 · own the class rather than colliding with Horizon's .visually-hidden,
+   which sits on 81 elements and wins on specificity in the unfocused state */
+.sv-visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* ── 04 · LAYOUT ─────────────────────────────────────────────────────── */
+.w{max-width:1220px;margin:0 auto;padding:0 var(--c)}
+.w--wide{max-width:1400px}
+.n{max-width:680px;margin:0 auto}
+@media(max-width:760px){ .w{padding:0 var(--b)} }
+
+[data-sv] .sv-section,section[data-sv]{padding:var(--g) 0}
+@media(max-width:880px){ [data-sv] .sv-section,section[data-sv]{padding:var(--f) 0} }
+.rule{height:1px;background:var(--tan);opacity:.35}
+
+/* asymmetric split · 5:7, alternating. Equal columns read as templated. */
+.split{display:grid;grid-template-columns:5fr 7fr;gap:var(--f);align-items:center;
+  padding:var(--d) 0}
+.split:nth-of-type(even){grid-template-columns:7fr 5fr}
+.split:nth-of-type(even) .split__fig{order:2}
+@media(max-width:880px){
+  .split,.split:nth-of-type(even){grid-template-columns:1fr;gap:var(--c);padding:var(--c) 0}
+  .split:nth-of-type(even) .split__fig{order:0}
+}
+
+/* ── 05 · LINKS AND BUTTONS ──────────────────────────────────────────── */
+/* Three levels. Gold is never a button or a link — contrast fails. */
+.btn{display:inline-block;padding:18px 46px;background:var(--emerald);color:var(--cream);
+  font-family:var(--sans);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;
+  text-decoration:none;border:1px solid transparent;border-radius:2px;cursor:pointer;
+  transition:background-color var(--micro) var(--e),color var(--micro) var(--e)}
+.btn:hover{background:var(--emerald-d)}
+.btn--ghost{background:transparent;color:var(--emerald);border-color:currentColor}
+.btn--ghost:hover{background:var(--emerald);color:var(--cream)}
+.btn--ivory{background:var(--cream);color:var(--emerald)}
+
+.act{font-family:var(--sans);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;
+  text-decoration:none;color:var(--ink);border-bottom:1px solid var(--tan);
+  padding-bottom:6px;transition:opacity var(--micro)}
+.act:hover{opacity:.6}
+.ext::after{content:"↗";font-size:.72em;margin-left:4px;opacity:.7}
+
+/* text-roll · duplicate label must carry aria-hidden */
+.roll{display:inline-block;overflow:hidden;height:1.15em;vertical-align:bottom;
+  text-decoration:none;color:inherit}
+.roll > span{display:block;transition:transform var(--micro) var(--e)}
+.roll:hover > span,.roll:focus-visible > span{transform:translateY(-1.15em)}
+
+/* ── 06 · IMAGE TREATMENT ────────────────────────────────────────────── */
+/* .im is the placeholder field. Replace with <img> when assets exist —
+   the wrapper, ratio and radius stay identical so nothing shifts.
+   The petal below is the EMPTY state only: ::after paints after .im > img,
+   so an unguarded rule laid a 5% emerald petal over every photograph on
+   the site — visible on pale garments and on the size-chart pictures
+   (owner, Sep 2026). :has keeps it to frames with no image; a browser
+   without :has drops the decoration entirely, which is the safe way to
+   fail. */
+.im{position:relative;overflow:hidden;border-radius:var(--r-img);
+  background:linear-gradient(150deg,#F5F0E2,#E9E1CD 55%,#DCD2B8)}
+.im:not(:has(img))::after{content:"";position:absolute;left:50%;top:50%;width:28%;height:60%;
+  transform:translate(-50%,-50%);opacity:.05;
+  background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -86 28 92'%3E%3Cpath d='M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z' fill='%2314524A'/%3E%3C/svg%3E")}
+.im--b{background:linear-gradient(160deg,#EFE8D6,#E0D5BC 60%,#CFC0A1)}
+.im--c{background:linear-gradient(125deg,#FAF6EA,#EBE3CE)}
+.im--d{background:linear-gradient(140deg,#EAE1CD,#D5C7A8)}
+.im > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* ratios — one class per surface, never an ad-hoc aspect-ratio */
+.r-product { aspect-ratio:4/5 }
+.r-campaign{ aspect-ratio:5/4 }
+.r-row     { aspect-ratio:4/3 }
+.r-journal { aspect-ratio:5/6 }
+.r-macro   { aspect-ratio:1 }
+.r-band    { aspect-ratio:16/5 }
+
+/* badges are CSS overlays — never baked into the file, or the master
+   becomes ineligible for Merchant Center and Meta catalogue feeds */
+.badge{position:absolute;top:12px;left:12px;z-index:2;background:var(--cream);
+  color:var(--emerald);font-family:var(--sans);font-size:.6rem;letter-spacing:.18em;
+  text-transform:uppercase;font-weight:500;padding:6px 12px;border-radius:999px}
+.badge--ai{left:auto;right:12px;background:rgba(26,26,26,.72);color:var(--cream)}
+.im__cap{position:absolute;left:14px;bottom:12px;z-index:2;font-family:var(--sans);
+  font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--grey)}
+
+/* macro mosaic */
+.mosaic{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mosaic .im{aspect-ratio:1}
+.mosaic .im:first-child{grid-row:span 2;aspect-ratio:auto}
+@media(max-width:760px){
+  .mosaic{grid-template-columns:1fr 1fr}
+  .mosaic .im:first-child{grid-row:auto;aspect-ratio:1}
+}
+
+/* ── 07 · CARDS AND PANELS ───────────────────────────────────────────── */
+.card{background:var(--card);border-radius:var(--r-card);box-shadow:var(--sh-s);
+  padding:var(--d)}
+.card--letter{border-radius:4px;padding:var(--f) var(--d);max-width:760px;margin:0 auto}
+.card--letter p{color:var(--ink);font-size:1.06rem}
+@media(max-width:760px){ .card--letter{padding:var(--d) var(--b)} }
+
+.sig{margin-top:var(--d);padding-top:var(--b);border-top:1px solid rgba(198,161,91,.4)}
+.sig strong{font-family:var(--serif);font-size:1.5rem;font-weight:400;display:block}
+
+.note{max-width:64ch;padding:var(--b);background:var(--card);
+  border-left:2px solid var(--tan);font-size:.85rem;color:var(--grey)}
+
+/* inverse panel — the one emerald moment per page */
+.panel-dark{background:var(--emerald);color:var(--cream);padding:var(--g) 0}
+.panel-dark p{color:rgba(251,247,239,.78)}
+.panel-dark .lab{color:rgba(251,247,239,.5)}
+.panel-dark .display,.panel-dark h2{color:var(--cream)}
+
+/* pull quote */
+.pull{text-align:center}
+.pull p{font-family:var(--serif);font-size:clamp(1.7rem,3.6vw,2.7rem);line-height:1.28;
+  max-width:20ch;margin:0 auto;color:inherit}
+
+/* ── 08 · MOTION ─────────────────────────────────────────────────────── */
+/* transform + opacity only. Two exceptions, both bounded and one-off:
+   accordion height, expanding-panel flex-grow. */
+
+/* reveal · fires once, then unobserves */
+.rv{opacity:0;transform:translateY(var(--rise));
+  transition:opacity .85s var(--entrance),transform .85s var(--entrance)}
+.rv.in{opacity:1;transform:none}
+
+/* line reveal · by LINE only. Never by word, never by character. */
+.ln{display:block;overflow:hidden}
+.ln > span{display:block;transform:translateY(108%);transition:transform .95s var(--e)}
+.in .ln > span,.ln.in > span{transform:none}
+.ln:nth-child(2) > span{transition-delay:.09s}
+.ln:nth-child(3) > span{transition-delay:.18s}
+
+/* masked reveal · ONE use per page */
+.mask .im::before{content:"";position:absolute;inset:0;z-index:2;background:var(--cream);
+  transform:scaleY(1);transform-origin:bottom;transition:transform 1.1s var(--e) .15s}
+.mask.in .im::before{transform:scaleY(0)}
+
+/* pinned sequence */
+.pin{position:relative}
+.pin__track{position:sticky;top:0;height:100vh;display:grid;grid-template-columns:1fr 1fr;
+  gap:var(--f);align-items:center;max-width:1220px;margin:0 auto;padding:0 var(--c)}
+.pin__vis{position:relative;aspect-ratio:4/5;max-height:66vh;width:100%;
+  justify-self:center;box-shadow:var(--sh)}
+.pin__vis .im{position:absolute;inset:0;opacity:0;transition:opacity .7s var(--e)}
+.pin__vis .im.on{opacity:1}
+.pin__copy{position:relative;min-height:250px}
+.pin__step{position:absolute;inset:0;opacity:0;transform:translateY(12px);
+  transition:opacity .45s var(--e),transform .45s var(--e)}
+.pin__step.on{opacity:1;transform:none}
+.pin__bar{display:flex;gap:5px;margin-top:var(--d)}
+.pin__bar i{height:1px;flex:1;background:rgba(198,161,91,.4);
+  transition:background-color .45s var(--e)}
+.pin__bar i.on{background:var(--emerald)}
+.sentinel{height:100vh}
+@media(max-width:880px){
+  .pin__track{position:static;height:auto;grid-template-columns:1fr;padding:var(--f) var(--b)}
+  .pin__vis{max-height:none;aspect-ratio:4/3;margin-bottom:var(--c)}
+  .pin__copy{position:static;min-height:0}
+  .pin__step{position:static;opacity:1;transform:none;margin-bottom:var(--d)}
+  .sentinel{display:none}
+}
+
+/* ── 08b · THE CURTAIN · v1.7 ────────────────────────────────────────────
+   The film stays; the page arrives over it. On any template that OPENS
+   with the full-height film hero, the hero pins to the top of the scroll
+   and everything after it slides up over the still frame — the next page
+   drawn across the film like a sheet. One effect, two shapes:
+
+     the hero is main's ONLY section (the homepage today) → main itself
+       pins, and the FOOTER is the curtain;
+     the hero leads a longer page (the homepage with content) → the hero's
+       own section wrapper pins inside main and the SECOND SECTION is the
+       curtain. The footer is still lifted: the pin lasts to the end of
+       main, and a z-0 film outpaints an unpositioned footer.
+
+   Scroll response comes from position:sticky, which the compositor
+   anchors off-thread — the only scroll-following §08's "no scroll
+   listeners" rule permits. The covering surface carries an upward shadow
+   so the join reads as one plane passing over another, not two sections
+   butted together.
+
+   Gated on no-preference: under reduced motion the page must read as a
+   plain document, and a hero that refuses to scroll away is exactly the
+   surprise that rule exists to remove. */
+@media (prefers-reduced-motion: no-preference){
+
+  /* Either shape: the pinned film is a positioned z-0 layer, so the
+     footer must be lifted above it or the film paints over the footer
+     for as long as the pin lasts. */
+  main.content-for-layout:has(> .shopify-section:first-child .sv-hero-video--full) ~ footer{
+    position:relative;z-index:1;background:var(--emerald)}
+
+  /* shape 1 · hero-only main — pin the whole main; the footer is the
+     curtain, so it alone carries the lip. */
+  main.content-for-layout:has(> .shopify-section:only-child .sv-hero-video--full){
+    position:sticky;top:0;z-index:0}
+  main.content-for-layout:has(> .shopify-section:only-child .sv-hero-video--full) ~ footer{
+    box-shadow:0 -30px 80px -18px rgba(26,26,26,.55)}
+
+  /* shape 2 · hero leads a longer page — pin its wrapper inside main.
+     Every following section gets a ground so the film can never show
+     through a transparent one; only the first also carries the lip. */
+  #MainContent > .shopify-section:first-child:not(:only-child):has(.sv-hero-video--full){
+    position:sticky;top:0;z-index:0}
+  #MainContent > .shopify-section:first-child:not(:only-child):has(.sv-hero-video--full) ~ .shopify-section{
+    position:relative;z-index:1;background:var(--cream)}
+  #MainContent > .shopify-section:first-child:not(:only-child):has(.sv-hero-video--full) + .shopify-section{
+    box-shadow:0 -30px 80px -18px rgba(26,26,26,.55)}
+}
+
+/* ── 08c · AMBIENT GROUND · v1.8 ─────────────────────────────────────────
+   The page's moving backdrop: three depths of gold thread and eight
+   motes, each layer drifting on its own axis and tempo. Markup comes
+   from snippets/sv-ambient.liquid; a host section carries .sv-amb-host
+   on its [data-sv] root and renders the snippet before its .w column.
+   Transform-only keyframes; the reduced-motion rule at the foot of this
+   file freezes it into a still engraving. */
+[data-sv].sv-amb-host{position:relative;overflow:hidden}
+.sv-amb-host > .w{position:relative;z-index:1}
+.sv-amb{position:absolute;inset:0;pointer-events:none}
+/* wider than the host and pulled left, so horizontal drift never
+   exposes an edge */
+.sv-amb__threads{position:absolute;top:0;bottom:0;left:-60px;
+  width:calc(100% + 120px);height:100%}
+.sv-amb__threads path{fill:none;stroke:var(--tan)}
+.sv-amb__threads--far {animation:sv-amb-far 44s ease-in-out infinite alternate}
+.sv-amb__threads--far path{stroke-width:1;opacity:.14}
+.sv-amb__threads--mid {animation:sv-amb-mid 28s ease-in-out infinite alternate}
+.sv-amb__threads--mid path{stroke-width:1.5;opacity:.3}
+.sv-amb__threads--near{animation:sv-amb-near 19s ease-in-out infinite alternate}
+.sv-amb__threads--near path{stroke-width:2;opacity:.48}
+.sv-amb__mote{position:absolute;left:var(--mx);top:var(--my);width:6px;height:6px;
+  border-radius:50%;background:var(--tan);opacity:.38;
+  animation:sv-amb-float var(--md,20s) ease-in-out var(--mdel,0s) infinite alternate}
+.sv-amb__mote--far{width:4px;height:4px;opacity:.2}
+.sv-amb__mote--near{width:8px;height:8px;opacity:.5}
+@keyframes sv-amb-far {from{transform:translate3d(-28px,0,0)}to{transform:translate3d(28px,-10px,0)}}
+@keyframes sv-amb-mid {from{transform:translate3d(0,-18px,0)}to{transform:translate3d(18px,8px,0)}}
+@keyframes sv-amb-near{from{transform:translate3d(22px,10px,0)}to{transform:translate3d(-22px,-14px,0)}}
+@keyframes sv-amb-float{from{transform:translate3d(0,0,0)}to{transform:translate3d(var(--dx,14px),var(--dy,-36px),0)}}
+
+/* ── 09 · CSS 3D ─────────────────────────────────────────────────────── */
+/* perspective + rotateY + translateZ. No WebGL, no canvas, no library. */
+
+/* wardrobe doors */
+.wardrobe{perspective:2200px;perspective-origin:50% 42%}
+.wardrobe__body{position:relative;transform-style:preserve-3d;aspect-ratio:3/4;
+  box-shadow:var(--sh-l)}
+.wardrobe__body > .im{position:absolute;inset:0}
+.door{position:absolute;top:0;height:100%;width:50.4%;z-index:3;backface-visibility:hidden;
+  background:linear-gradient(152deg,#FFFDF8,#F5EEDD 56%,#E8DDC7);
+  border:1px solid rgba(198,161,91,.34);transition:transform 1500ms var(--e)}
+.door::after{content:"";position:absolute;top:50%;width:4px;height:44px;border-radius:2px;
+  background:var(--tan);transform:translateY(-50%)}
+.door--l{left:0;transform-origin:left center}  .door--l::after{right:13px}
+.door--r{right:0;transform-origin:right center} .door--r::after{left:13px}
+.is-open .door--l{transform:rotateY(-124deg)}
+.is-open .door--r{transform:rotateY(124deg)}
+.seam{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--tan);
+  opacity:.42;z-index:4;transition:opacity .7s var(--e)}
+.is-open .seam{opacity:0}
+
+/* pointer tilt · desktop only, ≤3deg. 70% of traffic has no pointer,
+   so this can never carry meaning. */
+@media (hover:hover) and (pointer:fine){
+  .tilt{transform:perspective(1000px) rotateX(var(--rx,0)) rotateY(var(--ry,0));
+    transition:transform .4s var(--e)}
+  .tilt.is-live{transition:transform .1s linear}
+}
+
+/* perspective carousel */
+.stage{perspective:1400px;position:relative}
+.stage__inner{position:relative;height:100%;transform-style:preserve-3d}
+.card3{position:absolute;top:0;left:50%;width:min(560px,86%);height:100%;
+  margin-left:calc(min(560px,86%) / -2);background:var(--card);
+  border:1px solid rgba(198,161,91,.4);border-radius:4px;padding:var(--c);
+  display:flex;flex-direction:column;justify-content:center;
+  transition:transform .62s var(--e),opacity .62s var(--e)}
+.card3[data-pos="0"] {transform:rotateY(0) translateZ(0) scale(1);opacity:1;z-index:3}
+.card3[data-pos="-1"]{transform:rotateY(34deg) translateX(-56%) translateZ(-210px) scale(.9);opacity:.42;z-index:2}
+.card3[data-pos="1"] {transform:rotateY(-34deg) translateX(56%) translateZ(-210px) scale(.9);opacity:.42;z-index:2}
+.card3[data-pos="hide"]{transform:translateZ(-420px) scale(.8);opacity:0;z-index:1}
+.pips{display:flex;gap:7px;align-items:center}
+.pips i{width:7px;height:7px;border-radius:50%;background:rgba(20,82,74,.22);
+  transition:width var(--std) var(--e),background-color var(--std) var(--e)}
+.pips i.on{width:26px;border-radius:4px;background:var(--tan)}
+@media(max-width:880px){
+  .stage{perspective:none}
+  .card3{position:relative;left:0;margin:0 auto;width:100%;height:auto}
+  .card3[data-pos="-1"],.card3[data-pos="1"],.card3[data-pos="hide"]{display:none}
+  .card3[data-pos="0"]{transform:none;opacity:1}
+}
+
+/* floating cluster · one, in one place, nothing else floating */
+.float{position:fixed;right:22px;bottom:24px;z-index:70;
+  display:flex;flex-direction:column;gap:10px}
+.float a{width:50px;height:50px;border-radius:50%;background:var(--emerald);
+  color:var(--cream);display:grid;place-items:center;box-shadow:var(--sh-s);
+  transition:transform var(--micro) var(--e)}
+.float a:hover{transform:translateY(-3px)}
+.float svg{width:21px;height:21px;fill:currentColor}
+@media(max-width:880px){ .float a:not(:last-child){display:none} }
+/* The phone menu is a full-screen sheet at z-index 80 — but it sits
+   inside the header group's sticky z-60 wrapper, so that 80 is scored
+   inside a 60 context and the sheet can never rise past a root-level
+   layer. The float is one: z-70 at the root, painted over the open menu
+   with its own button sitting on top of the navigation.
+
+   Re-stacking the header would fix the symptom and break more — it would
+   also put the header over the cart drawer and the bottom bar. So the
+   float stands down instead, which is what it should do regardless: the
+   menu is a full-screen decision and nothing should hover over it. */
+body:has(.sv-header__drawer[open]) .float{opacity:0;pointer-events:none}
+
+/* ── 10 · ACCESSIBILITY ──────────────────────────────────────────────── */
+:focus-visible{outline:2px solid var(--tan);outline-offset:4px}
+.panel-dark :focus-visible,.float :focus-visible{outline-color:var(--cream)}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:16px;top:16px;z-index:200;background:var(--emerald);color:var(--cream);
+  padding:14px 20px;font-family:var(--sans);font-size:.72rem;letter-spacing:.2em;
+  text-transform:uppercase;text-decoration:none}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);
+  white-space:nowrap}
+
+/* ── POLICY PAGES ──────────────────────────────────────────────────────
+   v1.6 · Confirmed, after trying both: v1.4's claim below is exactly
+   right, and worth stating harder so nobody spends another hour on it.
+   `policy` is NOT one of Shopify's template types. templates/policy.json
+   is rejected on upload — "Template type 'policy' does not support JSON
+   templates" — and templates/policy.liquid uploads with no complaint and
+   is then never used; the storefront goes on emitting
+   .shopify-policy__container regardless. Dawn ships no policy template
+   for the same reason. The theme's only ways in are this block, which
+   dresses that container, and sections/sv-policy.liquid, which is
+   rendered as its SIBLING from layout/theme.liquid and lays the two out
+   side by side. Do not try to template this page again.
+
+   v1.5 · The reading pass (§03c) and sv-page's list and table treatment
+   reach the policies, so Shipping and Refund read as the same document
+   as the Size Guide rather than as Shopify's default page.
+   v1.4 · Shopify renders /policies/* with its own fixed markup
+   (.shopify-policy__container); a theme cannot swap the template, only
+   dress it. Scoped to those classes, which exist nowhere else. The frame
+   matches sv-page: serif title in emerald over a gold rule, measured
+   column, tan list markers, emerald links. */
+
+/* The ivory ground. Every other page paints it from its [data-sv] root;
+   a policy page has no such root, so it was left on the browser's white.
+   Painted on both so the column and the space beside it agree. */
+body:has(.shopify-policy__container){background:var(--cream)}
+.shopify-policy__container{max-width:760px;margin-inline:auto;
+  padding:72px 24px 110px;background:var(--cream);
+  font-family:var(--sans);font-weight:400;font-size:clamp(1.02rem,1.1vw,1.1rem);
+  line-height:1.7;color:var(--ink)}
+/* Compound selector: Shopify's own policy-*.css loads after this file and
+   centres the title at (0,1,0) — the container scope outranks it. */
+.shopify-policy__container .shopify-policy__title{text-align:left;
+  padding-bottom:28px;position:relative}
+.shopify-policy__title::after{content:'';display:block;width:56px;height:2px;
+  margin-top:28px;background:var(--tan)}
+.shopify-policy__title h1{font-family:var(--serif);font-weight:400;line-height:1.06;
+  font-size:clamp(2.1rem,4.5vw,3.1rem);color:var(--emerald);text-transform:none;
+  letter-spacing:normal}
+.shopify-policy__body h2,.shopify-policy__body h3{font-family:var(--serif);
+  font-weight:400;line-height:1.2;color:var(--emerald)}
+.shopify-policy__body h2{font-size:clamp(1.5rem,2.6vw,1.9rem)}
+.shopify-policy__body h3{font-size:clamp(1.2rem,2vw,1.4rem)}
+.shopify-policy__body a{color:var(--emerald);text-decoration:underline;
+  text-underline-offset:.25em;text-decoration-color:var(--tan)}
+.shopify-policy__body a:hover{color:var(--emerald-d)}
+.shopify-policy__body strong{font-weight:500}
+.shopify-policy__body em{font-family:var(--serif);font-size:1.05em}
+
+/* Vertical rhythm on the sv-page scale. Shopify's policy markup is a flat
+   run of siblings, so the rhythm has to come from the gaps between them. */
+.shopify-policy__body > * + *{margin-top:16px}
+.shopify-policy__body > h2{margin-top:48px}
+.shopify-policy__body > h3{margin-top:28px}
+
+/* Lists, matching sv-page: Horizon's reset strips the marker, so both the
+   list-style and the indent are stated. */
+.shopify-policy__body ul,.shopify-policy__body ol{padding-left:1.5em;
+  max-width:56ch;display:grid;gap:8px}
+.shopify-policy__body ul{list-style:disc}
+.shopify-policy__body ol{list-style:decimal}
+.shopify-policy__body li::marker{color:var(--tan);font-weight:400}
+
+/* Tables — the size chart's card, verbatim: emerald caps head, ivory
+   zebra, raised surface. The shipping matrix is the one that needed it. */
+.shopify-policy__body table{width:100%;border-collapse:collapse;
+  margin-block:28px;background:var(--card);box-shadow:var(--sh-s);
+  border-radius:var(--r-img);overflow:hidden}
+.shopify-policy__body th{font-family:var(--sans);font-weight:400;font-size:.68rem;
+  letter-spacing:.18em;text-transform:uppercase;text-align:left;
+  color:var(--cream);background:var(--emerald);padding:12px 16px}
+.shopify-policy__body td{padding:10px 16px;border-bottom:1px solid var(--cream-2);
+  vertical-align:top}
+/* v1.6 · The shipping matrix's first column carries a paragraph of state
+   names and the other two carry four words each; left to auto widths it
+   took the space and wrapped "2 to 4 working days" over three lines in
+   every row. Capping it is the whole fix. */
+.shopify-policy__body th:first-child,
+.shopify-policy__body td:first-child{width:56%}
+.shopify-policy__body tbody tr:last-child td{border-bottom:0}
+.shopify-policy__body tbody tr:nth-child(even) td{background:var(--cream)}
+
+@media(max-width:760px){
+  .shopify-policy__container{padding:48px 28px 72px}
+  /* The matrix scrolls in place rather than stretching the page. */
+  .shopify-policy__body table{display:block;overflow-x:auto}
+}
+
+/* Every page must read as a complete document with all motion removed. */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  .rv,.ln > span{opacity:1;transform:none}
+  .mask .im::before{transform:scaleY(0)}
+  .door--l{transform:rotateY(-124deg)} .door--r{transform:rotateY(124deg)} .seam{opacity:0}
+  .pin__track{position:static;height:auto}
+  .pin__step{position:static;opacity:1;transform:none}
+  .pin__vis .im{position:relative;opacity:1;aspect-ratio:4/5}
+  .tilt{transform:none!important}
+  .sentinel{display:none}
+}
+
+/* ── §12 · Shopify-rendered pages ───────────────────────────────────────
+   Collection and search pages are Horizon's own sections, so they arrive
+   in its type: headings at 700 in flat black, card text and controls in
+   pure #000. Every page the brand owns — the policies, the FAQ, the
+   product page — reads as the serif at 400 in emerald over ink body text.
+   These rules put the Shopify-rendered pages on the same footing where
+   the theme editor cannot reach. The homepage is untouched: its sections
+   set their own display type over the film. */
+.content-for-layout .section--page-width h1,
+.content-for-layout .section--page-width h2.h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--emerald);
+  letter-spacing: -0.012em;
+  line-height: 1.06;
+}
+
+/* Card titles keep the body sans (a serif at card size reads as a quote,
+   not a name) but take ink rather than black, like the policy pages. */
+.content-for-layout .product-grid a,
+.content-for-layout [class*='product-title'],
+.content-for-layout [class*='product-title'] a {
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+.content-for-layout [class*='price'] {
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+/* Filter, sort and pagination controls. */
+.content-for-layout .facets summary,
+.content-for-layout [class*='facets'] summary,
+.content-for-layout [class*='facets'] label,
+.content-for-layout .select__select,
+.content-for-layout [class*='pagination'] a {
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+/* ── §08d · Ambient ground, page-wide ───────────────────────────────────
+   §08c's layer is section-scoped: it drifts inside whichever section hosts
+   it. Off the homepage there is no such host — the page is Shopify's own
+   sections — so one fixed layer sits behind the whole document and the
+   content rides above it. Body takes the brand cream so the threads have
+   the homepage's ground to run on rather than flat white. */
+body:has(.sv-amb-page) {
+  background: var(--cream);
+}
+
+.sv-page-amb {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sv-page-amb .sv-amb {
+  position: absolute;
+  inset: 0;
+}
+
+/* The document above the threads. Header and footer carry their own
+   grounds and are unaffected. */
+.content-for-layout.sv-amb-page {
+  position: relative;
+  z-index: 1;
+}
+
+/* Horizon paints each section's own ground from the palette — a white
+   sheet per section — which left the ambient layer visible only in the
+   one gap between them. On ambient pages those grounds step aside and
+   the page's own cream carries the threads from header to footer. Only
+   the section-level sheets are cleared; a card or badge that sets its
+   own colour keeps it. */
+/* One class more than Horizon's own `.section-background.color-custom-*`
+   so this wins on order as well as weight. */
+.content-for-layout.sv-amb-page .section-background,
+.content-for-layout.sv-amb-page .main-collection-grid,
+.content-for-layout.sv-amb-page .main-search-grid,
+.content-for-layout.sv-amb-page .product-grid-container,
+.content-for-layout.sv-amb-page .collection-wrapper {
+  background-color: transparent;
+}

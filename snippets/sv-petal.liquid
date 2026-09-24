@@ -1,0 +1,23 @@
+{% doc %}
+  The Sahasra Vastra mark. One path, inline SVG, no icon font.
+
+  Inherits colour from `currentColor`, so the caller decides. Decorative by
+  default — pass a title only where the mark is the sole content of a link.
+
+  @param {string} [class] - class applied to the <svg>
+  @param {string} [title] - accessible name. Omit for decorative use.
+
+  @example
+  {% render 'sv-petal', class: 'sv-footer__mark' %}
+{% enddoc %}
+
+<svg
+  {% if class %}class="{{ class }}"{% endif %}
+  viewBox="-14 -86 28 92"
+  xmlns="http://www.w3.org/2000/svg"
+  {% if title != blank %}role="img"{% else %}aria-hidden="true"{% endif %}
+  focusable="false"
+>
+  {%- if title != blank -%}<title>{{ title }}</title>{%- endif -%}
+  <path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="currentColor" />
+</svg>

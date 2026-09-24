@@ -1,0 +1,102 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "sv-product",
+      "settings": {}
+    },
+    "recommendations": {
+      "type": "sv-recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "intent": "related",
+        "limit": 8
+      }
+    },
+    "reels": {
+      "type": "sv-reels",
+      "settings": {
+        "eyebrow": "Loved by parents",
+        "heading": "See it on real little ones",
+        "sub": ""
+      }
+    },
+    "reviews": {
+      "type": "sv-reviews",
+      "settings": {
+        "heading": "Customer reviews"
+      }
+    },
+    "recent": {
+      "type": "sv-recently-viewed",
+      "settings": {
+        "heading": "Recently viewed",
+        "limit": 8
+      }
+    },
+    "facts": {
+      "type": "sv-product-facts",
+      "blocks": {
+        "zone_kerala": {
+          "type": "zone",
+          "settings": {
+            "name": "Kerala",
+            "days": "2 to 4 working days",
+            "charge": 80,
+            "metafield_key": "kerala"
+          }
+        },
+        "zone_south": {
+          "type": "zone",
+          "settings": {
+            "name": "South India",
+            "days": "3 to 5 working days",
+            "charge": 150,
+            "metafield_key": "south"
+          }
+        },
+        "zone_rest": {
+          "type": "zone",
+          "settings": {
+            "name": "Rest of India",
+            "days": "4 to 7 working days",
+            "charge": 200,
+            "metafield_key": "rest"
+          }
+        },
+        "zone_remote": {
+          "type": "zone",
+          "settings": {
+            "name": "Remote areas",
+            "days": "7 to 10 working days",
+            "charge": 200,
+            "metafield_key": "remote"
+          }
+        }
+      },
+      "block_order": [
+        "zone_kerala",
+        "zone_south",
+        "zone_rest",
+        "zone_remote"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "main",
+    "recommendations",
+    "reels",
+    "reviews",
+    "recent",
+    "facts"
+  ]
+}

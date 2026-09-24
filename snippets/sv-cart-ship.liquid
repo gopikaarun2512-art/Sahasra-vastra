@@ -1,0 +1,65 @@
+{% doc %}
+  The free-delivery banner. Sits at the very top of the order summary on
+  the cart page and at the top of the drawer's summary, so it is the
+  first thing read before the total and the Check out button.
+
+  Threshold comes from shop.metafields.custom.free_shipping_threshold (the
+  same field the announcement strip and the policy summary read), so one
+  edit in Admin moves all three. It must match the free-delivery rule on
+  every zone in Settings → Shipping. Falls back to ₹2,000 if the field is
+  ever cleared. Free delivery applies across India.
+
+  Under ₹1,500 it states the threshold; from ₹1,500 it counts down with
+  a progress bar; at the threshold it confirms free delivery.
+
+  The bar is decoration — the sentence carries the information — so it
+  is aria-hidden. The wrapper is a polite live region so a quantity change
+  that crosses the threshold is announced.
+
+  @param {string} [context] - 'page' (default) or 'drawer'
+
+  @example
+  {% render 'sv-cart-ship', context: 'drawer' %}
+{% enddoc %}
+
+{%- liquid
+  assign context = context | default: 'page'
+  assign free_at = shop.metafields.custom.free_shipping_threshold.value | default: 200000
+  assign remaining = free_at | minus: cart.total_price
+  assign progress = cart.total_price | times: 100 | divided_by: free_at
+  if progress > 100
+    assign progress = 100
+  endif
+
+  # Three states. "Add ₹X more" only once the bag is within reach
+  # (₹1,500 and up) — below that, a ₹1,551 gap reads as a push, so the
+  # banner simply states the threshold and drops the bar.
+  assign nudge_from = 150000
+  if remaining <= 0
+    assign state = 'free'
+  elsif cart.total_price >= nudge_from
+    assign state = 'nudge'
+  else
+    assign state = 'info'
+  endif
+-%}
+
+<div
+  class="sv-cart-ship sv-cart-ship--{{ context }}{% if state == 'free' %} is-free{% endif %}"
+  role="status"
+  aria-live="polite"
+>
+  <p class="sv-cart-ship__line">
+    {%- case state -%}
+      {%- when 'free' -%}
+        <strong>You&rsquo;ve unlocked free delivery</strong> on this order.
+      {%- when 'nudge' -%}
+        Add <strong>{{ remaining | money_without_trailing_zeros }}</strong> more for free delivery across India.
+      {%- else -%}
+        <strong>Free delivery</strong> on orders over {{ free_at | money_without_trailing_zeros }}, anywhere in India.
+    {%- endcase -%}
+  </p>
+  {%- if state == 'nudge' -%}
+    <span class="sv-cart-ship__bar" aria-hidden="true"><i style="width: {{ progress }}%"></i></span>
+  {%- endif -%}
+</div>

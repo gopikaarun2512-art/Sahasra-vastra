@@ -1,0 +1,2418 @@
+{% doc %}
+  Policy sidebar — the summary column beside /policies/*, and the figures,
+  journeys, clauses and hand-offs each of the five documents carries.
+
+  ── Why this is not a template ────────────────────────────────────────
+  It should have been. It cannot be. `policy` is not one of Shopify's
+  template types: there is no policy.json (the CLI rejects it outright —
+  "Template type 'policy' does not support JSON templates") and there is
+  no working policy.liquid either. A policy.liquid file uploads without
+  complaint and is then simply never used — the storefront goes on
+  rendering Shopify's own fixed markup:
+
+      <div class="shopify-policy__container">
+        <div class="shopify-policy__title"><h1>…</h1></div>
+        <div class="shopify-policy__body"><div class="rte">…</div></div>
+      </div>
+
+  straight into {{ content_for_layout }}. Dawn ships no policy template
+  for the same reason. So the theme cannot own this page's markup; it can
+  only dress that container (sv-system.css § POLICY PAGES) and add to it
+  from the outside, which is what this section is.
+
+  It is rendered from layout/theme.liquid, immediately before
+  {{ content_for_layout }} and only on /policies/*, and CSS then lays the
+  two out as one two-column page. Nothing here can be placed *inside*
+  Shopify's container, which is why the summary is a column beside the
+  document rather than a band under its title.
+
+  ── One section, five documents ───────────────────────────────────────
+  There is one policy route and five policies, and no template to hang
+  per-policy settings on, so the branch is the request path. `handle`
+  below is that branch, and `scope` is what every conditional here reads.
+
+  Three things are built from the document itself and so are shared by
+  all five: the eyebrow, the last-updated stamp, and the jump list. The
+  figures, the journey, the clause and the hand-off are per policy, and
+  every setting that carries them is named <prefix><role> — sh_, rf_,
+  pv_, tm_, ct_ — so that a sixth policy is a prefix and a schema header
+  and no new markup. Blocks carry a `policy` setting for the same reason:
+  one section cannot have two block lists.
+
+  ── What each document gets, and why it differs ───────────────────────
+  Each page is furnished from what a person actually arrives at it to
+  find, which is different on each one:
+
+  · Shipping is a page of figures — when it leaves, what it costs, when
+    it lands — so it gets three figures and the parcel's journey.
+  · Refund is a page of conditions, and two of them decide every claim
+    before the rest matters: you have 24 hours, and you must have filmed
+    the unboxing. Both are sentences inside §4, read fourth, by someone
+    who has already opened the packet.
+  · Privacy is read by a parent deciding whether to hand over a name and
+    an address. The three figures are the three answers to that (the card
+    details we never see, the data we never sell, the 30 days), and §2's
+    paragraph on what we deliberately do not ask about a child — the most
+    unusual commitment in the document — becomes the dark card. §7's
+    rights become a journey, because a right you cannot see the steps of
+    is not one anybody exercises.
+  · Terms is read for what it commits you to: prepaid, 18+, liability
+    capped at the order. §5's "the contract forms when we confirm
+    dispatch" is the line nobody reads and the one that matters, so it
+    becomes step 03 of a four-step journey. The dark card is §3's
+    AI-imagery disclosure — material to what you think you are buying,
+    and currently sitting behind two paragraphs about screen colour.
+  · Contact is not a legal document at all and is the one page on the
+    site a reader can act on wrongly: the address is an office, not a
+    shop. That becomes the dark card, and the hand-off becomes what the
+    page was missing entirely — a WhatsApp button and a mailto, rather
+    than a phone number and an address set as body copy.
+
+  What is NOT restated here, on any of them, is any list the document
+  argues a case over — Refund §2 and §3, the shipping rate table,
+  Privacy's retention schedule. A second copy in a sidebar is how a store
+  ends up refusing on one page what it accepts on another.
+
+  The policy text itself is never touched. It comes from Settings →
+  Policies and it is the authoritative version. The three things the
+  script does to it — hiding the restated title, lifting the stamp,
+  giving the headings ids — each move or reveal what Admin wrote. None
+  of them changes a word of it.
+{% enddoc %}
+
+{%- liquid
+  # The only thing that tells the five policies apart: there is no
+  # template, so there is no `template` and no page object to ask.
+  # request.path is '/policies/shipping-policy' and, under a localised
+  # domain, '/en-in/policies/shipping-policy' — `contains` covers both.
+  assign path = request.path | downcase
+  assign handle = 'policy'
+
+  if path contains 'shipping-policy'
+    assign handle = 'shipping-policy'
+  elsif path contains 'refund-policy'
+    assign handle = 'refund-policy'
+  elsif path contains 'privacy-policy'
+    assign handle = 'privacy-policy'
+  elsif path contains 'terms-of-service'
+    assign handle = 'terms-of-service'
+  elsif path contains 'terms-of-sale'
+    assign handle = 'terms-of-sale'
+  elsif path contains 'contact-information'
+    assign handle = 'contact-information'
+  elsif path contains 'legal-notice'
+    assign handle = 'legal-notice'
+  elsif path contains 'subscription-policy'
+    assign handle = 'subscription-policy'
+  endif
+
+  # Blank on any policy this theme has not furnished — terms of sale,
+  # legal notice, subscription policy — which then get the eyebrow, the
+  # stamp and the contents list and nothing else. Every conditional below
+  # reads this rather than `handle`, so a sixth furnished policy is one
+  # more branch here and no new markup.
+  assign scope = ''
+  if handle == 'shipping-policy'
+    assign scope = 'shipping'
+  elsif handle == 'refund-policy'
+    assign scope = 'refund'
+  elsif handle == 'privacy-policy'
+    assign scope = 'privacy'
+  elsif handle == 'terms-of-service'
+    assign scope = 'terms'
+  elsif handle == 'contact-information'
+    assign scope = 'contact'
+  endif
+
+  # The eyebrow says what the document is FOR, where Shopify's own <h1>
+  # says what it is called. Hard-coded rather than a setting, because a
+  # setting here would have to read the same on all five pages.
+  case handle
+    when 'shipping-policy'
+      assign eyebrow = 'Shipping & delivery'
+    when 'refund-policy'
+      assign eyebrow = 'Returns & claims'
+    when 'privacy-policy'
+      assign eyebrow = 'Your privacy'
+    when 'terms-of-service'
+      assign eyebrow = 'Terms'
+    when 'terms-of-sale'
+      assign eyebrow = 'Terms'
+    when 'contact-information'
+      assign eyebrow = 'Reaching us'
+    else
+      assign eyebrow = 'Our policies'
+  endcase
+
+  # ── One set of furniture, five sets of words for it ─────────────────
+  # Five furnished policies × eleven strings is fifty-five settings, and
+  # written as `if scope == …` branches that is fifty-five assigns in a
+  # ladder nobody will keep in step. Every setting is instead named
+  # <prefix><role> — sh_help_title, pv_rule_body — and read through one
+  # lookup, so a sixth policy is a prefix here, a header in the schema,
+  # and not one line of this file.
+  #
+  # Bracket access takes a variable, not an expression, which is why each
+  # key is captured first. Verbose, but it is the only form that works.
+  case scope
+    when 'shipping'
+      assign px = 'sh_'
+    when 'refund'
+      assign px = 'rf_'
+    when 'privacy'
+      assign px = 'pv_'
+    when 'terms'
+      assign px = 'tm_'
+    when 'contact'
+      assign px = 'ct_'
+    else
+      assign px = ''
+  endcase
+
+  if px != blank
+    assign k = px | append: 'flow_title'
+    assign flow_title = section.settings[k]
+
+    assign k = px | append: 'rule_label'
+    assign rule_label = section.settings[k]
+    assign k = px | append: 'rule_title'
+    assign rule_title = section.settings[k]
+    assign k = px | append: 'rule_body'
+    assign rule_body = section.settings[k]
+    assign k = px | append: 'rule_link_label'
+    assign rule_link_label = section.settings[k]
+    assign k = px | append: 'rule_link_url'
+    assign rule_link_url = section.settings[k]
+
+    assign k = px | append: 'help_label'
+    assign help_label = section.settings[k]
+    assign k = px | append: 'help_title'
+    assign help_title = section.settings[k]
+    assign k = px | append: 'help_body'
+    assign help_body = section.settings[k]
+    assign k = px | append: 'help_wa_label'
+    assign help_wa_label = section.settings[k]
+    assign k = px | append: 'help_wa_text'
+    assign help_wa_text = section.settings[k]
+    assign k = px | append: 'help_mail_label'
+    assign help_mail_label = section.settings[k]
+    assign k = px | append: 'help_link_label'
+    assign help_link_label = section.settings[k]
+    assign k = px | append: 'help_link_url'
+    assign help_link_url = section.settings[k]
+  endif
+
+  # Both read from Admin, never typed — the rule sv-credentials states and
+  # the announcement bar keeps. A policy that prints the shop's own
+  # contact details from a theme setting is how two pages come to give two
+  # different numbers.
+  assign whatsapp = shop.metafields.custom.whatsapp_number.value
+  assign support_email = shop.metafields.custom.support_email.value
+-%}
+
+{%- comment -%}
+  Arms the entrance before anything paints — see the snippet's own note on
+  why this must be the first child. Its parent here is the section's own
+  wrapper div (.sv-pol-mount), which is therefore what carries
+  .sv-motion-ready, and what the entrance rules key off.
+{%- endcomment -%}
+{%- render 'sv-motion-gate' -%}
+
+{%- comment -%}
+  Two top-level blocks, not one, and the wrapper between them is set to
+  display:contents so both become grid items of <main> alongside Shopify's
+  container. That is what lets the document sit BETWEEN them: beside the
+  figures on desktop, and after them on a phone, where a single column
+  would otherwise have pushed the page's own title three screens down.
+{%- endcomment -%}
+<aside class="sv-pol sv-pol--{{ handle }}" data-sv aria-label="{{ eyebrow | escape }} — at a glance">
+
+  <p class="eyebrow sv-pol__eyebrow" data-sv-motion>{{ eyebrow }}</p>
+
+  {%- comment -%}
+    ── The stamp ─────────────────────────────────────────────────────
+    Empty in markup and filled by script from the document's own first
+    line. "Last updated: 31 August 2026" is currently body copy, in the
+    same face and size as the eleven sections under it — and it is the
+    one fact a person checks before deciding whether the rest is worth
+    reading. It belongs at the top of the column, not fourth in the
+    reading order. Hidden until filled, and on a document that carries
+    no such line (Contact) it stays hidden.
+  {%- endcomment -%}
+  <p class="sv-pol__stamp" data-sv-stamp hidden></p>
+
+  {%- comment -%}
+    ── Contents ──────────────────────────────────────────────────────
+    Empty in markup and filled by script from the document's own <h3>s.
+    A policy's sections live in an Admin RTE this theme never sees, so a
+    hand-written list would fall out of step the first time a section was
+    added. Hidden until filled: a contents list with nothing in it is
+    worse than none.
+  {%- endcomment -%}
+  <nav class="sv-pol__toc" aria-label="Sections of this policy" data-sv-toc hidden>
+    <p class="lab lab--grey sv-pol__toclab">In this policy</p>
+    <ul class="sv-pol__toclist" data-sv-toclist></ul>
+  </nav>
+
+  {%- if scope != blank -%}
+    {%- comment -%}
+      ── Pins ────────────────────────────────────────────────────────
+      The three figures people open this page to find, beside the eight
+      or ten numbered sections they would otherwise have to read to find
+      them. On Shipping: dispatch, delivery, free-shipping threshold —
+      deliberately NOT the rate table, which stays in the policy body.
+      On Refund: the 24-hour clock, when the money lands, and who pays
+      the return postage. Those three are what a claim turns on, and
+      all three are sentences buried in §4 and §5 of the document.
+    {%- endcomment -%}
+    {%- assign pin_count = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'pin' -%}
+        {%- assign bscope = block.settings.policy | default: 'shipping' -%}
+        {%- if bscope == scope -%}{%- assign pin_count = pin_count | plus: 1 -%}{%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- if pin_count > 0 -%}
+      <ul class="sv-pol__pins" data-sv-motion>
+        {%- for block in section.blocks -%}
+          {%- assign bscope = block.settings.policy | default: 'shipping' -%}
+          {%- if block.type == 'pin' and bscope == scope -%}
+            {%- liquid
+              # A figure that also lives in a metafield is read from the
+              # metafield, never typed — the rule the announcement bar
+              # holds itself to, and for the same reason: a typed "₹499"
+              # here is exactly how the site comes to disagree with
+              # itself. The typed figure stays as the fallback.
+              assign pin_value = block.settings.value
+
+              if block.settings.source == 'threshold'
+                assign threshold = shop.metafields.custom.free_shipping_threshold.value
+                if threshold != blank
+                  # A money metafield's .value is already in the subunit,
+                  # so the filter takes it raw. Verified on the live shop.
+                  assign pin_value = threshold | money_without_trailing_zeros
+                endif
+              elsif block.settings.source == 'kerala'
+                assign kerala = shop.metafields.custom.delivery_charge_kerala.value
+                if kerala != blank
+                  # number_integer, i.e. rupees, so it is scaled up.
+                  assign pin_value = kerala | times: 100 | round | money_without_trailing_zeros
+                endif
+              endif
+            -%}
+            <li class="sv-pol__pin" {{ block.shopify_attributes }}>
+              <span class="lab">{{ block.settings.label }}</span>
+              <strong class="sv-pol__pinval">{{ pin_value }}</strong>
+              {%- if block.settings.note != blank -%}
+                <span class="sv-pol__pinnote">{{ block.settings.note }}</span>
+              {%- endif -%}
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- if rule_title != blank -%}
+    {%- comment -%}
+      ── The one clause, stated once, loudly ─────────────────────────
+      One per policy, and never more: the page's single dark object only
+      works while there is exactly one of it.
+
+      It is for the clause that decides something before any of the rest
+      of the document matters, and that the document itself buries. On
+      Refund it is the unboxing video, read fourth by someone who has
+      already opened the packet. On Privacy it is the paragraph in §2
+      that says we ask for nothing about the child — the most unusual
+      commitment on the page and the one a parent came to find. On Terms
+      it is the AI-imagery disclosure in §3, which is material to what
+      you think you are buying and sits behind two paragraphs about
+      screen colour. On Contact it is that the address is not a shop,
+      which is the only line on the page a reader can act on wrongly and
+      end up somewhere in Thiruvananthapuram with nothing to collect.
+
+      Shipping has none. Nothing on it qualifies, and an emerald card
+      invented to fill the slot would teach the reader that the dark
+      object means nothing in particular.
+    {%- endcomment -%}
+    <div class="sv-pol__rule" data-sv-motion>
+      {%- if rule_label != blank -%}
+        <p class="lab">{{ rule_label }}</p>
+      {%- endif -%}
+      <p class="sv-pol__ruleh">{{ rule_title }}</p>
+      {%- if rule_body != blank -%}
+        <div class="sv-pol__rulebody">{{ rule_body }}</div>
+      {%- endif -%}
+      {%- if rule_link_url != blank and rule_link_label != blank -%}
+        <a class="sv-pol__rulelink" href="{{ rule_link_url }}">
+          {{ rule_link_label }}
+        </a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+</aside>
+
+{%- if scope != blank -%}
+  {%- comment -%}
+    ── After the document ────────────────────────────────────────────
+    The second block. On desktop it continues the left column beneath
+    the figures; on a phone it falls below the policy, which is the
+    right place for "what happens next" and for the hand-off.
+  {%- endcomment -%}
+  <div class="sv-pol__after" data-sv>
+
+    {%- comment -%}
+      ── The journey ─────────────────────────────────────────────────
+      What actually happens, in order.
+
+      On Shipping the policy says all of this across sections 2, 4 and 7;
+      read as prose it is three separate facts, and read as a line it is
+      one process ending in the unboxing film, which is where it needs to
+      land.
+
+      On Refund it is §5, which is already a list — but a list of five
+      bullets reads as five conditions, and what it actually describes is
+      four moves with a clock on each one. "Within 1 working day", "at
+      our cost", "your choice", "within 7 working days" is the whole
+      shape of the thing, and it is the shape that answers the question
+      someone with a torn garment is really asking.
+    {%- endcomment -%}
+    {%- assign step_count = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'step' -%}
+        {%- assign bscope = block.settings.policy | default: 'shipping' -%}
+        {%- if bscope == scope -%}{%- assign step_count = step_count | plus: 1 -%}{%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- if step_count > 0 and flow_title != blank -%}
+      <section class="sv-pol__flow" aria-labelledby="sv-pol-flow-h" data-sv-motion>
+        <h2 class="lab lab--grey sv-pol__flowh" id="sv-pol-flow-h">{{ flow_title }}</h2>
+        <ol class="sv-pol__steps">
+          {%- comment -%}
+            The thread the steps hang from: four numerals on one line
+            read as a sequence, four stacked read as a list.
+          {%- endcomment -%}
+          <span class="sv-pol__thread" aria-hidden="true"></span>
+          {%- comment -%}
+            Counted separately, not from forloop.index: the loop walks
+            every block in the section — both policies' pins and both
+            policies' steps — so anything ahead of these would otherwise
+            number the journey 09 to 12.
+          {%- endcomment -%}
+          {%- assign step_n = 0 -%}
+          {%- for block in section.blocks -%}
+            {%- assign bscope = block.settings.policy | default: 'shipping' -%}
+            {%- if block.type == 'step' and bscope == scope -%}
+              {%- assign step_n = step_n | plus: 1 -%}
+              <li class="sv-pol__step" {{ block.shopify_attributes }}>
+                <span class="sv-pol__stepnum" aria-hidden="true">
+                  {{- step_n | prepend: '0' | slice: -2, 2 -}}
+                </span>
+                <span class="sv-pol__steplab">{{ block.settings.label }}</span>
+                {%- if block.settings.detail != blank -%}
+                  <span class="sv-pol__stepdet">{{ block.settings.detail }}</span>
+                {%- endif -%}
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ol>
+      </section>
+    {%- endif -%}
+
+    {%- if help_title != blank -%}
+      {%- comment -%}
+        ── Where to go next ──────────────────────────────────────────
+        A policy answers "what are the rules"; it does not answer "my
+        parcel has not moved in three days", and it does not fill in a
+        claim for you. This is the hand-off to the places that do —
+        on Refund, to /pages/report-a-problem, which is the whole of
+        §4 turned into something you can work through with a phone in
+        the other hand.
+      {%- endcomment -%}
+      <div class="sv-pol__help" data-sv-motion>
+        {%- if help_label != blank -%}<p class="lab">{{ help_label }}</p>{%- endif -%}
+        <p class="sv-pol__helph">{{ help_title }}</p>
+        {%- if help_body != blank -%}
+          <div class="sv-pol__helpbody">{{ help_body }}</div>
+        {%- endif -%}
+        {%- if whatsapp != blank and help_wa_label != blank -%}
+          <a class="btn sv-pol__helpbtn" href="https://wa.me/{{ whatsapp }}?text={{ help_wa_text | url_encode }}" rel="noopener" target="_blank">
+            {{ help_wa_label }}
+          </a>
+        {%- endif -%}
+        {%- comment -%}
+          Email, where the document itself names email as the channel.
+          §7 of the Privacy policy says "write to info@…" and the Data
+          Protection Act expects a written request; a WhatsApp button
+          alone would be the theme quietly contradicting the policy it
+          is sitting beside. The address is never typed — it is the same
+          metafield sv-credentials prints in the footer, so the two can
+          never disagree, and with the field empty the button is simply
+          not there.
+        {%- endcomment -%}
+        {%- if support_email != blank and help_mail_label != blank -%}
+          {%- liquid
+            # Solid where it is the card's only action (Privacy, where
+            # §7 names writing as the channel and there is no WhatsApp
+            # button beside it), ghost where WhatsApp already carries the
+            # weight. Two filled buttons in a 270px column read as two
+            # competing instructions.
+            assign mail_class = 'btn sv-pol__helpbtn'
+            if whatsapp != blank and help_wa_label != blank
+              assign mail_class = 'btn btn--ghost sv-pol__helpbtn sv-pol__helpmail'
+            endif
+          -%}
+          <a class="{{ mail_class }}" href="mailto:{{ support_email }}">
+            {{ help_mail_label }}
+          </a>
+        {%- endif -%}
+        {%- if help_link_url != blank and help_link_label != blank -%}
+          <a class="act sv-pol__helplink" href="{{ help_link_url }}">{{ help_link_label }}</a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+<script>
+    (function () {
+      /* The section's own wrapper div: both blocks above are its
+         children, and it is what the motion gate has already put
+         .sv-motion-ready on. */
+      var root = document.currentScript.parentElement;
+      if (!root) return;
+
+      var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      root.classList.add('is-js');
+
+      /* ── Sticky offset ──────────────────────────────────────────────
+         Anchors have to land clear of the sticky header group, whose
+         height is not knowable in CSS — it changes with the
+         announcement bar and between breakpoints. The CSS value stays
+         the fallback. Written to the documentElement rather than to
+         this column, because what it offsets (the policy headings) is
+         Shopify's markup, outside this element. */
+      var chrome = document.getElementById('header-group');
+      function setStick() {
+        if (!chrome) return;
+        var h = Math.round(chrome.getBoundingClientRect().height);
+        if (h > 0) document.documentElement.style.setProperty('--sv-stick', h + 'px');
+      }
+      setStick();
+      window.addEventListener('resize', setStick);
+
+      /* ── Contents, read out of the document ─────────────────────────
+         Every policy is a run of numbered <h3> sections inside one RTE
+         blob, with no ids of its own. Reading the headings back out and
+         slugging them is the only way a contents list can stay true to
+         Admin copy the theme never sees.
+
+         Deferred, and it has to be: this column is rendered BEFORE
+         {{ content_for_layout }}, so at the moment this script runs the
+         policy it is describing has not been parsed yet and every
+         query for it comes back empty. */
+      /* ── The title, printed twice ───────────────────────────────────
+         Every one of the five policies opens its Admin body with a
+         heading that restates the page title Shopify has already
+         printed as the <h1> directly above it: "Terms of service" then
+         "Terms of Service", "Privacy policy" then "Privacy Policy",
+         "Contact information" then "Contact Us". Two titles, two sizes,
+         forty pixels apart, on every policy page the store has.
+
+         It cannot be fixed in Admin without the policies reading
+         headless in Shopify's own emails and exports, where that
+         heading is the only title there is. So it is removed here,
+         where the <h1> is present, and only here.
+
+         The test is the first significant word, matched against the
+         <h1>'s. It is deliberately narrower than it could be: an exact
+         match would leave "Contact Us" and "Refund, Return &
+         Replacement Policy" standing, and anything looser would start
+         eating real section headings the day a policy opens with one.
+         No match, no change — the document is Admin's, not ours. */
+      function dropRestatedTitle(body) {
+        var h1 = document.querySelector('.shopify-policy__title h1');
+        var rte = body.querySelector('.rte') || body;
+        var first = rte.firstElementChild;
+
+        if (!h1 || !first || !/^H[12]$/.test(first.tagName)) return;
+
+        /* A heading that is not the document's first is a section of
+           it, whatever it happens to be called. */
+        if (rte.querySelector('h1, h2, h3') !== first) return;
+
+        var word = function (el) {
+          var m = (el.textContent || '').toLowerCase().match(/[a-z0-9]+/);
+          return m ? m[0] : '';
+        };
+
+        if (word(first) && word(first) === word(h1)) first.hidden = true;
+      }
+
+      /* ── The stamp ──────────────────────────────────────────────────
+         "Last updated: 31 August 2026" is the document's second line and
+         is set as body copy, which is to say it is invisible. Lifted to
+         the top of the column, where the one question a returning reader
+         has — is this the version I already read — is answered before
+         the document starts.
+
+         Copied, then the original hidden: the same fact twice on one
+         screen reads as an editing mistake. Matched on its own wording
+         only, so a policy that does not carry the line (Contact) is left
+         exactly as Admin wrote it. */
+      function liftStamp(body) {
+        var slot = root.querySelector('[data-sv-stamp]');
+        var rte = body.querySelector('.rte') || body;
+        if (!slot) return;
+
+        var kids = Array.prototype.slice.call(rte.children).slice(0, 4);
+
+        for (var i = 0; i < kids.length; i++) {
+          var el = kids[i];
+          if (el.tagName !== 'P') continue;
+
+          var text = (el.textContent || '').trim();
+          if (!/^last updated\b/i.test(text)) continue;
+          /* The line and nothing else — a paragraph that opens with it
+             and then carries a sentence is prose, not a stamp. */
+          if (text.length > 48) continue;
+
+          slot.textContent = text;
+          slot.hidden = false;
+          el.hidden = true;
+          return;
+        }
+      }
+
+      function buildToc() {
+        var body = document.querySelector('.shopify-policy__body');
+        var toc = root.querySelector('[data-sv-toc]');
+        var list = root.querySelector('[data-sv-toclist]');
+        var heads = body ? Array.prototype.slice.call(body.querySelectorAll('h3')) : [];
+
+        /* Under three sections a contents list is furniture, not
+           navigation. */
+        if (!toc || !list || heads.length < 3) return;
+
+        var used = {};
+
+        var slug = function (text) {
+          return text.toLowerCase()
+            .replace(/[‘’“”']/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'section';
+        };
+
+        /* "7. Opening your parcel" is the heading; "Opening your
+           parcel" is what belongs in a narrow column. The number is
+           still in the heading itself, doing its job. */
+        var label = function (text) {
+          return text.replace(/^\s*\d+[.)]\s*/, '').trim();
+        };
+
+        heads.forEach(function (h, i) {
+          var text = (h.textContent || '').trim();
+          if (!text) return;
+
+          /* Prefixed so an id can never begin with a digit, and
+             de-duplicated so two identically worded sections cannot
+             both claim the same anchor. An id set by hand wins. */
+          var id = h.id;
+          if (!id) {
+            id = 'p-' + slug(text);
+            if (used[id]) id = id + '-' + (i + 1);
+            h.id = id;
+          }
+          used[id] = true;
+
+          var li = document.createElement('li');
+          var a = document.createElement('a');
+          a.className = 'sv-pol__toclink';
+          a.href = '#' + id;
+          a.textContent = label(text);
+          li.appendChild(a);
+          list.appendChild(li);
+          marks.push({ head: h, link: a });
+        });
+
+        toc.hidden = false;
+        spy();
+      }
+
+      /* ── Which section am I in ──────────────────────────────────────
+         The contents list is only navigation while it is on screen, and
+         on desktop it now is: the column is sticky beside a document
+         that runs to twelve sections. A list of twelve identical links
+         beside a page you are halfway down tells you nothing about
+         where you are, which is the other half of what a contents list
+         is for.
+
+         Read off scroll rather than observed, deliberately. What is
+         wanted is "the last heading that has passed under the header",
+         which is one number; an IntersectionObserver reports entries
+         and leaves you to reconstruct that number from them, and gets
+         it wrong for any section shorter than the viewport — of which
+         this document has several.
+
+         Purely decorative: aria-current is set for a screen reader that
+         is on the link, and nothing here moves focus or the page. */
+      var marks = [];
+      var current = null;
+      var ticking = false;
+
+      function spy() {
+        ticking = false;
+        if (!marks.length) return;
+
+        var line = (parseInt(
+          getComputedStyle(document.documentElement).getPropertyValue('--sv-stick'), 10
+        ) || 124) + 12;
+
+        /* Before the first heading nothing is current — the lede is
+           nobody's section — and the last one lights when its own
+           heading passes the line like every other, not when the page
+           bottoms out. Measuring the bottom would mean knowing which
+           element scrolls, which is exactly the assumption this file
+           has just been burned by. */
+        var found = null;
+        for (var i = 0; i < marks.length; i++) {
+          if (marks[i].head.getBoundingClientRect().top <= line) found = marks[i];
+          else break;
+        }
+
+        if (found === current) return;
+
+        if (current) {
+          current.link.classList.remove('is-here');
+          current.link.removeAttribute('aria-current');
+        }
+        current = found;
+        if (current) {
+          current.link.classList.add('is-here');
+          current.link.setAttribute('aria-current', 'true');
+          keepInView(current.link);
+        }
+      }
+
+      /* On a long policy the live link can be outside the fold of the
+         column's OWN scroll. Moved by hand rather than by
+         scrollIntoView, which is free to scroll every scrollable
+         ancestor — the window included — and would turn a reader's
+         scroll into the page scrolling itself. This can only ever move
+         the column, and only when the column actually scrolls. */
+      function keepInView(link) {
+        if (root.scrollHeight <= root.clientHeight + 4) return;
+
+        var l = link.getBoundingClientRect();
+        var box = root.getBoundingClientRect();
+
+        if (l.top < box.top + 8) root.scrollTop += l.top - box.top - 8;
+        else if (l.bottom > box.bottom - 8) root.scrollTop += l.bottom - box.bottom + 8;
+      }
+
+      /* ── Listening where the scrolling actually happens ─────────────
+         This theme does not scroll the window. The page lives inside
+         .page-wrapper, which is the element with overflow, so a
+         window 'scroll' listener here never fires once — and the
+         scroll-position arithmetic a spy would normally do against
+         window.scrollY reads 0 for the whole length of the document.
+
+         Registered on `document` in the CAPTURE phase instead. A scroll
+         event does not bubble, but it does pass through the capture
+         phase on its way down, so this one listener catches the window,
+         .page-wrapper, and this column's own scroll alike — without
+         this file naming, or having to keep up with, whichever of them
+         the theme happens to use. */
+      function queue() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(spy);
+      }
+
+      document.addEventListener('scroll', queue, { capture: true, passive: true });
+      window.addEventListener('resize', queue);
+
+      /* ── A column may only be pinned beside something taller ────────
+         Pinning is a bargain: the column gives up its place in the flow
+         and, past the height of a screen, scrolls inside itself. That is
+         worth it beside Privacy, which runs to twelve sections and five
+         screens. Beside Contact it is a straight loss — the document is
+         four short sections and the column is longer than it, so pinning
+         puts two thirds of the column behind a scrollbar on a page that
+         barely scrolls at all.
+
+         Which it is cannot be known in CSS: it is the column's own
+         height against the document's, and both are set by Admin copy.
+         So it is measured, and the column is let back into the flow when
+         it is the taller of the two. Re-measured on resize, because the
+         document's height is a function of the width it is given.
+
+         The class is dropped before measuring: with it on there is no
+         clip, and scrollHeight would come back as the height of a box
+         that is no longer holding anything back. */
+      function fitColumn() {
+        var doc = document.querySelector('.shopify-policy__container');
+        if (!doc) return;
+
+        root.classList.remove('sv-pol-mount--flow');
+        if (root.scrollHeight > doc.offsetHeight - 40) {
+          root.classList.add('sv-pol-mount--flow');
+        }
+      }
+
+      /* All of these read the policy, and the policy is rendered after
+         this column — see buildToc's note. Nothing here may run early.
+         fitColumn goes first: the reveals it arms afterwards have to
+         know whether the column is a scrollport before they choose what
+         to measure "on screen" against. */
+      function dressPolicy() {
+        var body = document.querySelector('.shopify-policy__body');
+        if (!body) return;
+        dropRestatedTitle(body);
+        liftStamp(body);
+        buildToc();
+        fitColumn();
+        armReveals();
+      }
+
+      window.addEventListener('resize', fitColumn);
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', dressPolicy);
+      } else {
+        dressPolicy();
+      }
+
+      /* ── Reveal on scroll ───────────────────────────────────────────
+         Same contract as sv-faq and sv-size-guide: fires once, then
+         unobserves, and every held element is pinned to its finished
+         state by a timer shortly after it should have arrived. A
+         transition that never advances — a backgrounded tab, a dropped
+         frame budget — must never be able to leave a policy's figures
+         invisible. */
+      function armReveals() {
+        if (calm || !('IntersectionObserver' in window)) return;
+
+        var held = Array.prototype.slice.call(root.querySelectorAll('[data-sv-motion]'));
+
+        var reveal = function (el) {
+          if (el.classList.contains('sv-vis')) return;
+          el.classList.add('sv-vis');
+          mo.unobserve(el);
+          setTimeout(function () { el.classList.add('sv-settled'); }, 1800);
+        };
+
+        /* ── Which fold ───────────────────────────────────────────────
+           Above 900px this column is a scrollport of its own: held under
+           the header, taller than the viewport, scrolling inside itself.
+           Everything here lives inside it, so "on screen" means on
+           screen IN THE COLUMN, not in the viewport — and an observer
+           left on the viewport reports the journey and the hand-off as
+           never intersecting, because they are clipped by a box that is
+           itself fully in view. They would then be held at opacity 0
+           permanently, in a column the reader can scroll to.
+
+           Handing the observer that box as its root is the whole fix:
+           the entrance then plays when the reader scrolls the column,
+           which is the moment they arrive. Below 900px the wrapper is
+           display:contents, has no box at all, and the root goes back
+           to the viewport. */
+        var clipped = function () {
+          var oy = window.getComputedStyle(root).overflowY;
+          return oy === 'auto' || oy === 'scroll';
+        };
+
+        var mo = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) reveal(en.target); });
+        }, {
+          root: clipped() ? root : null,
+          rootMargin: '0px 0px -8% 0px',
+          threshold: 0.06
+        });
+
+        held.forEach(function (el) { mo.observe(el); });
+
+        /* The eyebrow and the pins are above the fold by definition. */
+        root.querySelectorAll('.sv-pol__eyebrow, .sv-pol__pins').forEach(reveal);
+
+        /* An observer reports a state, not every state passed through:
+           scroll hard enough in one gesture and an element can go from
+           below the fold to above it without a callback ever firing,
+           and would then stay invisible for good. */
+        var queued = false;
+        var sweep = function () {
+          queued = false;
+          /* Measured every time rather than cached: a window dragged
+             across 900px turns the column from a scrollport into part
+             of the page, and a fold remembered from load would go on
+             holding whatever was below the old one. */
+          var fold = clipped()
+            ? root.getBoundingClientRect().bottom
+            : window.innerHeight;
+
+          held.forEach(function (el) {
+            if (!el.classList.contains('sv-vis') &&
+                el.getBoundingClientRect().top < fold) reveal(el);
+          });
+        };
+
+        /* On `document`, in capture, for the reason the spy's listener
+           above is: the window does not scroll on this theme, so the
+           window-bound version of this backstop never ran and the 1.2s
+           timer below was quietly carrying it alone. */
+        document.addEventListener('scroll', function () {
+          if (queued) return;
+          queued = true;
+          setTimeout(sweep, 180);
+        }, { capture: true, passive: true });
+
+        setTimeout(sweep, 1200);
+      }
+    })();
+</script>
+
+{% stylesheet %}
+  /* Colour, type and spacing are tokens only. Primitives borrowed from
+     sv-system.css: .eyebrow, .lab, .btn, .act. Nothing here redefines the
+     system.
+
+     Two scopes live in this file:
+       · the PAGE layout, which has to reach Shopify's own container and
+         so is written as `main:has(.sv-pol) …`. That compound (0,2,1)
+         outranks sv-system.css's `.shopify-policy__container` (0,1,0)
+         whichever of the two stylesheets the theme loads first, which is
+         not a thing this section can otherwise know.
+       · this column's own furniture, under .sv-pol.
+
+     sv-system.css §02 scopes its reset under [data-sv] (0,1,1), which
+     outranks a bare class (0,1,0) — every rule below that has to beat it
+     is written compound for that reason, not for emphasis. */
+
+  /* ── The page, once the column is present ───────────────────────────
+     Shopify hands us <main> with the policy container inside it, and
+     this section is rendered as that container's sibling. Nothing can be
+     placed between the container's title and its body — the markup is
+     Shopify's — so the summary reads as a column beside the document
+     rather than as a band beneath its heading.
+
+     The section's own wrapper is what the left column IS on desktop: one
+     grid item holding both of its blocks, which is what lets it be
+     sticky. Below 900px it is dissolved with display:contents so that
+     its two blocks and the policy container become three siblings in one
+     column and the document can sit between them — see the note on that
+     breakpoint. Safe on this element and only this one: .shopify-section
+     is a structural div Shopify adds, it carries no semantics, and it
+     has no styles of its own to lose. */
+  main:has(.sv-pol) {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    column-gap: var(--d);
+    align-content: start;
+    max-width: 1220px;
+    margin-inline: auto;
+    padding: var(--d) var(--c) var(--f);
+    background: var(--cream);
+  }
+
+  /* ── The column travels ─────────────────────────────────────────────
+     A contents list that scrolls away is usable once, at the top, and
+     these documents run to twelve sections. Held under the header, it is
+     usable at section nine — which is the only place anybody has ever
+     wanted one.
+
+     Sticky needs two things this used to break. The travel comes from
+     the grid AREA, so the column has to be ONE item in a row as tall as
+     the document — hence the wrapper doing the work rather than
+     display:contents and two items in two rows. And it must not be
+     stretched, hence align-self, or its box already fills the row and
+     there is nowhere to travel to.
+
+     Scrolling inside itself is the honest answer to a column that is
+     occasionally taller than the viewport — Privacy carries figures, a
+     clause and a journey — and it costs nothing on the pages where it
+     never binds. dvh rather than vh so a phone's collapsing address bar
+     does not leave the foot of it unreachable; 900px down it is not
+     sticky at all, but the value is written once. */
+  .sv-pol-mount {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--sv-stick) + var(--b));
+    display: flex;
+    flex-direction: column;
+    gap: var(--b);
+    max-height: calc(100dvh - var(--sv-stick) - var(--c));
+    overflow-y: auto;
+    /* overflow-y:auto makes overflow-x `auto` too, which clips. The
+       padding is there so that a focus ring — 2px at a 4px offset — is
+       not sheared off against the column's own edge, and the matching
+       negative margin keeps the content on the 270px track. Scroll
+       chaining is deliberately left at its default: contained, a wheel
+       over the column would stop dead at the foot of it instead of
+       carrying on down the page, which is what a reader is doing. */
+    padding: 4px 8px;
+    margin: -4px -8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cream-2) transparent;
+  }
+
+  /* Set by the script when the column turns out to be taller than the
+     document beside it — Contact, which is four short sections. Pinning
+     is only worth its cost beside something long enough to read past it;
+     here the column simply runs down the page as it used to, and the
+     page scrolls both. */
+  .sv-pol-mount--flow {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .sv-pol-mount::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sv-pol-mount::-webkit-scrollbar-thumb {
+    background: var(--cream-2);
+    border-radius: 999px;
+  }
+
+  .sv-pol__after {
+    display: grid;
+    gap: var(--b);
+    align-content: start;
+    background: transparent;
+  }
+
+  main:has(.sv-pol) .shopify-policy__container {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  /* The container centres itself and carries its own page padding when
+     it is the whole page. As a grid cell it must do neither. */
+  main:has(.sv-pol) .shopify-policy__container {
+    max-width: none;
+    margin-inline: 0;
+    padding: 0;
+  }
+
+  /* Shopify's <h1> is the page title and stays exactly where it is; the
+     eyebrow above it belongs to this column, so the two are aligned by
+     killing the leading offset rather than by moving either. */
+  main:has(.sv-pol) .shopify-policy__container .shopify-policy__title {
+    margin-top: 0;
+  }
+
+  /* Anchors have to land clear of the sticky header group. --sv-stick is
+     measured onto <html> by the script; the value here is the fallback. */
+  :root {
+    --sv-stick: 124px;
+  }
+
+  main:has(.sv-pol) .shopify-policy__body h2,
+  main:has(.sv-pol) .shopify-policy__body h3 {
+    scroll-margin-top: var(--sv-stick);
+  }
+
+  /* ── The column ─────────────────────────────────────────────────── */
+  [data-sv].sv-pol {
+    display: grid;
+    gap: var(--b);
+    align-content: start;
+    background: transparent;
+  }
+
+  [data-sv] .sv-pol__eyebrow {
+    /* Optically level with the serif <h1> beside it, which sits on a
+       1.06 line-height and so starts higher than its box does. */
+    margin-top: 6px;
+    color: var(--ink);
+  }
+
+  /* ── The stamp ──────────────────────────────────────────────────────
+     Sits directly under the eyebrow and reads as its second line, which
+     is what it is: what this document is for, and when it last changed.
+     Small, tabular, ink — a date is a fact, not an accent, and the gold
+     it would otherwise have taken fails contrast at this size (the
+     argument the labels below make in full). The negative top margin
+     closes the column's var(--b) gap: these two lines are one unit. */
+  [data-sv] .sv-pol__stamp {
+    margin-top: calc(var(--a) - var(--b));
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    opacity: 0.72;
+  }
+
+  /* ── Labels, made readable ──────────────────────────────────────────
+     .lab paints gold (#C6A15B) at .66rem. On the ivory card that is
+     2.4:1 and on the cream ground 2.5:1 — against AA's 4.5:1 for text
+     this size. .lab--grey and .eyebrow are no better at 4.2:1. The
+     system already states the principle at §05, "Gold is never a button
+     or a link — contrast fails"; it just was not carried through to
+     small caps on a light ground.
+
+     So on this page gold is kept for everything that is a rule or an
+     edge, where contrast is not a legibility question — the pins' cap
+     bars, the numeral rings, the title's rule, the list markers — and
+     every label takes the reading pass's own answer instead
+     (sv-system.css §03c, .sv-read-lab): ink at 600, which is 17:1.
+     Hierarchy then comes from size, weight and case rather than colour.
+
+     Compound on purpose: .lab is (0,1,0) and this must beat it whichever
+     of the two stylesheets the theme happens to load first. */
+  .sv-pol .lab,
+  .sv-pol__after .lab {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: var(--ink);
+  }
+
+  /* ── Contents ───────────────────────────────────────────────────── */
+  .sv-pol__toclab {
+    margin-bottom: var(--a);
+  }
+
+  [data-sv] .sv-pol__toclist {
+    display: grid;
+    gap: 2px;
+    border-left: 1px solid var(--cream-2);
+  }
+
+  .sv-pol__toclink {
+    display: block;
+    padding: 7px 0 7px var(--a);
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    line-height: 1.45;
+    /* These are the page's navigation, so they take ink (16:1) rather
+       than --grey, which is 4.2:1 on the cream ground. */
+    color: var(--ink);
+    text-decoration: none;
+    transition: color var(--std) var(--e);
+  }
+
+  .sv-pol__toclink:hover,
+  .sv-pol__toclink:focus-visible {
+    color: var(--emerald);
+  }
+
+  /* ── Where you are ──────────────────────────────────────────────────
+     Gold, on the list's own left rule — a mark on an edge, not text, so
+     it is the one place on this page gold is allowed to carry meaning
+     (the column's contrast argument, made once below, holds: gold is
+     kept for rules and edges and never for type). The label alongside
+     turns emerald and gains weight, which is what actually does the
+     work; the bar is what makes it findable without reading. */
+  .sv-pol__toclink.is-here {
+    color: var(--emerald);
+    font-weight: 500;
+  }
+
+  .sv-pol__toclist li {
+    position: relative;
+  }
+
+  .sv-pol__toclink.is-here::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--tan);
+  }
+
+  /* [hidden] is only a UA rule at display:none, so any class here that
+     sets a display silently beats it. One guard for the column rather
+     than remembering it at each new display declaration. */
+  .sv-pol [hidden] {
+    display: none !important;
+  }
+
+  /* ── Pins ───────────────────────────────────────────────────────── */
+  [data-sv] .sv-pol__pins {
+    display: grid;
+    gap: var(--a);
+  }
+
+  .sv-pol__pin {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: var(--b) var(--a);
+    background: var(--card);
+    border-radius: var(--r-img);
+    box-shadow: var(--sh-s);
+  }
+
+  /* The gold cap is a bar, not a border, so it can draw. */
+  .sv-pol__pin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--tan);
+    border-radius: var(--r-img) var(--r-img) 0 0;
+  }
+
+  .sv-pol__pinval {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--emerald);
+  }
+
+  /* --grey on the card is 4.4:1 — a hair under AA at this size, and this
+     is the line that qualifies the figure above it, so it has to be
+     read, not skimmed past. Ink, one step smaller than the body. */
+  .sv-pol__pinnote {
+    font-size: 0.84rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  /* ── The video rule · refund only ───────────────────────────────────
+     The page's one dark object. Everything else on a policy page is ink
+     or emerald on ivory, so emerald-on-emerald is the only weight left
+     that does not mean "error" — and this is not an error, it is the
+     condition the whole document rests on.
+
+     It takes the pins' gold cap rather than the help card's left rule,
+     because it belongs to the figures above it: those three say what you
+     get, this says what you must have done to get it. */
+  .sv-pol__rule {
+    position: relative;
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+    padding: var(--b) var(--a);
+    background: var(--emerald);
+    border-radius: var(--r-img);
+    box-shadow: var(--sh-s);
+  }
+
+  .sv-pol__rule::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--tan);
+    border-radius: var(--r-img) var(--r-img) 0 0;
+  }
+
+  /* The system's default outline is gold, which all but vanishes on this
+     ground — the same swap .panel-dark makes in sv-system.css §10. */
+  .sv-pol__rule :focus-visible {
+    outline-color: var(--cream);
+  }
+
+  /* Gold small caps on emerald is 3.2:1 and this column has already made
+     that argument once, above: gold stays on the cap bar, where contrast
+     is not a legibility question, and the label takes cream at 8.4:1.
+     Label and heading then share a colour, and the hierarchy is carried
+     by size, case and face instead — which is how the rest of the column
+     already does it. Softened one step so the two do not read as one
+     run-on line; still 5.8:1. */
+  .sv-pol .sv-pol__rule .lab {
+    color: rgba(251, 247, 239, 0.78);
+  }
+
+  /* Both cards are a <p> label directly above a <p> heading, and
+     `[data-sv] p + p` (0,1,1) is a PAGE rhythm — var(--b), 28px. Landing
+     between a label and the thing it labels it reads as two unrelated
+     lines rather than one; measured at 38px against the 10px the grid
+     gap asks for. Zeroed so the gap is the only thing spacing these.
+     Direct children only: the richtext bodies below set their own. */
+  [data-sv] .sv-pol__rule > p + p,
+  [data-sv] .sv-pol__help > p + p {
+    margin-top: 0;
+  }
+
+  /* Compound for the same reason .sv-pol__helph is: this is a <p>, and
+     `[data-sv] p` (0,1,1) sets --grey and would win against a bare
+     class — on this ground that is 2.1:1 and unreadable. */
+  [data-sv] .sv-pol__ruleh {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    line-height: 1.2;
+    color: var(--cream);
+  }
+
+  /* 7.2:1. The measure is a cap rather than the system's `none`: on the
+     270px column it never binds, but between 640px and 900px this card
+     is the full width of the page and the line ran to 95 characters. */
+  [data-sv] .sv-pol__rulebody p {
+    font-size: 0.86rem;
+    line-height: 1.65;
+    color: rgba(251, 247, 239, 0.9);
+    max-width: 52ch;
+  }
+
+  /* --b between two paragraphs is a page rhythm, not a card's. */
+  [data-sv] .sv-pol__rulebody p + p {
+    margin-top: 8px;
+  }
+
+  [data-sv] .sv-pol__rulebody em {
+    font-family: var(--serif);
+    font-size: 1.06em;
+    font-style: italic;
+  }
+
+  /* .act would paint ink here. Same shape — caps, tracked, gold rule
+     under it — rebuilt in the one colour that reads on this ground. */
+  .sv-pol__rulelink {
+    margin-top: 4px;
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--cream);
+    border-bottom: 1px solid var(--tan);
+    padding-bottom: 6px;
+    transition: opacity var(--micro) var(--e);
+  }
+
+  .sv-pol__rulelink:hover,
+  .sv-pol__rulelink:focus-visible {
+    opacity: 0.7;
+  }
+
+  /* ── The journey ────────────────────────────────────────────────── */
+  /* .lab alone loses this one: sv-system.css §03 sets the serif face and
+     a clamp()ed display size on `[data-sv] h2` (0,1,1), which outranks a
+     bare class, so the label rendered as a 3rem serif heading. It stays
+     an <h2> because the strip is a titled section; the class is restated
+     compound so it wins. */
+  [data-sv] .sv-pol__flowh {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  [data-sv] .sv-pol__steps {
+    position: relative;
+    display: grid;
+    gap: var(--b);
+    margin-top: var(--a);
+  }
+
+  /* The thread the numerals hang from. Stopped short at both ends so it
+     begins and finishes at a numeral rather than running past them. */
+  .sv-pol__thread {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    bottom: 12px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--tan), rgba(198, 161, 91, 0.3));
+    pointer-events: none;
+  }
+
+  .sv-pol__step {
+    position: relative;
+    display: grid;
+    gap: 4px;
+    padding-left: calc(26px + var(--a));
+    min-height: 26px;
+  }
+
+  /* The numeral caps the thread. Its ivory ground is what makes the line
+     look interrupted rather than crossed out. */
+  .sv-pol__stepnum {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 1px solid var(--tan);
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    color: var(--emerald);
+  }
+
+  .sv-pol__steplab {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  .sv-pol__stepdet {
+    font-size: 0.84rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  /* ── Where to go next ───────────────────────────────────────────── */
+  .sv-pol__help {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+    padding: var(--b) var(--a);
+    background: var(--card);
+    border-radius: var(--r-img);
+    border-left: 2px solid var(--tan);
+    box-shadow: var(--sh-s);
+  }
+
+  /* Compound: this is a <p>, and `[data-sv] p` (0,1,1) sets --grey and
+     outranks a bare class, so the emerald never landed and the heading
+     was sitting at 4.4:1 while looking intentional. */
+  [data-sv] .sv-pol__helph {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    line-height: 1.2;
+    color: var(--emerald);
+  }
+
+  /* Capped rather than `none` for the reason the rule card's body is:
+     the column is 270px on desktop, where this never binds, and the full
+     width of the page between 640px and 900px, where it did. */
+  [data-sv] .sv-pol__helpbody p {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--ink);
+    max-width: 52ch;
+  }
+
+  .sv-pol__helpbtn {
+    /* A 46px-padded button does not fit a 270px column. */
+    padding: 14px var(--b);
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  /* The second action, where a card has two. The 6px above is the gap
+     between the body and the buttons; repeated between the buttons it
+     separates a pair that should read as one. */
+  .sv-pol__helpmail {
+    margin-top: 0;
+  }
+
+  /* One button sizes to its own words, which is right when it is alone.
+     Two do not: "Message on WhatsApp" is half again as long as "Send an
+     email", and left to themselves they stack as two different widths
+     with a ragged right edge inside a card whose every other edge is
+     flush. Stretched only where a second button exists. */
+  .sv-pol__help:has(.sv-pol__helpmail) .sv-pol__helpbtn {
+    justify-self: stretch;
+  }
+
+  .sv-pol__helplink {
+    margin-top: 4px;
+    font-size: 0.7rem;
+  }
+
+  /* ── Entrances ──────────────────────────────────────────────────────
+     Each element arrives on the system's --stagger; the pins' caps draw
+     in behind them. Three cards landing together read as one block,
+     which is exactly what they are not. */
+  .sv-pol-mount.is-js.sv-motion-ready [data-sv-motion],
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins > li {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity 0.7s var(--entrance), transform 0.7s var(--entrance);
+  }
+
+  .sv-pol-mount.is-js.sv-motion-ready [data-sv-motion].sv-vis,
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins.sv-vis > li {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins.sv-vis > li:nth-child(2) {
+    transition-delay: var(--stagger);
+  }
+
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins.sv-vis > li:nth-child(3) {
+    transition-delay: calc(var(--stagger) * 2);
+  }
+
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins > li::before,
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__rule::before {
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.75s var(--e);
+  }
+
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins.sv-vis > li::before,
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__rule.sv-vis::before {
+    transform: none;
+    transition-delay: 0.25s;
+  }
+
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins.sv-vis > li:nth-child(2)::before {
+    transition-delay: calc(0.25s + var(--stagger));
+  }
+
+  .sv-pol-mount.is-js.sv-motion-ready .sv-pol__pins.sv-vis > li:nth-child(3)::before {
+    transition-delay: calc(0.25s + var(--stagger) * 2);
+  }
+
+  /* A held element pinned by the script's timer is visible whatever the
+     transition did. */
+  .sv-pol-mount.is-js.sv-motion-ready .sv-settled,
+  .sv-pol-mount.is-js.sv-motion-ready .sv-settled > li {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* The caps draw with their own transform, so the guard above — which
+     only reaches the element — cannot land them. Left out, a dropped
+     frame budget leaves the refund page's one gold mark at scaleX(0). */
+  .sv-pol-mount.is-js.sv-motion-ready .sv-settled::before,
+  .sv-pol-mount.is-js.sv-motion-ready .sv-settled > li::before {
+    transform: none !important;
+  }
+
+  /* ── Responsive ─────────────────────────────────────────────────── */
+  @media (max-width: 1080px) {
+    main:has(.sv-pol) {
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: var(--c);
+    }
+  }
+
+  /* One column, and the reason the section renders as two blocks: the
+     page opens with the eyebrow, the contents and the figures, then the
+     document with its own title, then the journey and the hand-off.
+     Everything in one block would have put that title three screens
+     down a phone. */
+  @media (max-width: 900px) {
+    main:has(.sv-pol) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--c);
+      padding: var(--c) var(--b) var(--d);
+    }
+
+    /* The wrapper is dissolved and its two blocks become grid items of
+       <main> alongside the policy container, which is the only way the
+       document can sit BETWEEN them — and it has to, or a phone opens
+       the page on three screens of summary before the policy's own
+       title. Sticky goes with it: a column held under the header while
+       the document scrolls past is a two-column idea, and in one column
+       it would simply cover the page. */
+    .sv-pol-mount {
+      display: contents;
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .sv-pol,
+    .sv-pol__after,
+    main:has(.sv-pol) .shopify-policy__container {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
+    .sv-pol { order: 1; }
+    main:has(.sv-pol) .shopify-policy__container { order: 2; }
+    .sv-pol__after { order: 3; }
+
+    [data-sv].sv-pol {
+      gap: var(--b);
+    }
+
+    /* Ten stacked links is a screen of its own on a phone. Wrapped, the
+       same list is three rows. */
+    [data-sv] .sv-pol__toclist {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+      border-left: 0;
+    }
+
+    .sv-pol__toclink {
+      padding: 6px 12px;
+      background: var(--card);
+      border-radius: 999px;
+      box-shadow: var(--sh-s);
+      font-size: 0.8rem;
+    }
+
+    [data-sv] .sv-pol__pins {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .sv-pol__helpbtn {
+      justify-self: start;
+    }
+  }
+
+  @media (max-width: 640px) {
+    [data-sv] .sv-pol__pins {
+      grid-template-columns: 1fr;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Policy sidebar",
+  "tag": "div",
+  "class": "sv-pol-mount",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "This column appears beside every policy at /policies/*. Shopify has no policy template, so it is rendered from layout/theme.liquid and cannot be moved in the theme editor."
+    },
+    {
+      "type": "paragraph",
+      "content": "One route serves every policy. The eyebrow, the last-updated stamp and the contents list are built from each document itself and appear on all of them. Everything below belongs to one named policy — each figure and each journey step carries a setting saying which. A policy with nothing set here shows the stamp and the contents list and nothing else."
+    },
+    {
+      "type": "paragraph",
+      "content": "The policy text itself is edited in Settings → Policies, never here. Nothing in this column may state a rule the document does not already state."
+    },
+    {
+      "type": "header",
+      "content": "Shipping policy"
+    },
+    {
+      "type": "text",
+      "id": "sh_flow_title",
+      "label": "Journey heading",
+      "info": "Leave empty to drop the journey from this policy."
+    },
+    {
+      "type": "text",
+      "id": "sh_help_label",
+      "label": "Hand-off — label"
+    },
+    {
+      "type": "text",
+      "id": "sh_help_title",
+      "label": "Hand-off — heading",
+      "info": "Leave empty and the hand-off card does not appear."
+    },
+    {
+      "type": "richtext",
+      "id": "sh_help_body",
+      "label": "Hand-off — text"
+    },
+    {
+      "type": "text",
+      "id": "sh_help_wa_label",
+      "label": "Hand-off — WhatsApp button"
+    },
+    {
+      "type": "text",
+      "id": "sh_help_wa_text",
+      "label": "Hand-off — WhatsApp opening line"
+    },
+    {
+      "type": "text",
+      "id": "sh_help_mail_label",
+      "label": "Hand-off — email button",
+      "info": "Reads the address from the shop's support email metafield, never from here. Empty field, no button."
+    },
+    {
+      "type": "text",
+      "id": "sh_help_link_label",
+      "label": "Hand-off — secondary link label"
+    },
+    {
+      "type": "url",
+      "id": "sh_help_link_url",
+      "label": "Hand-off — secondary link"
+    },
+    {
+      "type": "header",
+      "content": "Refund policy"
+    },
+    {
+      "type": "text",
+      "id": "rf_flow_title",
+      "label": "Journey heading",
+      "info": "Leave empty to drop the journey from this policy."
+    },
+    {
+      "type": "text",
+      "id": "rf_rule_label",
+      "label": "Clause — label"
+    },
+    {
+      "type": "text",
+      "id": "rf_rule_title",
+      "label": "Clause — heading",
+      "info": "The page's one dark card. Leave empty and it does not appear. One per policy: a second would tell the reader that the dark card means nothing in particular."
+    },
+    {
+      "type": "richtext",
+      "id": "rf_rule_body",
+      "label": "Clause — text"
+    },
+    {
+      "type": "text",
+      "id": "rf_rule_link_label",
+      "label": "Clause — link label"
+    },
+    {
+      "type": "url",
+      "id": "rf_rule_link_url",
+      "label": "Clause — link"
+    },
+    {
+      "type": "text",
+      "id": "rf_help_label",
+      "label": "Hand-off — label"
+    },
+    {
+      "type": "text",
+      "id": "rf_help_title",
+      "label": "Hand-off — heading",
+      "info": "Leave empty and the hand-off card does not appear."
+    },
+    {
+      "type": "richtext",
+      "id": "rf_help_body",
+      "label": "Hand-off — text"
+    },
+    {
+      "type": "text",
+      "id": "rf_help_wa_label",
+      "label": "Hand-off — WhatsApp button"
+    },
+    {
+      "type": "text",
+      "id": "rf_help_wa_text",
+      "label": "Hand-off — WhatsApp opening line"
+    },
+    {
+      "type": "text",
+      "id": "rf_help_mail_label",
+      "label": "Hand-off — email button",
+      "info": "Reads the address from the shop's support email metafield, never from here. Empty field, no button."
+    },
+    {
+      "type": "text",
+      "id": "rf_help_link_label",
+      "label": "Hand-off — secondary link label"
+    },
+    {
+      "type": "url",
+      "id": "rf_help_link_url",
+      "label": "Hand-off — secondary link"
+    },
+    {
+      "type": "header",
+      "content": "Privacy policy"
+    },
+    {
+      "type": "text",
+      "id": "pv_flow_title",
+      "label": "Journey heading",
+      "info": "Leave empty to drop the journey from this policy."
+    },
+    {
+      "type": "text",
+      "id": "pv_rule_label",
+      "label": "Clause — label"
+    },
+    {
+      "type": "text",
+      "id": "pv_rule_title",
+      "label": "Clause — heading",
+      "info": "The page's one dark card. Leave empty and it does not appear. One per policy: a second would tell the reader that the dark card means nothing in particular."
+    },
+    {
+      "type": "richtext",
+      "id": "pv_rule_body",
+      "label": "Clause — text"
+    },
+    {
+      "type": "text",
+      "id": "pv_rule_link_label",
+      "label": "Clause — link label"
+    },
+    {
+      "type": "url",
+      "id": "pv_rule_link_url",
+      "label": "Clause — link"
+    },
+    {
+      "type": "text",
+      "id": "pv_help_label",
+      "label": "Hand-off — label"
+    },
+    {
+      "type": "text",
+      "id": "pv_help_title",
+      "label": "Hand-off — heading",
+      "info": "Leave empty and the hand-off card does not appear."
+    },
+    {
+      "type": "richtext",
+      "id": "pv_help_body",
+      "label": "Hand-off — text"
+    },
+    {
+      "type": "text",
+      "id": "pv_help_wa_label",
+      "label": "Hand-off — WhatsApp button"
+    },
+    {
+      "type": "text",
+      "id": "pv_help_wa_text",
+      "label": "Hand-off — WhatsApp opening line"
+    },
+    {
+      "type": "text",
+      "id": "pv_help_mail_label",
+      "label": "Hand-off — email button",
+      "info": "Reads the address from the shop's support email metafield, never from here. Empty field, no button."
+    },
+    {
+      "type": "text",
+      "id": "pv_help_link_label",
+      "label": "Hand-off — secondary link label"
+    },
+    {
+      "type": "url",
+      "id": "pv_help_link_url",
+      "label": "Hand-off — secondary link"
+    },
+    {
+      "type": "header",
+      "content": "Terms of service"
+    },
+    {
+      "type": "text",
+      "id": "tm_flow_title",
+      "label": "Journey heading",
+      "info": "Leave empty to drop the journey from this policy."
+    },
+    {
+      "type": "text",
+      "id": "tm_rule_label",
+      "label": "Clause — label"
+    },
+    {
+      "type": "text",
+      "id": "tm_rule_title",
+      "label": "Clause — heading",
+      "info": "The page's one dark card. Leave empty and it does not appear. One per policy: a second would tell the reader that the dark card means nothing in particular."
+    },
+    {
+      "type": "richtext",
+      "id": "tm_rule_body",
+      "label": "Clause — text"
+    },
+    {
+      "type": "text",
+      "id": "tm_rule_link_label",
+      "label": "Clause — link label"
+    },
+    {
+      "type": "url",
+      "id": "tm_rule_link_url",
+      "label": "Clause — link"
+    },
+    {
+      "type": "text",
+      "id": "tm_help_label",
+      "label": "Hand-off — label"
+    },
+    {
+      "type": "text",
+      "id": "tm_help_title",
+      "label": "Hand-off — heading",
+      "info": "Leave empty and the hand-off card does not appear."
+    },
+    {
+      "type": "richtext",
+      "id": "tm_help_body",
+      "label": "Hand-off — text"
+    },
+    {
+      "type": "text",
+      "id": "tm_help_wa_label",
+      "label": "Hand-off — WhatsApp button"
+    },
+    {
+      "type": "text",
+      "id": "tm_help_wa_text",
+      "label": "Hand-off — WhatsApp opening line"
+    },
+    {
+      "type": "text",
+      "id": "tm_help_mail_label",
+      "label": "Hand-off — email button",
+      "info": "Reads the address from the shop's support email metafield, never from here. Empty field, no button."
+    },
+    {
+      "type": "text",
+      "id": "tm_help_link_label",
+      "label": "Hand-off — secondary link label"
+    },
+    {
+      "type": "url",
+      "id": "tm_help_link_url",
+      "label": "Hand-off — secondary link"
+    },
+    {
+      "type": "header",
+      "content": "Contact information"
+    },
+    {
+      "type": "text",
+      "id": "ct_rule_label",
+      "label": "Clause — label"
+    },
+    {
+      "type": "text",
+      "id": "ct_rule_title",
+      "label": "Clause — heading",
+      "info": "The page's one dark card. Leave empty and it does not appear. One per policy: a second would tell the reader that the dark card means nothing in particular."
+    },
+    {
+      "type": "richtext",
+      "id": "ct_rule_body",
+      "label": "Clause — text"
+    },
+    {
+      "type": "text",
+      "id": "ct_rule_link_label",
+      "label": "Clause — link label"
+    },
+    {
+      "type": "url",
+      "id": "ct_rule_link_url",
+      "label": "Clause — link"
+    },
+    {
+      "type": "text",
+      "id": "ct_help_label",
+      "label": "Hand-off — label"
+    },
+    {
+      "type": "text",
+      "id": "ct_help_title",
+      "label": "Hand-off — heading",
+      "info": "Leave empty and the hand-off card does not appear."
+    },
+    {
+      "type": "richtext",
+      "id": "ct_help_body",
+      "label": "Hand-off — text"
+    },
+    {
+      "type": "text",
+      "id": "ct_help_wa_label",
+      "label": "Hand-off — WhatsApp button"
+    },
+    {
+      "type": "text",
+      "id": "ct_help_wa_text",
+      "label": "Hand-off — WhatsApp opening line"
+    },
+    {
+      "type": "text",
+      "id": "ct_help_mail_label",
+      "label": "Hand-off — email button",
+      "info": "Reads the address from the shop's support email metafield, never from here. Empty field, no button."
+    },
+    {
+      "type": "text",
+      "id": "ct_help_link_label",
+      "label": "Hand-off — secondary link label"
+    },
+    {
+      "type": "url",
+      "id": "ct_help_link_url",
+      "label": "Hand-off — secondary link"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "pin",
+      "name": "Figure",
+      "limit": 18,
+      "settings": [
+        {
+          "type": "select",
+          "id": "policy",
+          "label": "Show on",
+          "info": "Three figures per policy. A fourth on one page makes the column longer than the document beside it.",
+          "options": [
+            {
+              "value": "shipping",
+              "label": "Shipping policy"
+            },
+            {
+              "value": "refund",
+              "label": "Refund policy"
+            },
+            {
+              "value": "privacy",
+              "label": "Privacy policy"
+            },
+            {
+              "value": "terms",
+              "label": "Terms of service"
+            },
+            {
+              "value": "contact",
+              "label": "Contact information"
+            }
+          ],
+          "default": "shipping"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Dispatch"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Figure",
+          "default": "1–2 working days"
+        },
+        {
+          "type": "select",
+          "id": "source",
+          "label": "Read the figure from",
+          "info": "A figure that also lives in a shop metafield should be read from it, never typed here — that is how the site comes to disagree with itself. The typed figure is used when the metafield is empty.",
+          "options": [
+            {
+              "value": "typed",
+              "label": "The figure typed above"
+            },
+            {
+              "value": "threshold",
+              "label": "Free-shipping threshold (metafield)"
+            },
+            {
+              "value": "kerala",
+              "label": "Kerala delivery charge (metafield)"
+            }
+          ],
+          "default": "typed"
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "label": "Note",
+          "default": "Monday to Saturday, excluding public holidays in Kerala."
+        }
+      ]
+    },
+    {
+      "type": "step",
+      "name": "Journey step",
+      "limit": 20,
+      "settings": [
+        {
+          "type": "select",
+          "id": "policy",
+          "label": "Show on",
+          "info": "Four steps per policy. Steps are numbered per page, so each journey starts at 01 whatever sits above it in this list.",
+          "options": [
+            {
+              "value": "shipping",
+              "label": "Shipping policy"
+            },
+            {
+              "value": "refund",
+              "label": "Refund policy"
+            },
+            {
+              "value": "privacy",
+              "label": "Privacy policy"
+            },
+            {
+              "value": "terms",
+              "label": "Terms of service"
+            },
+            {
+              "value": "contact",
+              "label": "Contact information"
+            }
+          ],
+          "default": "shipping"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Step",
+          "default": "Order placed"
+        },
+        {
+          "type": "text",
+          "id": "detail",
+          "label": "Detail",
+          "default": "Paid at checkout. We are prepaid-only — there is no Cash on Delivery."
+        }
+      ]
+    }
+  ],
+  "default": {
+    "settings": {
+      "sh_flow_title": "What happens to your parcel",
+      "sh_help_label": "Something wrong?",
+      "sh_help_title": "Parcel not moving?",
+      "sh_help_body": "<p>Tracking can sit still for a day or two at a sorting hub, then catch up in one jump. If yours has not moved for three working days, message us with your order number and we will chase the courier ourselves.</p>",
+      "sh_help_wa_label": "Message us on WhatsApp",
+      "sh_help_wa_text": "Hi Sahasra Vastra, my order has not moved in a few days. My order number is ",
+      "sh_help_link_label": "Report a problem",
+      "sh_help_link_url": "/pages/report-a-problem",
+      "rf_flow_title": "What happens to your claim",
+      "rf_rule_label": "The one thing we cannot waive",
+      "rf_rule_title": "Film the unboxing",
+      "rf_rule_body": "<p>One unbroken shot, started <em>before</em> the packet is opened: the sealed parcel, the shipping label, the packet coming open, and every item taken out.</p><p>It is the only way either of us can show what was actually in the parcel when it arrived. Without it we cannot accept a claim.</p>",
+      "rf_rule_link_label": "How to film it",
+      "rf_rule_link_url": "/pages/report-a-problem#unboxing",
+      "rf_help_label": "Ready to start?",
+      "rf_help_title": "We will put it right.",
+      "rf_help_body": "<p>The claim page walks you through it — what went wrong, what we will need from you, and how to send it. It writes the message for you.</p>",
+      "rf_help_wa_label": "Report it on WhatsApp",
+      "rf_help_wa_text": "Hi Sahasra Vastra, I need to report a problem with my order. My order number is ",
+      "rf_help_link_label": "Open the claim page",
+      "rf_help_link_url": "/pages/report-a-problem",
+      "pv_flow_title": "Asking us to act on your data",
+      "pv_rule_label": "What we deliberately do not collect",
+      "pv_rule_title": "Nothing about your child",
+      "pv_rule_body": "<p>We sell clothes for children, and we never ask for a child's name, date of birth, school, daily routine or photograph. None of it is required to place an order, and we do not advertise to children.</p><p>If you tell us an age or a measurement to help pick a size, we use it for that order and <em>nothing else</em>.</p>",
+      "pv_help_label": "Your data, your call",
+      "pv_help_title": "Ask us what we hold.",
+      "pv_help_body": "<p>A copy of it, a correction, an erasure, or a consent withdrawn — write and we will answer within 30 days. We will check who you are first, so that nobody can ask on your behalf without you.</p>",
+      "pv_help_mail_label": "Email your request",
+      "pv_help_link_label": "All our contact details",
+      "pv_help_link_url": "/policies/contact-information",
+      "tm_flow_title": "How an order becomes a contract",
+      "tm_rule_label": "Please read this before you buy",
+      "tm_rule_title": "Some images here are AI-generated",
+      "tm_rule_body": "<p>Anyone shown in one is not a real person, not a real customer, and is not endorsing anything. The garment is real: every such image is built from the actual piece we sell, and we never use AI to make one look better than it is.</p><p>Every product page also carries at least one <em>unedited</em> photograph of the garment. When you are deciding, go by that one and by the size chart.</p>",
+      "tm_rule_link_label": "Open the size guide",
+      "tm_rule_link_url": "/pages/size-guide",
+      "tm_help_label": "Unsure about something?",
+      "tm_help_title": "Ask before you order.",
+      "tm_help_body": "<p>A size, a colour, whether we deliver to your pin code — ask first. It is a great deal easier than unwinding an order afterwards, for both of us.</p>",
+      "tm_help_wa_label": "Ask on WhatsApp",
+      "tm_help_wa_text": "Hi Sahasra Vastra, I have a question before I order: ",
+      "tm_help_link_label": "Read the shipping policy",
+      "tm_help_link_url": "/policies/shipping-policy",
+      "ct_rule_label": "Before you set out",
+      "ct_rule_title": "This address is not a shop",
+      "ct_rule_body": "<p>We are an online store. The registered address on this page is an office — there is no walk-in counter and nothing on display.</p><p>Orders can be collected in person by <em>prior appointment only</em>. Message us and we will fix a time.</p>",
+      "ct_help_label": "Talk to us",
+      "ct_help_title": "A person answers, usually the same day.",
+      "ct_help_body": "<p>Monday to Saturday, 10 am to 7 pm IST, and within one working day either way. If it is about an order already placed, send the order number in your first message and we can answer it in one.</p>",
+      "ct_help_wa_label": "Message on WhatsApp",
+      "ct_help_wa_text": "Hi Sahasra Vastra, ",
+      "ct_help_mail_label": "Send an email",
+      "ct_help_link_label": "Report a problem with an order",
+      "ct_help_link_url": "/pages/report-a-problem"
+    },
+    "blocks": [
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "shipping",
+          "label": "Dispatch",
+          "value": "1–2 working days",
+          "source": "typed",
+          "note": "Monday to Saturday, excluding Kerala public holidays. Sunday orders go the next working day."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "shipping",
+          "label": "Delivery",
+          "value": "2–10 working days",
+          "source": "typed",
+          "note": "Kerala 2–4 · South India 3–5 · rest of India 4–7 · remote areas 7–10, counted from dispatch."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "shipping",
+          "label": "Free shipping over",
+          "value": "₹2,000",
+          "source": "threshold",
+          "note": "Across India. Below that: Kerala ₹80 · South India ₹150 · rest of India and remote areas ₹200."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "shipping",
+          "label": "Order placed",
+          "detail": "Paid at checkout. We are prepaid-only — there is no Cash on Delivery."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "shipping",
+          "label": "Packed and handed over",
+          "detail": "Within 1–2 working days, to our courier partner."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "shipping",
+          "label": "Tracking link",
+          "detail": "Sent by email and on WhatsApp, and again when it is out for delivery."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "shipping",
+          "label": "Delivered",
+          "detail": "Please start filming before you open the packet — every claim needs that video."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "refund",
+          "label": "Tell us within",
+          "value": "24 hours",
+          "source": "typed",
+          "note": "From delivery or collection. Message us inside that window and the claim stands, even if it takes us both a few days to settle it."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "refund",
+          "label": "Money back within",
+          "value": "7 working days",
+          "source": "typed",
+          "note": "To your original payment method, counted from the day we accept the claim. Your bank may take 2–5 days more to show it."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "refund",
+          "label": "Return postage",
+          "value": "We pay it",
+          "source": "typed",
+          "note": "A free reverse pickup on every accepted claim, and no restocking fee. Keep the item, its tags and the packaging until it closes."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "refund",
+          "label": "You tell us",
+          "detail": "Within 24 hours, with your order number, the unboxing video and clear photographs of the problem."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "refund",
+          "label": "We reply",
+          "detail": "Within 1 working day, from the people who packed your parcel — not a ticket number."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "refund",
+          "label": "We collect it",
+          "detail": "A free reverse pickup at our cost, or photographs instead where a courier run is not worth it."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "refund",
+          "label": "Replacement or refund",
+          "detail": "Whichever you prefer. The same item again, subject to stock, or your money back in full."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "privacy",
+          "label": "Your card details",
+          "value": "We never see them",
+          "source": "typed",
+          "note": "Payment goes straight to the gateway. Your card number, UPI PIN, CVV and bank credentials never reach us."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "privacy",
+          "label": "Sold or rented to anyone",
+          "value": "Never",
+          "source": "typed",
+          "note": "We share only with the courier, the payment gateway, Shopify and our accountant — and only what your order needs."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "privacy",
+          "label": "We answer a request in",
+          "value": "30 days",
+          "source": "typed",
+          "note": "A complaint reaches our Grievance Officer, who acknowledges it within 48 hours."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "privacy",
+          "label": "You write to us",
+          "detail": "One line, saying what you want: a copy of your data, a correction, an erasure, or a consent withdrawn."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "privacy",
+          "label": "We check it is you",
+          "detail": "A short identity check, so that your data is never handed to somebody asking on your behalf."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "privacy",
+          "label": "We act within 30 days",
+          "detail": "Or tell you why we cannot. GST law requires us to keep order and invoice records for eight years."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "privacy",
+          "label": "Still not satisfied",
+          "detail": "Our Grievance Officer answers within 48 hours, and after that the Data Protection Board of India."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "terms",
+          "label": "Payment",
+          "value": "Prepaid only",
+          "source": "typed",
+          "note": "All prices are in rupees and include GST. There is no Cash on Delivery."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "terms",
+          "label": "Who may order",
+          "value": "18 and over",
+          "source": "typed",
+          "note": "Using a payment method you are authorised to use, with details that are accurate."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "terms",
+          "label": "Our liability is capped at",
+          "value": "What you paid",
+          "source": "typed",
+          "note": "For that order, so far as the law allows. Nothing here limits your rights under the Consumer Protection Act 2019."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "terms",
+          "label": "You place the order",
+          "detail": "An offer to buy at the price shown. Shipping, where it applies, is added at checkout."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "terms",
+          "label": "We check it",
+          "detail": "Stock, a serviceable address, a payment that clears. We may decline and refund in full."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "terms",
+          "label": "We confirm dispatch",
+          "detail": "This is the moment the contract forms — not the moment you paid."
+        }
+      },
+      {
+        "type": "step",
+        "settings": {
+          "policy": "terms",
+          "label": "Delivery, and after",
+          "detail": "Timelines sit in the Shipping Policy and claims in the Refund Policy. Both form part of these terms."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "contact",
+          "label": "We reply within",
+          "value": "One working day",
+          "source": "typed",
+          "note": "Monday to Saturday, 10 am to 7 pm IST. Anything sent after hours is answered the next morning."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "contact",
+          "label": "Who answers",
+          "value": "We do",
+          "source": "typed",
+          "note": "A small family business answering its own messages. There is no call centre and no ticket number."
+        }
+      },
+      {
+        "type": "pin",
+        "settings": {
+          "policy": "contact",
+          "label": "Complaints acknowledged in",
+          "value": "48 hours",
+          "source": "typed",
+          "note": "By our Grievance Officer, and resolved within 30 days."
+        }
+      }
+    ]
+  }
+}
+{% endschema %}

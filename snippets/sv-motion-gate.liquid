@@ -1,0 +1,46 @@
+{% doc %}
+  Motion gate — arms a section's entrance before the section paints.
+
+  Every sv- section that reveals on scroll holds its content at opacity 0
+  under a `.sv-motion-ready` class, and adds that class from script so
+  that a visitor whose script never runs is left with a complete, fully
+  visible page rather than a blank one. That contract is right; where it
+  went wrong was the placement.
+
+  The script that added the class sat at the FOOT of the section, after
+  all the markup. On the FAQ that is seventy kilobytes of questions — far
+  more than the browser will hold before its first paint. So the real
+  sequence a visitor saw was:
+
+      paint the whole page, visible
+      reach the script, add the class, everything drops to opacity 0
+      observer fires, fade it back in
+
+  which reads exactly like a page that failed to load and then recovered.
+
+  Rendered as the first child of the section, this closes that window:
+  the class is on the root before any of its children have been parsed,
+  so nothing is ever painted in a state it is about to be pulled out of.
+  The entrance then plays from a clean start, which is what it was
+  written to do.
+
+  The guards mirror the ones the section's own script uses, and must
+  keep mirroring them — arming the hold when nothing will release it is
+  the one failure mode worse than the flash. No IntersectionObserver
+  means nothing would ever add `.sv-vis`; reduced motion means the
+  section wants no entrance at all.
+
+  Uses parentElement rather than a selector so it carries no knowledge
+  of the section it sits in: drop it in as the first child and it gates
+  that element, whatever it is called.
+{% enddoc %}
+
+<script>
+  (function () {
+    var el = document.currentScript && document.currentScript.parentElement;
+    if (!el) return;
+    if (!('IntersectionObserver' in window)) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    el.classList.add('sv-motion-ready');
+  })();
+</script>

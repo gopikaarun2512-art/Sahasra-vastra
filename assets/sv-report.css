@@ -1,0 +1,1589 @@
+  /* Colour, spacing and motion are tokens from sv-system.css. Nothing
+     here redefines one — §01 of that file is the only place a value is
+     allowed to be decided. Everything below is scoped to .sv-rp. */
+
+  /* The ring and the gauge fill interpolate rather than jump. A
+     registered property is the only way to transition a bare number;
+     without it the fallback is an instant set, which is still correct. */
+  @property --sv-rp-p {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  .sv-rp {
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+    padding: var(--d) 0 0;
+    --sv-rp-read: 0;
+  }
+
+  .sv-rp__inner {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+  }
+
+  .sv-rp__inner--b {
+    padding-top: var(--d);
+  }
+
+  /* ── The ground ─────────────────────────────────────────────────── */
+  .sv-rp__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .sv-rp__weave,
+  .sv-rp__glow,
+  .sv-rp__petal {
+    position: absolute;
+  }
+
+  /* Two crossing thread fields. Each layer translates by exactly one
+     tile of its own gradient, which is what makes the loop seamless —
+     anything else visibly jumps at the wrap. */
+  .sv-rp__weave {
+    inset: -40px;
+    opacity: 0.5;
+    background-image:
+      repeating-linear-gradient(64deg, rgba(198, 161, 91, 0.10) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(-64deg, rgba(20, 82, 74, 0.07) 0 1px, transparent 1px 44px);
+  }
+
+  .sv-rp__glow {
+    width: 62vw;
+    height: 62vw;
+    max-width: 780px;
+    max-height: 780px;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.5;
+  }
+
+  .sv-rp__glow--a {
+    top: -14vw;
+    right: -18vw;
+    background: radial-gradient(circle, rgba(198, 161, 91, 0.30), transparent 68%);
+  }
+
+  .sv-rp__glow--b {
+    bottom: 8vw;
+    left: -22vw;
+    background: radial-gradient(circle, rgba(20, 82, 74, 0.16), transparent 70%);
+  }
+
+  .sv-rp__petal {
+    width: 30px;
+    fill: var(--emerald);
+    opacity: 0.05;
+  }
+
+  .sv-rp__petal--1 { top: 12%;  left: 6%;  width: 42px; }
+  .sv-rp__petal--2 { top: 34%;  right: 9%; width: 26px; }
+  .sv-rp__petal--3 { top: 58%;  left: 11%; width: 34px; }
+  .sv-rp__petal--4 { top: 76%;  right: 6%; width: 46px; }
+  .sv-rp__petal--5 { top: 92%;  left: 18%; width: 24px; }
+
+  .sv-rp--bg-subtle .sv-rp__weave { opacity: 0.26; }
+  .sv-rp--bg-subtle .sv-rp__glow  { opacity: 0.3; }
+  .sv-rp--bg-subtle .sv-rp__petal { opacity: 0.03; }
+
+  /* The drift. Transform and opacity only, and slow enough that it
+     reads as weather rather than animation. */
+  @media (prefers-reduced-motion: no-preference) {
+    .sv-rp--bg-full .sv-rp__weave {
+      animation: sv-rp-weave 44s linear infinite;
+    }
+
+    .sv-rp--bg-full .sv-rp__glow--a { animation: sv-rp-drift-a 38s ease-in-out infinite alternate; }
+    .sv-rp--bg-full .sv-rp__glow--b { animation: sv-rp-drift-b 46s ease-in-out infinite alternate; }
+
+    .sv-rp--bg-full .sv-rp__petal {
+      animation: sv-rp-adrift 30s ease-in-out infinite alternate;
+    }
+
+    .sv-rp--bg-full .sv-rp__petal--2 { animation-duration: 38s; animation-delay: -6s; }
+    .sv-rp--bg-full .sv-rp__petal--3 { animation-duration: 34s; animation-delay: -14s; }
+    .sv-rp--bg-full .sv-rp__petal--4 { animation-duration: 42s; animation-delay: -22s; }
+    .sv-rp--bg-full .sv-rp__petal--5 { animation-duration: 36s; animation-delay: -9s; }
+  }
+
+  @keyframes sv-rp-weave {
+    to { transform: translate3d(34px, 44px, 0); }
+  }
+
+  @keyframes sv-rp-drift-a {
+    to { transform: translate3d(-5vw, 6vw, 0) scale(1.1); }
+  }
+
+  @keyframes sv-rp-drift-b {
+    to { transform: translate3d(6vw, -5vw, 0) scale(1.08); }
+  }
+
+  @keyframes sv-rp-adrift {
+    from { transform: translate3d(0, 0, 0) rotate(-8deg); }
+    to   { transform: translate3d(14px, -30px, 0) rotate(10deg); }
+  }
+
+  /* ── The thread ─────────────────────────────────────────────────── */
+  .sv-rp__thread {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -18px;
+    width: 12px;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .sv-rp__thread path {
+    fill: none;
+    stroke: var(--tan);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    opacity: 0.55;
+    /* The rAF fallback: the script writes --sv-rp-read and the stitch is
+       drawn to that fraction. 2000 comfortably exceeds the path's own
+       length, so the dash always covers it whatever the viewBox scales
+       to — a stitch that is drawn early is invisible either way. */
+    stroke-dasharray: 2000;
+    stroke-dashoffset: calc(2000 * (1 - var(--sv-rp-read)));
+  }
+
+  /* Where the browser has scroll-driven animation the stitch is driven
+     by the scroll itself: continuous, reversible, and off the main
+     thread. The named timeline is declared on the column the thread
+     sits inside, so the descendant can reference it. */
+  @supports (animation-timeline: view()) {
+    .sv-rp__inner {
+      view-timeline-name: --sv-rp-read-tl;
+      view-timeline-axis: block;
+    }
+
+    .sv-rp__thread path {
+      animation: sv-rp-stitch linear both;
+      animation-timeline: --sv-rp-read-tl;
+      animation-range: cover 0% cover 100%;
+    }
+
+    @keyframes sv-rp-stitch {
+      from { stroke-dashoffset: 2000; }
+      to   { stroke-dashoffset: 0; }
+    }
+  }
+
+  @media (max-width: 1100px) {
+    .sv-rp__thread { display: none; }
+  }
+
+  /* ── Masthead ───────────────────────────────────────────────────── */
+  .sv-rp__head {
+    position: relative;
+    z-index: 1;
+  }
+
+  [data-sv] .sv-rp__title {
+    margin-top: var(--b);
+    font-size: clamp(2.6rem, 6vw, 4.4rem);
+    color: var(--emerald);
+    text-wrap: balance;
+  }
+
+  [data-sv] .sv-rp__title em {
+    color: var(--tan);
+  }
+
+  .sv-rp__line {
+    display: block;
+  }
+
+  [data-sv] .sv-rp__lead {
+    margin-top: var(--b);
+    max-width: 52ch;
+    font-size: clamp(1.02rem, 1.25vw, 1.18rem);
+    font-weight: 400;
+    line-height: 1.66;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+
+  /* ── The window ─────────────────────────────────────────────────── */
+  .sv-rp__window {
+    display: flex;
+    align-items: center;
+    gap: var(--b);
+    margin-top: var(--c);
+    padding: var(--b);
+    background: var(--card);
+    border-radius: var(--r-card);
+    box-shadow: var(--sh-s);
+    border-left: 2px solid var(--tan);
+  }
+
+  .sv-rp__dial {
+    position: relative;
+    flex: 0 0 auto;
+    width: 104px;
+    height: 104px;
+    display: grid;
+    place-items: center;
+  }
+
+  .sv-rp__dial svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .sv-rp__dialtrack,
+  .sv-rp__dialarc {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .sv-rp__dialtrack {
+    stroke: rgba(20, 82, 74, 0.12);
+  }
+
+  /* 2πr at r=52 is 326.7. The arc is drawn from nothing to nearly the
+     full circle — nearly, so the gap reads as a window closing rather
+     than a completed ring. */
+  .sv-rp__dialarc {
+    stroke: var(--tan);
+    stroke-dasharray: 327;
+    stroke-dashoffset: 33;
+  }
+
+  .sv-rp__dialnum {
+    position: relative;
+    font-family: var(--serif);
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--emerald);
+  }
+
+  [data-sv] .sv-rp__windowline {
+    margin-top: 8px;
+    font-family: var(--serif);
+    font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+    line-height: 1.24;
+    color: var(--ink);
+    max-width: 30ch;
+  }
+
+  [data-sv] .sv-rp__windownote {
+    margin-top: 10px;
+    color: var(--grey);
+    max-width: 44ch;
+  }
+
+  .sv-rp__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--b);
+    margin-top: var(--c);
+  }
+
+  /* ── Sections ───────────────────────────────────────────────────── */
+  .sv-rp__sec {
+    position: relative;
+    z-index: 1;
+    margin-top: var(--f);
+    scroll-margin-top: calc(var(--stick, 120px) + var(--b));
+  }
+
+  [data-sv] .sv-rp__h {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    color: var(--emerald);
+    text-wrap: balance;
+  }
+
+  [data-sv] .sv-rp__note-lead {
+    margin-top: var(--a);
+    max-width: 58ch;
+  }
+
+  /* Deep-linked arrival, so a pasted anchor lands somewhere visibly. */
+  .sv-rp__sec.is-landed > .sv-rp__h,
+  .sv-rp__film.is-landed .sv-rp__filmh {
+    animation: sv-rp-landed 2.2s var(--e) 1;
+  }
+
+  @keyframes sv-rp-landed {
+    0%, 100% { color: var(--emerald); }
+    18%, 60% { color: var(--tan); }
+  }
+
+  /* ── 01 · Triage ────────────────────────────────────────────────── */
+  /* Two by two, not auto-fit. Four claim types in a 860px column fit
+     three across and leave the fourth stranded on a row of its own,
+     which reads as an afterthought — and these are four equal choices.
+     Fixed columns also keep the cards wide enough for the detail line
+     to sit on two lines rather than five. */
+  [data-sv] .sv-rp__claims {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--a);
+    margin-top: var(--b);
+  }
+
+  .sv-rp__claim {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    text-align: left;
+    padding: var(--b) var(--b) calc(var(--b) + 6px);
+    background: var(--card);
+    border: 1px solid rgba(198, 161, 91, 0.34);
+    border-radius: var(--r-img);
+    box-shadow: var(--sh-s);
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    transition:
+      transform var(--std) var(--e),
+      border-color var(--std) var(--e),
+      box-shadow var(--std) var(--e),
+      background-color var(--std) var(--e);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .sv-rp__claim:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--sh);
+      border-color: var(--tan);
+    }
+  }
+
+  .sv-rp__claim.is-on {
+    background: var(--emerald);
+    border-color: var(--emerald);
+    box-shadow: var(--sh);
+  }
+
+  .sv-rp__claimart {
+    display: block;
+    width: 46px;
+    height: 46px;
+    color: var(--emerald);
+    transition: color var(--std) var(--e);
+  }
+
+  .sv-rp__claim.is-on .sv-rp__claimart { color: var(--tan); }
+
+  .sv-rp__claimart svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  .sv-rp__claimart svg :is(path, line, circle, rect, polyline) {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .sv-rp__claimlab {
+    display: block;
+    margin-top: var(--a);
+    font-family: var(--serif);
+    font-size: 1.22rem;
+    line-height: 1.24;
+    color: var(--emerald);
+    transition: color var(--std) var(--e);
+  }
+
+  .sv-rp__claim.is-on .sv-rp__claimlab { color: var(--cream); }
+
+  .sv-rp__claimdet {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--grey);
+    transition: color var(--std) var(--e);
+  }
+
+  .sv-rp__claim.is-on .sv-rp__claimdet { color: rgba(251, 247, 239, 0.74); }
+
+  .sv-rp__claimtick {
+    position: absolute;
+    top: var(--b);
+    right: var(--b);
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+    transform: scale(0.4) rotate(-20deg);
+    transition: opacity var(--std) var(--e), transform var(--std) var(--e);
+  }
+
+  .sv-rp__claimtick svg {
+    width: 100%;
+    height: 100%;
+    fill: var(--tan);
+    display: block;
+  }
+
+  .sv-rp__claim.is-on .sv-rp__claimtick {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* With script off the cards cannot be chosen, so they must not look
+     choosable. Reverting to a plain bordered panel is honest. */
+  .sv-rp:not(.sv-rp--js) .sv-rp__claim {
+    cursor: default;
+    box-shadow: none;
+  }
+
+  .sv-rp:not(.sv-rp--js) .sv-rp__claimtick { display: none; }
+
+  .sv-rp__exclusion {
+    margin-top: var(--b);
+  }
+
+  /* ── 02 · The kit ───────────────────────────────────────────────── */
+  .sv-rp__kitgrid {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: var(--c);
+    align-items: start;
+    margin-top: var(--b);
+  }
+
+  [data-sv] .sv-rp__needs {
+    display: grid;
+    gap: var(--a);
+  }
+
+  .sv-rp__need {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--a);
+    align-items: start;
+    padding: var(--b);
+    background: var(--card);
+    border-radius: var(--r-img);
+    box-shadow: var(--sh-s);
+    transition: box-shadow var(--std) var(--e), opacity var(--std) var(--e);
+  }
+
+  .sv-rp__need.is-done {
+    box-shadow: inset 0 0 0 1px rgba(198, 161, 91, 0.5);
+  }
+
+  .sv-rp__tick {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid rgba(20, 82, 74, 0.28);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color var(--std) var(--e), border-color var(--std) var(--e);
+  }
+
+  .sv-rp__tick[aria-checked='true'] {
+    background: var(--emerald);
+    border-color: var(--emerald);
+  }
+
+  .sv-rp__tickmark {
+    width: 12px;
+    height: 12px;
+    display: block;
+    opacity: 0;
+    transform: scale(0.3) rotate(-30deg);
+    transition: opacity var(--std) var(--e), transform var(--std) var(--e);
+  }
+
+  .sv-rp__tickmark svg {
+    width: 100%;
+    height: 100%;
+    fill: var(--tan);
+    display: block;
+  }
+
+  .sv-rp__tick[aria-checked='true'] .sv-rp__tickmark {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Without script the tick cannot record anything, so it goes and the
+     row falls back to a numbered procedure — which is what this list
+     was before it became interactive.
+
+     display must return to list-item, not merely drop the columns: a
+     grid item is not a list item, and the marker would never be
+     generated. That failure is silent, which is what makes it worth
+     stating here. */
+  .sv-rp:not(.sv-rp--js) .sv-rp__tick { display: none; }
+
+  .sv-rp:not(.sv-rp--js) .sv-rp__need {
+    display: list-item;
+    list-style: decimal;
+    margin-left: 1.6em;
+  }
+
+  .sv-rp:not(.sv-rp--js) .sv-rp__need::marker {
+    color: var(--tan);
+    font-family: var(--serif);
+    font-size: 1.15em;
+  }
+
+  .sv-rp__needdet {
+    margin-top: 8px;
+    max-width: 48ch;
+  }
+
+  .sv-rp__needdet p + p {
+    margin-top: var(--a);
+  }
+
+  /* The hint. Native <details> is the baseline; the height animation is
+     one of the two bounded exceptions §08 allows, and only runs where
+     the browser can interpolate to a keyword height. */
+  .sv-rp__hint {
+    margin-top: 12px;
+  }
+
+  .sv-rp__hintsum {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--sans);
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--emerald);
+    border-bottom: 1px solid var(--tan);
+    padding-bottom: 4px;
+  }
+
+  .sv-rp__hintsum::-webkit-details-marker { display: none; }
+
+  .sv-rp__hintsum::after {
+    content: '+';
+    font-size: 1rem;
+    line-height: 1;
+    transition: transform var(--std) var(--e);
+  }
+
+  .sv-rp__hint[open] .sv-rp__hintsum::after {
+    transform: rotate(45deg);
+  }
+
+  .sv-rp__hintbody {
+    margin-top: 12px;
+    max-width: 44ch;
+  }
+
+  @supports (interpolate-size: allow-keywords) and selector(::details-content) {
+    .sv-rp__hint {
+      interpolate-size: allow-keywords;
+    }
+
+    /* The canonical recipe: a zero block-size that transitions to the
+       keyword, with the discrete content-visibility flip allowed.
+       transition-behavior is stated as its own declaration rather than
+       tacked onto the shorthand, so it covers both properties.
+
+       Verified in Chrome 148: the disclosure opens and closes
+       correctly, but the height snaps at the halfway point rather than
+       interpolating — that build reports interpolate-size support
+       while reporting no calc-size(), so its support is partial. This
+       is the enhancement layer either way. Where it interpolates the
+       hint unfolds; where it does not, <details> snaps, which is what
+       <details> has always done and what the no-@supports path below
+       gets regardless. */
+    .sv-rp__hint::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition: block-size var(--std) var(--e), content-visibility var(--std) var(--e);
+      transition-behavior: allow-discrete;
+    }
+
+    .sv-rp__hint[open]::details-content {
+      block-size: auto;
+    }
+  }
+
+  /* ── The gauge ──────────────────────────────────────────────────── */
+  .sv-rp__gauge {
+    position: sticky;
+    top: calc(var(--stick, 120px) + var(--a));
+    padding: var(--b);
+    background: var(--cream-2);
+    border-radius: var(--r-card);
+    text-align: center;
+    --sv-rp-p: 0;
+  }
+
+  .sv-rp__ring {
+    position: relative;
+    width: 108px;
+    height: 108px;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+  }
+
+  .sv-rp__ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .sv-rp__ringtrack,
+  .sv-rp__ringarc {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  .sv-rp__ringtrack { stroke: rgba(20, 82, 74, 0.14); }
+
+  /* 2πr at r=50 is 314.2. The fill is the registered property, so it
+     interpolates; the transition is on stroke-dashoffset, which is
+     neither a layout nor a paint-heavy property. */
+  .sv-rp__ringarc {
+    stroke: var(--emerald);
+    stroke-dasharray: 314;
+    stroke-dashoffset: calc(314 * (1 - var(--sv-rp-p)));
+    transition: stroke-dashoffset var(--slow) var(--e), stroke var(--std) var(--e);
+  }
+
+  .sv-rp__gauge.is-ready .sv-rp__ringarc { stroke: var(--tan); }
+
+  .sv-rp__ringnum {
+    position: relative;
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    color: var(--emerald);
+  }
+
+  [data-sv] .sv-rp__gaugestate {
+    margin-top: var(--a);
+    font-size: 0.86rem;
+    line-height: 1.55;
+    color: var(--grey);
+    max-width: none;
+  }
+
+  .sv-rp__field {
+    margin-top: var(--b);
+    text-align: left;
+  }
+
+  .sv-rp__fieldlab {
+    display: block;
+    text-transform: uppercase;
+  }
+
+  .sv-rp__input {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px 14px;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid rgba(20, 82, 74, 0.2);
+    border-radius: 2px;
+    transition: border-color var(--micro) var(--e);
+  }
+
+  .sv-rp__input:focus {
+    border-color: var(--tan);
+  }
+
+  [data-sv] .sv-rp__fieldnote {
+    margin-top: 8px;
+    color: var(--grey);
+  }
+
+  .sv-rp__go--gauge {
+    display: block;
+    margin-top: var(--b);
+    text-align: center;
+  }
+
+  /* The hand-off rings once when the kit is complete — the same gesture
+     the size guide makes when its chart resolves. */
+  .sv-rp__gauge.is-ready .sv-rp__go--gauge {
+    animation: sv-rp-armed 1s var(--e) 1 both;
+  }
+
+  @keyframes sv-rp-armed {
+    0%   { box-shadow: 0 0 0 0 rgba(20, 82, 74, 0.35); }
+    100% { box-shadow: 0 0 0 18px rgba(20, 82, 74, 0); }
+  }
+
+  /* With no script there is nothing to count, so the gauge reduces to
+     the field and the button — both of which still work. */
+  .sv-rp:not(.sv-rp--js) .sv-rp__ring,
+  .sv-rp:not(.sv-rp--js) .sv-rp__gaugestate { display: none; }
+
+  @media (max-width: 880px) {
+    .sv-rp__kitgrid {
+      grid-template-columns: 1fr;
+      gap: var(--b);
+    }
+
+    .sv-rp__gauge { position: static; }
+  }
+
+  /* ── 03 · The film ──────────────────────────────────────────────── */
+  .sv-rp__film {
+    position: relative;
+    z-index: 1;
+    margin-top: var(--f);
+    scroll-margin-top: calc(var(--stick, 120px) + var(--b));
+  }
+
+  /* ── The baseline ─────────────────────────────────────────────────
+     Not the filmstrip. With no script, no scroll-driven animation, no
+     observer, or motion reduced, the film is a captioned illustration
+     and a numbered list — the same instruction, told without movement.
+     The pinned sequence is opted into by a class the script adds only
+     once it knows the page can actually drive it, so nothing here ever
+     depends on that having happened. */
+  .sv-rp__filmtrack {
+    position: static;
+    display: grid;
+    align-content: center;
+  }
+
+  .sv-rp__filminner {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: var(--d);
+    align-items: center;
+    /* The track is a grid and this carries `.w`, whose `margin: 0 auto`
+       switches a grid item out of stretch and into max-content sizing —
+       which sized the whole sequence to its captions and left the stage
+       at two thirds of the column it was meant to fill. Stating the
+       width restores the fill; the auto margins then centre it. */
+    width: 100%;
+  }
+
+  /* Stacked, the stage would show every drawing at once. Only the first
+     is kept: in the baseline the captions carry the sequence and the
+     art is an illustration, not a filmstrip. */
+  .sv-rp__scene:not(:first-child) { display: none; }
+
+  .sv-rp__scrub { height: 0; }
+
+  [data-sv] .sv-rp__filmh {
+    margin-top: var(--a);
+  }
+
+  [data-sv] .sv-rp__caps {
+    position: static;
+    margin-top: var(--b);
+    display: grid;
+    gap: var(--b);
+  }
+
+  .sv-rp__cap {
+    position: static;
+  }
+
+  .sv-rp__capnum {
+    display: block;
+  }
+
+  .sv-rp__captitle {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--serif);
+    font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+    line-height: 1.22;
+    color: var(--emerald);
+  }
+
+  .sv-rp__capdet {
+    display: block;
+    margin-top: 12px;
+    max-width: 38ch;
+  }
+
+  /* The pips exist only for the pinned sequence — in the baseline the
+     captions are all on screen at once and there is no position to
+     report. */
+  .sv-rp__pips { display: none; }
+
+  .sv-rp__stage {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    justify-self: center;
+    background: var(--card);
+    border-radius: var(--r-card);
+    box-shadow: var(--sh);
+    overflow: hidden;
+  }
+
+  .sv-rp__scene {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: var(--b);
+  }
+
+  .sv-rp__scene svg {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    overflow: visible;
+    color: var(--emerald);
+  }
+
+  .sv-rp__scene svg :is(path, line, circle, rect, polyline, polygon) {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* ── A photographed frame ─────────────────────────────────────────
+   The drawings are line art on the card's own ground, so they sit in
+   padding and breathe. A photograph is the frame, so it goes edge to
+   edge and the padding comes off.
+
+   Positioned rather than flowed because the stage is an aspect-ratio
+   box: a relative child inside one resolves `height: 100%` against auto
+   and the image would fall back to its natural height, which is the
+   wrong height in the pinned 5:4 stage. Absolute gives it the stage's
+   own box in both ratios, and object-fit takes the crop from the sides
+   where the prompts left margin for exactly that. */
+.sv-rp__scene--img {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  display: block;
+}
+
+.sv-rp__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sv-rp__scene svg .sv-rp-gold { color: var(--tan); }
+  .sv-rp__scene svg .sv-rp-fill { fill: rgba(198, 161, 91, 0.16); stroke: none; }
+
+  /* The viewfinder that runs across all four drawings, and the dot that
+     says the camera has not been stopped. */
+  .sv-rp__scene svg .sv-rp-dim {
+    color: var(--grey);
+    opacity: 0.55;
+  }
+
+  .sv-rp__scene svg .sv-rp-rec {
+    fill: var(--tan);
+    stroke: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sv-rp__scene svg .sv-rp-rec {
+      animation: sv-rp-rec 2.4s ease-in-out infinite;
+    }
+  }
+
+  @keyframes sv-rp-rec {
+    0%, 62%, 100% { opacity: 1; }
+    80%           { opacity: 0.15; }
+  }
+
+  .sv-rp__mark {
+    display: block;
+    height: calc(100% / var(--sv-rp-frames, 4));
+  }
+
+  .sv-rp__filmfoot {
+    padding-top: var(--c);
+  }
+
+  /* ── The pinned sequence ──────────────────────────────────────────
+     Opted into, never assumed. The script adds one of two classes once
+     it knows which mechanism the browser can drive:
+
+       .sv-rp--scrub   scroll-driven CSS, continuous and reversible
+       .sv-rp--step    an observer stepping the frames
+
+     Both need the same furniture — a sticky track, a stacked stage,
+     one caption at a time — so that is written once here and the two
+     mechanisms differ only in what moves the frames. Below 881px
+     neither class applies and the baseline above stands. */
+  @media (min-width: 881px) {
+    .sv-rp--scrub .sv-rp__filmtrack,
+    .sv-rp--step .sv-rp__filmtrack {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      background: var(--cream);
+    }
+
+    .sv-rp--scrub .sv-rp__caps,
+    .sv-rp--step .sv-rp__caps {
+      position: relative;
+      display: block;
+      min-height: 190px;
+    }
+
+    .sv-rp--scrub .sv-rp__cap,
+    .sv-rp--step .sv-rp__cap {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    .sv-rp--scrub .sv-rp__stage,
+    .sv-rp--step .sv-rp__stage {
+      aspect-ratio: 5 / 4;
+      max-height: 62vh;
+    }
+
+    .sv-rp--scrub .sv-rp__scene,
+    .sv-rp--step .sv-rp__scene {
+      position: absolute;
+      inset: 0;
+      padding: var(--c);
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    .sv-rp--scrub .sv-rp__scene:not(:first-child),
+    .sv-rp--step .sv-rp__scene:not(:first-child) {
+      display: grid;
+    }
+
+    .sv-rp--scrub .sv-rp__pips,
+    .sv-rp--step .sv-rp__pips {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-top: var(--c);
+    }
+
+    .sv-rp--scrub .sv-rp__pips i,
+    .sv-rp--step .sv-rp__pips i {
+      height: 2px;
+      flex: 1;
+      max-width: 48px;
+      background: rgba(198, 161, 91, 0.4);
+    }
+
+    /* One viewport per frame. It holds nothing, so leaving it at zero
+       outside these two classes is what keeps the baseline a stack. */
+    .sv-rp--scrub .sv-rp__scrub,
+    .sv-rp--step .sv-rp__scrub {
+      height: calc(var(--sv-rp-frames, 4) * 100vh);
+    }
+
+    /* ── Stepped ────────────────────────────────────────────────────
+       The observer sets .is-on; the transition does the rest. */
+    .sv-rp--step .sv-rp__scene {
+      transition: opacity var(--slow) var(--e), transform var(--slow) var(--e);
+    }
+
+    /* Faster out, and the incoming one waits for it — the same hand-off
+       the scrubbed captions make, expressed as a delay rather than as
+       keyframe boundaries. Without it two paragraphs overlap for half a
+       second on every step. */
+    .sv-rp--step .sv-rp__cap {
+      transition: opacity 0.22s var(--e), transform 0.22s var(--e);
+    }
+
+    .sv-rp--step .sv-rp__cap.is-on {
+      transition-delay: 0.22s;
+    }
+
+    .sv-rp--step .sv-rp__cap.is-on,
+    .sv-rp--step .sv-rp__scene.is-on {
+      opacity: 1;
+      transform: none;
+    }
+
+    .sv-rp--step .sv-rp__pips i {
+      transition: background-color var(--std) var(--e);
+    }
+
+    .sv-rp--step .sv-rp__pips i.on { background: var(--emerald); }
+  }
+
+  /* ── Scrubbed ─────────────────────────────────────────────────────
+     The film declares the timeline; the scenes, captions and pips read
+     it. The range is `contain`, so the animation runs exactly while the
+     sticky track is pinned — which is what makes the scrub line up with
+     what is actually on screen rather than drifting ahead of it.
+
+     The slices below are written for four frames. CSS cannot divide a
+     range by a sibling count, so rather than have a fifth or third
+     frame silently land in dead scroll, the script only adds
+     .sv-rp--scrub when the merchant's block count is four and sends
+     every other count down the stepped path, which is index-driven and
+     correct for any number. */
+  @media (min-width: 881px) {
+    .sv-rp--scrub .sv-rp__film {
+      view-timeline-name: --sv-rp-film;
+      view-timeline-axis: block;
+    }
+
+    .sv-rp--scrub .sv-rp__scene,
+    .sv-rp--scrub .sv-rp__cap {
+      animation: linear both;
+      animation-timeline: --sv-rp-film;
+      animation-range: contain 0% contain 100%;
+      animation-duration: auto;
+    }
+
+    .sv-rp--scrub .sv-rp__scene:nth-child(1) { animation-name: sv-rp-f1; }
+    .sv-rp--scrub .sv-rp__scene:nth-child(2) { animation-name: sv-rp-f2; }
+    .sv-rp--scrub .sv-rp__scene:nth-child(3) { animation-name: sv-rp-f3; }
+    .sv-rp--scrub .sv-rp__scene:nth-child(4) { animation-name: sv-rp-f4; }
+
+    /* The captions hand over rather than cross-fading. A photograph
+       dissolving through another photograph reads as a dissolve; a
+       paragraph dissolving through another paragraph reads as broken —
+       two numerals and two headings sat on top of each other at half
+       opacity and neither could be read.
+
+       So each transition window the scenes share is split in two: the
+       outgoing caption is gone before the incoming one starts. Same
+       boundaries, no overlap. */
+    .sv-rp--scrub .sv-rp__cap:nth-child(1) { animation-name: sv-rp-c1; }
+    .sv-rp--scrub .sv-rp__cap:nth-child(2) { animation-name: sv-rp-c2; }
+    .sv-rp--scrub .sv-rp__cap:nth-child(3) { animation-name: sv-rp-c3; }
+    .sv-rp--scrub .sv-rp__cap:nth-child(4) { animation-name: sv-rp-c4; }
+
+    @keyframes sv-rp-c1 {
+      0%   { opacity: 1; transform: none; }
+      18%  { opacity: 1; transform: none; }
+      22%  { opacity: 0; transform: translateY(-8px); }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+
+    @keyframes sv-rp-c2 {
+      0%   { opacity: 0; transform: translateY(8px); }
+      22%  { opacity: 0; transform: translateY(8px); }
+      26%  { opacity: 1; transform: none; }
+      40%  { opacity: 1; transform: none; }
+      44%  { opacity: 0; transform: translateY(-8px); }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+
+    @keyframes sv-rp-c3 {
+      0%   { opacity: 0; transform: translateY(8px); }
+      44%  { opacity: 0; transform: translateY(8px); }
+      48%  { opacity: 1; transform: none; }
+      62%  { opacity: 1; transform: none; }
+      66%  { opacity: 0; transform: translateY(-8px); }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+
+    @keyframes sv-rp-c4 {
+      0%   { opacity: 0; transform: translateY(8px); }
+      66%  { opacity: 0; transform: translateY(8px); }
+      70%  { opacity: 1; transform: none; }
+      100% { opacity: 1; transform: none; }
+    }
+
+    @keyframes sv-rp-f1 {
+      0%   { opacity: 1; transform: none; }
+      18%  { opacity: 1; transform: none; }
+      26%  { opacity: 0; transform: scale(0.97) translateY(-10px); }
+      100% { opacity: 0; transform: scale(0.97) translateY(-10px); }
+    }
+
+    @keyframes sv-rp-f2 {
+      0%   { opacity: 0; transform: scale(0.97) translateY(10px); }
+      18%  { opacity: 0; transform: scale(0.97) translateY(10px); }
+      26%  { opacity: 1; transform: none; }
+      40%  { opacity: 1; transform: none; }
+      48%  { opacity: 0; transform: scale(0.97) translateY(-10px); }
+      100% { opacity: 0; transform: scale(0.97) translateY(-10px); }
+    }
+
+    @keyframes sv-rp-f3 {
+      0%   { opacity: 0; transform: scale(0.97) translateY(10px); }
+      40%  { opacity: 0; transform: scale(0.97) translateY(10px); }
+      48%  { opacity: 1; transform: none; }
+      62%  { opacity: 1; transform: none; }
+      70%  { opacity: 0; transform: scale(0.97) translateY(-10px); }
+      100% { opacity: 0; transform: scale(0.97) translateY(-10px); }
+    }
+
+    /* The last frame holds to the end of the range rather than fading
+       out — there is nothing after it, and a stage that empties on the
+       final viewport of scroll reads as a bug. */
+    @keyframes sv-rp-f4 {
+      0%   { opacity: 0; transform: scale(0.97) translateY(10px); }
+      62%  { opacity: 0; transform: scale(0.97) translateY(10px); }
+      70%  { opacity: 1; transform: none; }
+      100% { opacity: 1; transform: none; }
+    }
+
+    /* The pips follow the same slices. Background-color is not a
+       compositor property, but there are four of them and they change
+       four times over a 400vh scroll. */
+    .sv-rp--scrub .sv-rp__pips i {
+      animation: linear both;
+      animation-timeline: --sv-rp-film;
+      animation-range: contain 0% contain 100%;
+    }
+
+    .sv-rp--scrub .sv-rp__pips i:nth-child(1) { animation-name: sv-rp-p1; }
+    .sv-rp--scrub .sv-rp__pips i:nth-child(2) { animation-name: sv-rp-p2; }
+    .sv-rp--scrub .sv-rp__pips i:nth-child(3) { animation-name: sv-rp-p3; }
+    .sv-rp--scrub .sv-rp__pips i:nth-child(4) { animation-name: sv-rp-p4; }
+
+    @keyframes sv-rp-p1 { 0%, 21% { background-color: #14524A; } 22%, 100% { background-color: rgba(198,161,91,.4); } }
+    @keyframes sv-rp-p2 { 0%, 21% { background-color: rgba(198,161,91,.4); } 22%, 43% { background-color: #14524A; } 44%, 100% { background-color: rgba(198,161,91,.4); } }
+    @keyframes sv-rp-p3 { 0%, 43% { background-color: rgba(198,161,91,.4); } 44%, 65% { background-color: #14524A; } 66%, 100% { background-color: rgba(198,161,91,.4); } }
+    @keyframes sv-rp-p4 { 0%, 65% { background-color: rgba(198,161,91,.4); } 66%, 100% { background-color: #14524A; } }
+  }
+
+  /* Narrow: the copy leads and the drawing follows it, rather than the
+     desktop pairing. The baseline already handles everything else. */
+  @media (max-width: 880px) {
+    .sv-rp__filminner {
+      grid-template-columns: 1fr;
+      gap: var(--b);
+    }
+
+    .sv-rp__stage { order: -1; }
+  }
+
+  /* ── 04 · Routes ────────────────────────────────────────────────── */
+  [data-sv] .sv-rp__routelist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--a);
+    margin-top: var(--b);
+  }
+
+  .sv-rp__route {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: var(--b);
+    background: var(--card);
+    border-radius: var(--r-img);
+    box-shadow: var(--sh-s);
+  }
+
+  .sv-rp__route.is-primary {
+    box-shadow: var(--sh);
+    border: 1px solid var(--tan);
+  }
+
+  .sv-rp__routeart {
+    display: block;
+    width: 34px;
+    height: 34px;
+    color: var(--tan);
+  }
+
+  .sv-rp__routeart svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  .sv-rp__routeart svg :is(path, line, circle, rect, polyline) {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  [data-sv] .sv-rp__routeh {
+    font-size: 1.25rem;
+    color: var(--emerald);
+  }
+
+  .sv-rp__routebody {
+    max-width: 34ch;
+  }
+
+  .sv-rp__routebody p + p { margin-top: 10px; }
+
+  .sv-rp__routego {
+    margin-top: auto;
+    padding: 14px 30px;
+  }
+
+  .sv-rp__copy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.86rem;
+    color: var(--grey);
+  }
+
+  .sv-rp__copyval {
+    font-family: var(--sans);
+    color: var(--ink);
+    word-break: break-all;
+  }
+
+  .sv-rp__copybtn {
+    padding: 5px 12px;
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--emerald);
+    background: transparent;
+    border: 1px solid rgba(20, 82, 74, 0.3);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color var(--micro) var(--e), color var(--micro) var(--e);
+  }
+
+  .sv-rp__copybtn:hover,
+  .sv-rp__copybtn.is-done {
+    background: var(--emerald);
+    color: var(--cream);
+  }
+
+  /* ── 05 · What happens next ─────────────────────────────────────── */
+  [data-sv] .sv-rp__rail {
+    position: relative;
+    margin-top: var(--c);
+    padding-left: var(--c);
+    display: grid;
+    gap: var(--c);
+  }
+
+  /* The rail itself: a track, and a line that fills along it. The fill
+     is a scaleY on a pseudo-element, so it is a compositor property
+     whether it is driven by scroll or simply drawn. */
+  .sv-rp__rail::before,
+  .sv-rp__rail::after {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+  }
+
+  .sv-rp__rail::before {
+    background: rgba(198, 161, 91, 0.32);
+  }
+
+  .sv-rp__rail::after {
+    background: var(--emerald);
+    transform-origin: top;
+    transform: scaleY(1);
+  }
+
+  @supports (animation-timeline: view()) {
+    .sv-rp__rail::after {
+      animation: sv-rp-draw linear both;
+      animation-timeline: view();
+      animation-range: cover 12% cover 76%;
+    }
+
+    @keyframes sv-rp-draw {
+      from { transform: scaleY(0); }
+      to   { transform: scaleY(1); }
+    }
+  }
+
+  .sv-rp__stop {
+    position: relative;
+  }
+
+  .sv-rp__stopdot {
+    position: absolute;
+    left: calc(var(--c) * -1 + 8px);
+    top: 4px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 1px solid var(--emerald);
+  }
+
+  .sv-rp__stopmeta {
+    display: block;
+  }
+
+  [data-sv] .sv-rp__stoph {
+    margin-top: 8px;
+    font-size: clamp(1.2rem, 2vw, 1.45rem);
+    color: var(--emerald);
+  }
+
+  .sv-rp__stopbody {
+    margin-top: 10px;
+    max-width: 52ch;
+  }
+
+  .sv-rp__stopbody p + p { margin-top: var(--a); }
+
+  .sv-rp__nextnote {
+    margin-top: var(--c);
+  }
+
+  @media (max-width: 760px) {
+    [data-sv] .sv-rp__rail { padding-left: var(--b); gap: var(--b); }
+    .sv-rp__rail::before,
+    .sv-rp__rail::after { left: 5px; }
+    .sv-rp__stopdot { left: calc(var(--b) * -1); }
+  }
+
+  /* ── 06 · Why ───────────────────────────────────────────────────── */
+  .sv-rp__why {
+    position: relative;
+    z-index: 1;
+    margin-top: var(--f);
+    padding: var(--f) 0;
+  }
+
+  .sv-rp__whyinner {
+    text-align: center;
+  }
+
+  [data-sv] .sv-rp__whyh {
+    margin-top: var(--a);
+    font-size: clamp(1.7rem, 3.2vw, 2.4rem);
+    color: var(--cream);
+  }
+
+  .sv-rp__pull {
+    margin-top: var(--c);
+  }
+
+  .sv-rp__whybody {
+    margin-top: var(--c);
+  }
+
+  [data-sv] .sv-rp__whybody p {
+    margin-inline: auto;
+    font-size: 1rem;
+    line-height: 1.72;
+    color: rgba(251, 247, 239, 0.78);
+  }
+
+  .sv-rp__whybody a {
+    color: var(--cream);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-color: var(--tan);
+  }
+
+  /* ── 07 · The small print ───────────────────────────────────────── */
+  .sv-rp__fine {
+    padding-top: var(--d);
+    padding-bottom: var(--f);
+  }
+
+  .sv-rp__finebody {
+    max-width: 62ch;
+    color: var(--grey);
+  }
+
+  .sv-rp__finebody p + p { margin-top: var(--a); }
+
+  .sv-rp__finebody a {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-color: var(--tan);
+  }
+
+  .sv-rp__finebody a:hover { color: var(--emerald-d); }
+
+  /* ── Entrances ──────────────────────────────────────────────────── */
+  /* Held only once the script has confirmed it can release them, so a
+     failed script leaves every section visible rather than blank. */
+  .sv-rp.sv-motion-ready [data-sv-motion] {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity 0.85s var(--entrance), transform 0.85s var(--entrance);
+  }
+
+  .sv-rp.sv-motion-ready [data-sv-motion].sv-vis {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The pin: whatever the transition did or did not do, this is the
+     finished state, and it outranks both rules above. */
+  .sv-rp [data-sv-motion].sv-settled {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* The masthead lines, and the dial drawing itself once it arrives. */
+  .sv-rp.sv-motion-ready .sv-rp__line {
+    display: block;
+    overflow: hidden;
+  }
+
+  .sv-rp.sv-motion-ready .sv-rp__line > span {
+    display: block;
+    transform: translateY(108%);
+    transition: transform 0.95s var(--e);
+  }
+
+  .sv-rp.sv-motion-ready .sv-rp__head.sv-vis .sv-rp__line > span {
+    transform: none;
+  }
+
+  .sv-rp.sv-motion-ready .sv-rp__line:nth-child(2) > span { transition-delay: 0.09s; }
+
+  .sv-rp.sv-motion-ready .sv-rp__dialarc {
+    stroke-dashoffset: 327;
+    transition: stroke-dashoffset 1.4s var(--e) 0.5s;
+  }
+
+  .sv-rp.sv-motion-ready .sv-rp__head.sv-vis .sv-rp__dialarc {
+    stroke-dashoffset: 33;
+  }
+
+  /* The claim icons draw themselves once, as their card arrives. A
+     bounded stroke-dashoffset on line art — not a layout property, and
+     it ends in a state the art is readable in either way. */
+  .sv-rp.sv-motion-ready .sv-rp__claimart svg :is(path, line, circle, rect, polyline) {
+    stroke-dasharray: 260;
+    stroke-dashoffset: 260;
+  }
+
+  .sv-rp.sv-motion-ready .sv-rp__triage.sv-vis .sv-rp__claimart svg :is(path, line, circle, rect, polyline) {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1.2s var(--e);
+  }
+
+  .sv-rp.sv-motion-ready .sv-rp__triage.sv-vis .sv-rp__claimwrap:nth-child(2) .sv-rp__claimart svg * { transition-delay: 0.1s; }
+  .sv-rp.sv-motion-ready .sv-rp__triage.sv-vis .sv-rp__claimwrap:nth-child(3) .sv-rp__claimart svg * { transition-delay: 0.2s; }
+  .sv-rp.sv-motion-ready .sv-rp__triage.sv-vis .sv-rp__claimwrap:nth-child(4) .sv-rp__claimart svg * { transition-delay: 0.3s; }
+
+  .sv-rp [data-sv-motion].sv-settled .sv-rp__claimart svg * {
+    stroke-dashoffset: 0 !important;
+  }
+
+  /* The kit rows arrive in order rather than as a block. */
+  .sv-rp.sv-motion-ready .sv-rp__kit.sv-vis .sv-rp__need:nth-child(2) { transition-delay: 0.08s; }
+  .sv-rp.sv-motion-ready .sv-rp__kit.sv-vis .sv-rp__need:nth-child(3) { transition-delay: 0.16s; }
+
+  /* ── Narrow ─────────────────────────────────────────────────────── */
+  @media (max-width: 760px) {
+    .sv-rp { padding-top: var(--c); }
+
+    .sv-rp__window {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--a);
+    }
+
+    .sv-rp__sec,
+    .sv-rp__film,
+    .sv-rp__why { margin-top: var(--d); }
+
+    .sv-rp__actions { gap: var(--a); }
+
+    .sv-rp__go { width: 100%; text-align: center; }
+
+    /* Carries [data-sv] to match the base rule's specificity — without
+       it the two-up grid survives onto a 375px screen and each card is
+       151px wide. */
+    [data-sv] .sv-rp__claims { grid-template-columns: 1fr; }
+
+    .sv-rp__need { padding: var(--a); }
+
+    .sv-rp__why { padding: var(--d) 0; }
+
+    .sv-rp__fine { padding-bottom: var(--d); }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  /* The page must read as a complete document with every animation
+     removed. sv-system.css §10 already flattens the shared primitives;
+     these are this section's own. */
+  @media (prefers-reduced-motion: reduce) {
+    .sv-rp__weave,
+    .sv-rp__glow,
+    .sv-rp__petal { animation: none !important; }
+
+    .sv-rp.sv-motion-ready [data-sv-motion],
+    .sv-rp.sv-motion-ready .sv-rp__line > span {
+      opacity: 1;
+      transform: none;
+    }
+
+    .sv-rp.sv-motion-ready .sv-rp__dialarc,
+    .sv-rp.sv-motion-ready .sv-rp__claimart svg :is(path, line, circle, rect, polyline) {
+      stroke-dashoffset: 33;
+      transition: none;
+    }
+
+    .sv-rp.sv-motion-ready .sv-rp__claimart svg :is(path, line, circle, rect, polyline) {
+      stroke-dasharray: none;
+      stroke-dashoffset: 0;
+    }
+
+    .sv-rp__thread path {
+      stroke-dashoffset: 0;
+      animation: none !important;
+    }
+
+    /* The film: the script does not add either pinning class when
+       motion is reduced, so the baseline stack already stands. These
+       are the belt to that braces — a stylesheet should not depend on
+       a script having declined to do something. */
+    .sv-rp__filmtrack { position: static; height: auto; }
+    [data-sv] .sv-rp__caps { position: static; min-height: 0; display: grid; gap: var(--b); }
+    .sv-rp__cap { position: static; opacity: 1; transform: none; animation: none !important; }
+    .sv-rp__scene { position: relative; opacity: 1; transform: none; animation: none !important; }
+    /* Equal specificity to the rule above and later in the file, so
+       without this the photographed frames lose their box and the stage
+       collapses when motion is reduced. */
+    .sv-rp__scene--img { position: absolute; inset: 0; }
+    .sv-rp__scene:not(:first-child) { display: none; }
+    .sv-rp__scrub { height: 0 !important; }
+    .sv-rp__pips { display: none; }
+    .sv-rp__scene svg .sv-rp-rec { animation: none !important; opacity: 1; }
+
+    .sv-rp__rail::after { animation: none !important; transform: scaleY(1); }
+
+    .sv-rp__gauge.is-ready .sv-rp__go--gauge { animation: none; }
+  }

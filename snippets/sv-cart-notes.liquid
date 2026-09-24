@@ -1,0 +1,65 @@
+{% doc %}
+  What a shopper should know before they pay, said once for both the cart
+  page and the cart drawer so the two can never disagree.
+
+  ── Every line here is a promise made elsewhere ─────────────────────────
+  - Free delivery progress lives in sv-cart-ship (the banner at the top
+    of the summary), not here.
+  - Delivery rates: Settings → Shipping and delivery → General profile
+    (Kerala 80, South India 150, Rest 200, Remote 200; all free ≥ 2,000 —
+    threshold from shop.metafields.custom.free_shipping_threshold).
+  - GST: Settings → Taxes → India, 5% on every state (prices tax-inclusive).
+    Change both lines here the day either setting changes.
+  - Payment: Settings → Payments — Cashfree (UPI first, then credit and
+    debit cards, netbanking, wallets), prepaid only, no Cash on Delivery. Change this line the day
+    the gateway or COD position changes.
+  - Returns: never restated here. sv-returns-line owns that wording, and
+    its copy speaks from the product page ("measurements are on this
+    page"), so the cart links to the published policy instead.
+
+  @param {string} [context] - 'page' (default) or 'drawer'
+
+  @example
+  {% render 'sv-cart-notes', context: 'drawer' %}
+{% enddoc %}
+
+{%- liquid
+  assign context = context | default: 'page'
+  assign wa_text = 'Hi, I have a question about my bag before I pay.' | url_encode
+-%}
+
+<div class="sv-cart-notes sv-cart-notes--{{ context }}">
+  <dl class="sv-cart-notes__facts">
+    <div>
+      <dt>Delivery</dt>
+      <dd>
+        Kerala ₹80 &middot; South India ₹150 &middot; rest of India and remote areas ₹200. Free on orders over {{ shop.metafields.custom.free_shipping_threshold.value | default: 200000 | money_without_trailing_zeros }}.
+        Your exact charge shows at checkout.
+      </dd>
+    </div>
+    <div>
+      <dt>GST</dt>
+      <dd>Prices include 5% GST</dd>
+    </div>
+    <div>
+      <dt>Payment</dt>
+      <dd>Prepaid &middot; UPI, credit &amp; debit cards, netbanking &amp; wallets, secured by Cashfree</dd>
+    </div>
+    <div>
+      <dt>Dispatch</dt>
+      <dd>Packed and handed to the courier within 1&ndash;2 working days</dd>
+    </div>
+  </dl>
+
+  <a class="sv-cart-notes__policy" href="{{ shop.refund_policy.url | default: '/policies/refund-policy' }}">Returns &amp; claims policy</a>
+
+  <a
+    class="sv-cart-notes__wa"
+    href="https://wa.me/918547629251?text={{ wa_text }}"
+    target="_blank"
+    rel="noopener"
+  >
+    {%- render 'sv-icon', name: 'whatsapp' -%}
+    <span>Questions before you pay? WhatsApp us</span>
+  </a>
+</div>

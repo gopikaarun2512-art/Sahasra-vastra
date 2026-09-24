@@ -1,0 +1,77 @@
+{%- comment -%}
+  "You may also like" — Shopify's own product recommendations (the
+  lillywhale shelf). The first render has no products: `recommendations`
+  is only populated when this section is requested through
+  /recommendations/products, which sv-shelf.js does and swaps in. With
+  no related products the shelf stays hidden — no heading over nothing.
+{%- endcomment -%}
+
+{%- liquid
+  assign limit = section.settings.limit | default: 8
+  assign intent = section.settings.intent | default: 'related'
+-%}
+
+{%- comment -%}
+  The shelf is ranked in the browser, not here, because half of what it
+  ranks on is the shopper's: the size they chose, and the size they are
+  looking at on this page. What the section can supply is the garment
+  they are standing in front of — its type, its tags, its price — so the
+  script never has to ask for it.
+{%- endcomment -%}
+<section
+  class="sv-shelf"
+  data-sv
+  data-sv-recs
+  data-sv-shelf
+  data-ctx-type="{{ product.type | escape }}"
+  data-ctx-tags="{{ product.tags | join: '|' | escape }}"
+  data-ctx-price="{{ product.price }}"
+  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ limit }}&intent={{ intent }}"
+  {% unless recommendations.performed and recommendations.products_count > 0 %}hidden{% endunless %}
+>
+  {%- if recommendations.performed and recommendations.products_count > 0 -%}
+    <div class="w">
+      <div class="sv-shelf__head">
+        <h2 class="sv-shelf__h">{{ section.settings.heading }}</h2>
+        <div class="sv-shelf__nav">
+          <button type="button" class="sv-shelf__btn" data-sv-shelf-step="-1" aria-label="Scroll back">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m14.5 6-6 6 6 6"/></svg>
+          </button>
+          <button type="button" class="sv-shelf__btn" data-sv-shelf-step="1" aria-label="Scroll forward">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m9.5 6 6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <ul class="sv-shelf__row" role="list" data-sv-shelf-row>
+        {%- for rec in recommendations.products -%}
+          {%- render 'sv-card', product: rec -%}
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+</section>
+
+<script src="{{ 'sv-shelf.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "SV You may also like",
+  "tag": "div",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "You may also like" },
+    {
+      "type": "select",
+      "id": "intent",
+      "label": "Show",
+      "options": [
+        { "value": "related", "label": "Similar designs" },
+        { "value": "complementary", "label": "Goes well with (set in Search & Discovery)" }
+      ],
+      "default": "related"
+    },
+    { "type": "range", "id": "limit", "label": "Products", "min": 4, "max": 10, "step": 1, "default": 8 }
+  ],
+  "presets": [{ "name": "SV You may also like" }]
+}
+{% endschema %}

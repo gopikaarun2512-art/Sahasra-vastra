@@ -1,0 +1,380 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+/*
+ * ------------------------------------------------------------
+ * Sahasra Vastra — FAQ (Sep 2026).
+ *
+ * The FAQ previously fell through to templates/page.json and rendered as
+ * a single RTE dump inside `sv-page`: 18 questions, 4.5 screens of grey
+ * paragraphs, no way to scan, jump, search or link to one answer.
+ *
+ * Content now lives in these blocks rather than the Admin page body,
+ * because four things need structure the RTE cannot carry — stable
+ * anchors for support to paste into a reply, a jump rail built from the
+ * real group list, client-side filtering, and FAQPage JSON-LD.
+ *
+ * Content changes from the Admin copy:
+ *   · the two unboxing-video questions merged into one (they asked the
+ *     same thing twice; the reasoning is now the second paragraph)
+ *   · a new question on stalled tracking — the most common support
+ *     ticket for an Indian D2C store and previously unanswered
+ *   · delivery windows lifted out of prose into a table
+ *   · Returns & claims moved above Our photographs, on intent
+ *
+ * The Admin page body (/pages/faq) is now unused by this template. Leave
+ * it in place as the fallback if the template is ever unassigned.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "sv-faq",
+      "blocks": {
+        "pin_delivery": {
+          "type": "pin",
+          "settings": {
+            "label": "Delivery",
+            "value": "2–7 working days",
+            "note": "Kerala 2–4 · South India 3–5 · rest of India 4–7. Dispatch is within 1–2 working days.",
+            "target": "delivery-times"
+          }
+        },
+        "pin_payment": {
+          "type": "pin",
+          "settings": {
+            "label": "Payment",
+            "value": "Prepaid only",
+            "note": "UPI, card, net banking or wallet at checkout. We do not offer Cash on Delivery.",
+            "target": "cod"
+          }
+        },
+        "pin_unboxing": {
+          "type": "pin",
+          "settings": {
+            "label": "Before you open",
+            "value": "Film your unboxing",
+            "note": "One continuous video, from sealed parcel to the last item out. It is what lets us settle a claim the same day.",
+            "target": "unboxing-video"
+          }
+        },
+
+        "g_ordering": {
+          "type": "group",
+          "settings": {
+            "title": "Ordering & payment",
+            "slug": "ordering",
+            "blurb": "",
+            "tone": "default",
+            "cta_label": "Message us about an order",
+            "cta_url": "",
+            "cta_wa": "Hi Sahasra Vastra, I have a question about my order. My order number is "
+          }
+        },
+        "q_cod": {
+          "type": "question",
+          "settings": {
+            "question": "Do you offer Cash on Delivery?",
+            "answer": "<p>No. We are a prepaid-only store. All payments are made securely at checkout by UPI, card, net banking or wallet.</p>",
+            "slug": "cod",
+            "start_open": false,
+            "keywords": "cod cash on delivery pay later payment upi gpay phonepe paytm"
+          }
+        },
+        "q_cancel": {
+          "type": "question",
+          "settings": {
+            "question": "Can I cancel my order?",
+            "answer": "<p>Yes, free of charge, any time before the parcel is dispatched or collected — normally a window of 1 to 2 working days. Email or WhatsApp us with your order number and we refund you in full.</p>",
+            "slug": "cancel-order",
+            "start_open": false,
+            "keywords": "cancel cancellation refund change my mind"
+          }
+        },
+
+        "g_shipping": {
+          "type": "group",
+          "settings": {
+            "title": "Shipping & delivery",
+            "slug": "shipping",
+            "blurb": "",
+            "tone": "default",
+            "cta_label": "Chase a parcel with us",
+            "cta_url": "",
+            "cta_wa": "Hi Sahasra Vastra, I would like to check on my delivery. My order number is "
+          }
+        },
+        "q_dispatch": {
+          "type": "question",
+          "settings": {
+            "question": "How soon do you dispatch?",
+            "answer": "<p>Within 1 to 2 working days of your order. You will get a tracking link by email and WhatsApp the moment the parcel leaves us.</p>",
+            "slug": "dispatch-time",
+            "start_open": false,
+            "keywords": "dispatch ship out send processing time how long"
+          }
+        },
+        "q_delivery": {
+          "type": "question",
+          "settings": {
+            "question": "How long does delivery take?",
+            "answer": "<p>From dispatch, counting working days only. Festivals and weather can add a day or two.</p>",
+            "slug": "delivery-times",
+            "start_open": false,
+            "keywords": "delivery time how long days kerala chennai bangalore hyderabad mumbai delhi shipping speed",
+            "table_head": "Destination | Working days",
+            "table_rows": "Kerala | 2–4\nSouth India | 3–5\nRest of India | 4–7\nRemote areas | 7–10"
+          }
+        },
+        "q_tracking": {
+          "type": "question",
+          "settings": {
+            "question": "My tracking link has not updated.",
+            "answer": "<p>Scans lag, especially over weekends and festivals, and a parcel often travels several hundred kilometres between two of them. A quiet tracking page usually means the parcel is moving, not that it is lost.</p><p>If there has been no movement for three working days, send us your order number on WhatsApp. We will chase the courier ourselves and come back to you — you should not have to sit on a helpline for a parcel we sent.</p>",
+            "slug": "tracking-stalled",
+            "start_open": false,
+            "keywords": "tracking track courier delayed late stuck not moving lost where is my order awb"
+          }
+        },
+        "q_international": {
+          "type": "question",
+          "settings": {
+            "question": "Do you ship outside India?",
+            "answer": "<p>Not at present. We deliver across India only.</p>",
+            "slug": "international",
+            "start_open": false,
+            "keywords": "international abroad overseas usa uk uae gulf dubai singapore worldwide export"
+          }
+        },
+        "q_collect": {
+          "type": "question",
+          "settings": {
+            "question": "Can I collect my order instead?",
+            "answer": "<p>Yes, and there is no shipping charge. Collection is by prior appointment only — message us on WhatsApp to arrange a time, and bring your order number.</p><p>We are an online store working from a registered business address, not a shop with a counter, so please do not travel without arranging a slot first.</p>",
+            "slug": "collect-in-person",
+            "start_open": false,
+            "keywords": "pickup collect self collection store address shop trivandrum thiruvananthapuram visit"
+          }
+        },
+
+        "g_sizes": {
+          "type": "group",
+          "settings": {
+            "title": "Sizes & fit",
+            "slug": "sizes",
+            "blurb": "",
+            "tone": "default",
+            "cta_label": "Send us a measurement and we will size it",
+            "cta_url": "",
+            "cta_wa": "Hi Sahasra Vastra, my child's chest is __ cm and height __ cm. Which size should I order?"
+          }
+        },
+        "q_choose_size": {
+          "type": "question",
+          "settings": {
+            "question": "How do I choose the right size?",
+            "answer": "<p>Do not order by age alone — children of the same age can be very different sizes. Measure a garment your child already wears and compare it to the chart on the product page. Full instructions are on our <a href=\"/pages/size-guide\">Size Guide</a>.</p>",
+            "slug": "choose-size",
+            "start_open": false,
+            "keywords": "size sizing chart measure measurement age fit which size"
+          }
+        },
+        "q_between_sizes": {
+          "type": "question",
+          "settings": {
+            "question": "My child is between two sizes.",
+            "answer": "<p>Always go one size up. Cotton shrinks slightly on the first washes, and the roomier size lasts several months longer.</p>",
+            "slug": "between-sizes",
+            "start_open": false,
+            "keywords": "between sizes size up bigger smaller shrink borderline"
+          }
+        },
+        "q_ask_size": {
+          "type": "question",
+          "settings": {
+            "question": "Can I ask you which size to order?",
+            "answer": "<p>Please do. Send your child's chest measurement and height on WhatsApp and we will tell you.</p>",
+            "slug": "ask-us-size",
+            "start_open": false,
+            "keywords": "help me choose size advice recommend ask"
+          }
+        },
+
+        "g_returns": {
+          "type": "group",
+          "settings": {
+            "title": "Returns & claims",
+            "slug": "returns",
+            "blurb": "",
+            "tone": "default",
+            "cta_label": "Read the full Refund Policy",
+            "cta_url": "/policies/refund-policy",
+            "cta_wa": ""
+          }
+        },
+        "q_unboxing": {
+          "type": "question",
+          "settings": {
+            "question": "Do I have to film my unboxing?",
+            "answer": "<p>Yes, every time, and we cannot accept a claim without it. Start recording <em>before</em> you open the packet and keep filming in one continuous shot — the sealed parcel, the shipping label, the packet being opened, and every item coming out. It takes half a minute.</p><p>We ask because it is the only way either of us can show what was actually inside the parcel when it arrived. Without it, we would have to price in the cost of claims we cannot verify, and every honest customer would end up paying for that. With it, we can settle a genuine claim the same day and without argument.</p>",
+            "slug": "unboxing-video",
+            "start_open": true,
+            "keywords": "unboxing video film record proof claim evidence mandatory required"
+          }
+        },
+        "q_returns": {
+          "type": "question",
+          "settings": {
+            "question": "Can I return or exchange an item?",
+            "answer": "<p>We do not accept returns or exchanges for change of mind or for size, which is why we ask you to measure before ordering. If you are unsure, send us the measurements first — we would far rather size it with you than have you guess.</p>",
+            "slug": "returns-exchanges",
+            "start_open": false,
+            "keywords": "return exchange refund send back swap change size"
+          }
+        },
+        "q_damaged": {
+          "type": "question",
+          "settings": {
+            "question": "What if my order arrives damaged, wrong or incomplete?",
+            "answer": "<p>We replace it or refund you in full, at our cost. Message us within 24 hours of delivery or collection with your unboxing video, your order number, and clear photographs of the problem, and we will arrange it. The full terms are in our <a href=\"/policies/refund-policy\">Refund Policy</a>.</p>",
+            "slug": "damaged-wrong-incomplete",
+            "start_open": false,
+            "keywords": "damaged wrong item missing incomplete defect torn stained faulty claim replacement"
+          }
+        },
+        "q_parcel_damaged": {
+          "type": "question",
+          "settings": {
+            "question": "The parcel looked damaged before I opened it.",
+            "answer": "<p>Photograph the outside of the parcel first, then start filming and open it on camera. Contact us within 24 hours.</p>",
+            "slug": "parcel-damaged-outside",
+            "start_open": false,
+            "keywords": "parcel box damaged crushed opened tampered wet seal broken"
+          }
+        },
+        "q_send_video": {
+          "type": "question",
+          "settings": {
+            "question": "How do I send you the video?",
+            "answer": "<p>WhatsApp is usually easiest. If the file is too large to send, upload it to Google Drive or any similar service and send us the link.</p>",
+            "slug": "send-video",
+            "start_open": false,
+            "keywords": "send video upload file too large whatsapp drive share"
+          }
+        },
+
+        "g_photographs": {
+          "type": "group",
+          "settings": {
+            "title": "Our photographs",
+            "slug": "photographs",
+            "blurb": "We use AI imagery, and we would rather you heard that from us than noticed it yourself.",
+            "tone": "emerald",
+            "cta_label": "",
+            "cta_url": "",
+            "cta_wa": ""
+          }
+        },
+        "q_ai_images": {
+          "type": "question",
+          "settings": {
+            "question": "Are the children in your photos real?",
+            "answer": "<p>Some are, and some are not. We use artificial intelligence to create model and background images, so a child shown wearing our clothing may be an AI-generated image rather than a real person. Where that is the case, the product page says so.</p>",
+            "slug": "ai-images",
+            "start_open": false,
+            "keywords": "ai artificial intelligence generated real model children photos fake images"
+          }
+        },
+        "q_real_garment": {
+          "type": "question",
+          "settings": {
+            "question": "Then how do I know what the garment really looks like?",
+            "answer": "<p>Every product page carries at least one plain, unedited photograph of the actual garment we will send you, alongside any styled images. We build our AI images from that real garment, and we never use AI to make a fabric, print or colour look better than it is.</p><p>When you are deciding, trust the plain photograph and the size chart.</p>",
+            "slug": "real-garment-photo",
+            "start_open": false,
+            "keywords": "real photo actual garment colour accurate edited retouched true to photo"
+          }
+        },
+
+        "g_fabric": {
+          "type": "group",
+          "settings": {
+            "title": "Fabric & care",
+            "slug": "fabric",
+            "blurb": "",
+            "tone": "default",
+            "cta_label": "Ask about a specific fabric",
+            "cta_url": "",
+            "cta_wa": "Hi Sahasra Vastra, I have a question about the fabric on "
+          }
+        },
+        "q_materials": {
+          "type": "question",
+          "settings": {
+            "question": "What are the clothes made of?",
+            "answer": "<p>Cotton, in weights chosen for the Indian climate. Everything for babies and toddlers is 100% cotton or muslin next to the skin — never synthetic — and we require written azo-free dye confirmation from our suppliers.</p>",
+            "slug": "materials",
+            "start_open": false,
+            "keywords": "fabric material cotton muslin synthetic polyester organic azo dye gsm"
+          }
+        },
+        "q_washing": {
+          "type": "question",
+          "settings": {
+            "question": "How should I wash them?",
+            "answer": "<p>Cold machine wash inside out with like colours, mild detergent, no bleach, dry in shade. Wash new colours separately the first two times.</p>",
+            "slug": "washing",
+            "start_open": false,
+            "keywords": "wash care laundry machine bleach iron dry shrink colour bleed"
+          }
+        }
+      },
+      "block_order": [
+        "pin_delivery",
+        "pin_payment",
+        "pin_unboxing",
+        "g_ordering",
+        "q_cod",
+        "q_cancel",
+        "g_shipping",
+        "q_dispatch",
+        "q_delivery",
+        "q_tracking",
+        "q_international",
+        "q_collect",
+        "g_sizes",
+        "q_choose_size",
+        "q_between_sizes",
+        "q_ask_size",
+        "g_returns",
+        "q_unboxing",
+        "q_returns",
+        "q_damaged",
+        "q_parcel_damaged",
+        "q_send_video",
+        "g_photographs",
+        "q_ai_images",
+        "q_real_garment",
+        "g_fabric",
+        "q_materials",
+        "q_washing"
+      ],
+      "settings": {
+        "eyebrow": "Help",
+        "title_a": "Plain answers,",
+        "title_b": "<em>every time.</em>",
+        "lead": "The questions customers ask us most, answered without hedging. If yours is not here, message us — we reply within one working day.",
+        "search_placeholder": "Search — try “delivery”, “size” or “refund”",
+        "bg_motion": "full",
+        "whatsapp": "918547629251"
+      }
+    }
+  },
+  "order": ["main"]
+}

@@ -1,0 +1,549 @@
+{%- comment -%}
+  Wishlist — the page at /pages/wishlist (template page.saved).
+  The list is device-local: localStorage `sv_saved`, written by the
+  Wishlist button on product pages. Nothing is sent to the server; each
+  handle is resolved through /products/{handle}.js, and a product that
+  has since been unpublished drops out (and out of the list).
+
+  Sep 2026 redesign (owner's direction): each card buys in place — size
+  chips, Add to bag via /cart/add.js, the header and bottom-bar cart
+  counts updated from /cart.js — plus a heart on the photo to remove,
+  Share wishlist (one WhatsApp message with every link) and Clear all.
+  Same one-size-in-hand rule as the product page: Add stays disabled
+  until a size is chosen, unless the design has only one.
+{%- endcomment -%}
+
+{{ 'sv-card.css' | asset_url | stylesheet_tag }}
+
+{%- assign whatsapp = shop.metafields.custom.whatsapp_number.value -%}
+
+<section class="sv-wish" data-sv data-sv-wish>
+  <div class="w">
+    <header class="sv-wish__head">
+      <div>
+        <p class="lab lab--grey sv-wish__eyebrow">Your picks</p>
+        <h1 class="sv-wish__h">{{ section.settings.heading }} <span class="sv-wish__count" data-sv-wish-count hidden></span></h1>
+        <p class="sv-wish__sub">{{ section.settings.sub }}</p>
+      </div>
+      <div class="sv-wish__tools" data-sv-wish-tools hidden>
+        <a class="sv-wish__tool" data-sv-wish-share href="#" target="_blank" rel="noopener">
+          {% render 'sv-icon', name: 'whatsapp' %}<span>Share wishlist</span>
+        </a>
+        <button type="button" class="sv-wish__tool sv-wish__tool--quiet" data-sv-wish-clear>Clear all</button>
+      </div>
+    </header>
+
+    <ul class="sv-wish__grid" role="list" data-sv-wish-grid hidden></ul>
+
+    <div class="sv-wish__empty" data-sv-wish-empty>
+      <span class="sv-wish__emptyicon" aria-hidden="true">{% render 'sv-icon', name: 'heart' %}</span>
+      <h2 class="sv-wish__emptyh">Your wishlist is empty</h2>
+      <p>Tap <strong>Wishlist</strong> on any design and it waits for you here &mdash; on this device, no account needed.</p>
+      <div class="sv-wish__emptyactions">
+        <a class="btn" href="{{ section.settings.cta_url | default: routes.all_products_collection_url }}">{{ section.settings.cta_label }}</a>
+        <a class="btn btn--ghost" href="{{ routes.collections_url }}/new-arrivals">New arrivals</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (() => {
+    const root = document.currentScript.previousElementSibling;
+    if (!root || root.dataset.svBound) return;
+    root.dataset.svBound = '1';
+    const $ = (s) => root.querySelector(s);
+    const grid = $('[data-sv-wish-grid]');
+    const empty = $('[data-sv-wish-empty]');
+    const tools = $('[data-sv-wish-tools]');
+    const countEl = $('[data-sv-wish-count]');
+    const share = $('[data-sv-wish-share]');
+    const base = window.Shopify?.routes?.root || '/';
+    const wa = {{ whatsapp | json }};
+
+    const read = () => {
+      try {
+        const v = JSON.parse(localStorage.getItem('sv_saved') || '[]');
+        return Array.isArray(v) ? v : [];
+      } catch (e) { return []; }
+    };
+    const write = (list) => {
+      try { localStorage.setItem('sv_saved', JSON.stringify(list)); } catch (e) {}
+      document.dispatchEvent(new CustomEvent('sv:saved-change', { detail: { count: list.length } }));
+    };
+    const money = (cents) => {
+      try {
+        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: window.Shopify?.currency?.active || 'INR', minimumFractionDigits: 2 }).format(cents / 100);
+      } catch (e) { return '₹' + (cents / 100).toFixed(2); }
+    };
+    const el = (tag, cls, text) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    };
+
+    let items = [];
+
+    const refresh = () => {
+      const n = items.length;
+      grid.hidden = n === 0;
+      tools.hidden = n === 0;
+      empty.hidden = n > 0;
+      countEl.hidden = n === 0;
+      countEl.textContent = n ? `(${n})` : '';
+      /* One message, every link: to a partner, a grandparent, or us. */
+      const lines = items.map((p) => `• ${p.title} — ${location.origin}${p.url}`);
+      const text = `My Sahasra Vastra wishlist:\n${lines.join('\n')}`;
+      share.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    };
+
+    /* Cart counts in the header and the phone bottom bar are server-
+       rendered only when the cart is non-empty, so create them if absent. */
+    const paintCart = (count) => {
+      const spots = [
+        ['.sv-header a[href$="/cart"]', 'sv-header__count'],
+        ['.sv-hero-video__navside a[href$="/cart"]', 'sv-hero-video__navcount'],
+        ['.sv-bottombar a[href$="/cart"]', 'sv-bottombar__count'],
+      ];
+      spots.forEach(([sel, cls]) => {
+        document.querySelectorAll(sel).forEach((a) => {
+          let b = a.querySelector('.' + cls);
+          if (!b) { b = el('span', cls); b.setAttribute('aria-hidden', 'true'); a.append(b); }
+          b.textContent = String(count);
+        });
+      });
+    };
+
+    const card = (p) => {
+      const li = el('li', 'sv-card sv-wish__item');
+
+      const media = el('div', 'sv-wish__media');
+      const a = el('a', 'sv-card__link');
+      a.href = p.url;
+      const frame = el('span', 'im r-product sv-card__frame');
+      if (p.featured_image) {
+        const src = p.featured_image.startsWith('//') ? 'https:' + p.featured_image : p.featured_image;
+        const sized = (w) => src + (src.includes('?') ? '&' : '?') + 'width=' + w;
+        const img = document.createElement('img');
+        img.src = sized(600);
+        img.srcset = `${sized(300)} 300w, ${sized(450)} 450w, ${sized(600)} 600w`;
+        img.sizes = '(max-width: 760px) 46vw, 300px';
+        img.loading = 'lazy';
+        img.alt = p.title;
+        frame.append(img);
+      }
+      a.append(frame);
+
+      const heart = el('button', 'sv-wish__heart');
+      heart.type = 'button';
+      heart.setAttribute('aria-label', `Remove ${p.title} from wishlist`);
+      heart.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" d="M12 20.3s-7.8-4.6-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.8-7.8 10.4-7.8 10.4Z"/></svg>';
+      heart.addEventListener('click', () => {
+        items = items.filter((x) => x.handle !== p.handle);
+        write(items.map((x) => x.handle));
+        li.remove();
+        refresh();
+      });
+      media.append(a, heart);
+
+      const body = el('div', 'sv-wish__body');
+      const name = el('a', 'sv-wish__name', p.title);
+      name.href = p.url;
+      const price = el('p', 'sv-wish__price');
+      if (p.compare_at_price > p.price) price.append(el('s', null, money(p.compare_at_price)), ' ');
+      price.append(money(p.price));
+      body.append(name, price);
+
+      /* Sizes as chips; sold-out ones crossed through and disabled. */
+      const real = p.variants.filter((v) => v.title !== 'Default Title');
+      let chosen = p.variants.length === 1 ? p.variants[0] : null;
+      const add = el('button', 'btn sv-wish__add');
+      add.type = 'button';
+      const note = el('p', 'sv-wish__note');
+      note.setAttribute('role', 'status');
+
+      const paintAdd = () => {
+        if (!p.available) { add.disabled = true; add.textContent = 'Sold out'; return; }
+        add.disabled = !chosen || !chosen.available;
+        add.textContent = chosen ? (chosen.available ? 'Add to bag' : 'Sold out') : 'Choose a size';
+      };
+
+      if (real.length) {
+        const sizes = el('div', 'sv-wish__sizes');
+        sizes.setAttribute('role', 'radiogroup');
+        sizes.setAttribute('aria-label', `Size for ${p.title}`);
+        real.forEach((v) => {
+          const b = el('button', 'sv-wish__size', v.title.replace('-', '–'));
+          b.type = 'button';
+          b.setAttribute('role', 'radio');
+          const on = chosen && chosen.id === v.id;
+          b.setAttribute('aria-checked', String(!!on));
+          if (on) b.classList.add('is-on');
+          if (!v.available) { b.classList.add('is-out'); b.disabled = true; b.title = 'Sold out'; }
+          b.addEventListener('click', () => {
+            chosen = v;
+            sizes.querySelectorAll('.sv-wish__size').forEach((x) => {
+              const me = x === b;
+              x.classList.toggle('is-on', me);
+              x.setAttribute('aria-checked', String(me));
+            });
+            note.textContent = '';
+            paintAdd();
+          });
+          sizes.append(b);
+        });
+        body.append(sizes);
+      }
+
+      add.addEventListener('click', async () => {
+        if (!chosen) return;
+        add.disabled = true;
+        add.textContent = 'Adding…';
+        try {
+          const res = await fetch(`${base}cart/add.js`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ items: [{ id: chosen.id, quantity: 1 }] }),
+          });
+          const data = await res.json();
+          if (!res.ok || data.status) throw new Error(data.description || data.message || 'Could not add');
+          const cart = await fetch(`${base}cart.js`).then((r) => r.json());
+          paintCart(cart.item_count);
+          note.innerHTML = '';
+          note.append('Added to bag · ');
+          const go = el('a', null, 'View bag');
+          go.href = `${base}cart`;
+          note.append(go);
+          add.textContent = 'Added';
+          setTimeout(paintAdd, 2200);
+        } catch (err) {
+          note.textContent = err.message || 'Could not add — please try again.';
+          paintAdd();
+        }
+      });
+
+      paintAdd();
+      body.append(add, note);
+      li.append(media, body);
+      return li;
+    };
+
+    $('[data-sv-wish-clear]').addEventListener('click', () => {
+      items = [];
+      write([]);
+      grid.replaceChildren();
+      refresh();
+    });
+
+    const handles = read();
+    if (!handles.length) { refresh(); return; }
+
+    Promise.all(handles.map((h) =>
+      fetch(`${base}products/${encodeURIComponent(h)}.js`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+    )).then((products) => {
+      items = products.filter(Boolean);
+      if (items.length !== handles.length) write(items.map((p) => p.handle));
+      items.forEach((p) => grid.append(card(p)));
+      refresh();
+    });
+  })();
+</script>
+
+{% stylesheet %}
+  section[data-sv].sv-wish {
+    padding: var(--c) 0 var(--d);
+  }
+
+  .sv-wish__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--b);
+    margin-bottom: var(--c);
+    padding-bottom: var(--b);
+    border-bottom: 1px solid rgba(198, 161, 91, 0.35);
+  }
+
+  [data-sv] .sv-wish__eyebrow {
+    margin: 0 0 6px;
+  }
+
+  [data-sv] .sv-wish__h {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 4.4vw, 3.2rem);
+    font-weight: 500;
+    line-height: 1.05;
+  }
+
+  .sv-wish__count {
+    font-size: 0.5em;
+    color: var(--grey);
+    vertical-align: middle;
+  }
+
+  .sv-wish__count[hidden],
+  .sv-wish__tools[hidden],
+  .sv-wish__grid[hidden],
+  .sv-wish__empty[hidden] {
+    display: none;
+  }
+
+  [data-sv] .sv-wish__sub {
+    max-width: 56ch;
+    margin: 10px 0 0;
+    color: var(--grey);
+  }
+
+  .sv-wish__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  [data-sv] .sv-wish__tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 46px;
+    padding: 0 18px;
+    border: 1px solid var(--cream-2);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 0.86rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  [data-sv] .sv-wish__tool:hover {
+    border-color: var(--tan);
+  }
+
+  .sv-wish__tool svg {
+    width: 18px;
+    height: 18px;
+    color: #1f9d55;
+  }
+
+  [data-sv] .sv-wish__tool--quiet {
+    background: transparent;
+    color: var(--grey);
+  }
+
+  [data-sv] .sv-wish__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--c) var(--b);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sv-wish__item {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+
+  .sv-wish__media {
+    position: relative;
+  }
+
+  .sv-wish__heart {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--emerald);
+    box-shadow: var(--sh-s);
+    cursor: pointer;
+    transition: transform var(--micro) var(--e);
+  }
+
+  .sv-wish__heart:hover {
+    transform: scale(1.08);
+  }
+
+  .sv-wish__heart svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .sv-wish__body {
+    display: grid;
+    gap: 10px;
+  }
+
+  [data-sv] .sv-wish__name {
+    font-family: var(--sans);
+    font-size: 0.98rem;
+    line-height: 1.35;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  [data-sv] .sv-wish__name:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  [data-sv] .sv-wish__price {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    color: var(--ink);
+  }
+
+  .sv-wish__price s {
+    font-size: 0.85em;
+    color: var(--grey);
+  }
+
+  .sv-wish__sizes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .sv-wish__size {
+    padding: 7px 12px;
+    border: 1px solid var(--cream-2);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+
+  .sv-wish__size:hover {
+    border-color: var(--tan);
+  }
+
+  .sv-wish__size.is-on {
+    background: var(--emerald);
+    border-color: var(--emerald);
+    color: var(--cream);
+  }
+
+  .sv-wish__size.is-out {
+    color: var(--grey);
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+
+  [data-sv] .sv-wish__add {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+  }
+
+  [data-sv] .sv-wish__add[disabled] {
+    background: var(--cream-2);
+    border-color: var(--cream-2);
+    color: var(--grey);
+    cursor: not-allowed;
+  }
+
+  [data-sv] .sv-wish__note {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--grey);
+  }
+
+  .sv-wish__note a {
+    color: var(--emerald);
+    text-underline-offset: 3px;
+  }
+
+  .sv-wish__empty {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: var(--d) 0;
+    text-align: center;
+  }
+
+  .sv-wish__emptyicon {
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    border-radius: 999px;
+    background: var(--cream-2);
+    color: var(--emerald);
+  }
+
+  .sv-wish__emptyicon svg {
+    width: 38px;
+    height: 38px;
+  }
+
+  [data-sv] .sv-wish__emptyh {
+    margin: 6px 0 0;
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    font-weight: 500;
+  }
+
+  [data-sv] .sv-wish__empty p {
+    max-width: 44ch;
+    margin: 0;
+    color: var(--grey);
+  }
+
+  .sv-wish__emptyactions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 1080px) {
+    [data-sv] .sv-wish__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    [data-sv] .sv-wish__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--b) var(--a);
+    }
+
+    .sv-wish__head {
+      align-items: start;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Wishlist",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Wishlist" },
+    { "type": "text", "id": "sub", "label": "Line under the heading", "default": "Designs you added on this device." },
+    { "type": "text", "id": "cta_label", "label": "Empty-state button", "default": "Shop by age" },
+    { "type": "url", "id": "cta_url", "label": "Empty-state button link" }
+  ],
+  "presets": [{ "name": "SV Wishlist" }]
+}
+{% endschema %}

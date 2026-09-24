@@ -1,0 +1,35 @@
+{% doc %}
+  One product card on the drop shelf (sections/sv-new-in.liquid).
+
+  Extracted so the shelf can deal the same card from two passes —
+  photographed products first, imageless ones after — without carrying
+  the markup twice. A product still waiting on photography shows §06's
+  placeholder field inside the frame, and the two-pass order keeps
+  those plain frames at the right-hand end of the shelf rather than
+  breaking up the pictures.
+
+  Accepts: product (required), idx (0-based reveal stagger index).
+{% enddoc %}
+
+<a class="sv-drop__card" href="{{ product.url }}" data-sv-motion style="--i: {{ idx }}">
+  <span class="im r-product sv-drop__frame">
+    {%- if product.featured_image -%}
+      <img
+        src="{{ product.featured_image | image_url: width: 600 }}"
+        srcset="{{ product.featured_image | image_url: width: 400 }} 400w, {{ product.featured_image | image_url: width: 600 }} 600w, {{ product.featured_image | image_url: width: 900 }} 900w"
+        sizes="(max-width: 760px) 44vw, 320px"
+        alt="{{ product.featured_image.alt | default: product.title | escape }}"
+        width="{{ product.featured_image.width }}"
+        height="{{ product.featured_image.height }}"
+        loading="lazy"
+      >
+    {%- endif -%}
+  </span>
+  <span class="sv-drop__name">{{ product.title }}</span>
+  <span class="sv-drop__price">
+    {%- if product.compare_at_price > product.price -%}
+      <s class="sv-drop__was">{{ product.compare_at_price | money }}</s>
+    {%- endif -%}
+    {{ product.price | money }}
+  </span>
+</a>

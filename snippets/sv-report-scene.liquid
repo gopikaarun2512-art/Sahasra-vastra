@@ -1,0 +1,145 @@
+{% doc %}
+  Report a problem — the unboxing drawings.
+
+  The four frames of the film in `sv-report`. Line art on a fixed
+  400×320 box, drawn in the section's stroke rather than declaring one
+  here, so a single rule in that stylesheet governs weight and colour
+  across every frame.
+
+  Every frame carries the same viewfinder — corner brackets and a
+  recording dot — because that is the whole instruction the sequence
+  exists to give: one unbroken shot, from the sealed parcel to the last
+  item out. Drawing it four times is what makes "do not stop filming"
+  legible without a sentence.
+
+  Drawn rather than photographed: a photograph of a real parcel would
+  have to be reshot every time the packaging changes, and would carry a
+  courier's branding we do not control into a page about claims against
+  couriers.
+
+  @param {string} art - which frame. Unknown values render the
+    viewfinder alone, so a frame added in the editor before its drawing
+    exists is empty rather than broken.
+{% enddoc %}
+
+<svg viewBox="0 0 400 320" focusable="false" aria-hidden="true">
+
+  {%- comment -%}
+    ── The viewfinder ──────────────────────────────────────────────
+    Held across all four frames. Dimmed, so it never competes with the
+    subject it is framing.
+  {%- endcomment -%}
+  <g class="sv-rp-dim">
+    <path d="M24 56 L24 24 L56 24"/>
+    <path d="M344 24 L376 24 L376 56"/>
+    <path d="M376 264 L376 296 L344 296"/>
+    <path d="M56 296 L24 296 L24 264"/>
+  </g>
+  <circle class="sv-rp-rec" cx="346" cy="52" r="5"/>
+
+  {%- case art -%}
+
+    {%- when 'sealed' -%}
+      {%- comment -%}
+        Frame one. The parcel before anything is cut — all three faces
+        visible, because "show it sealed" means showing the seams.
+      {%- endcomment -%}
+      <path d="M118 124 L200 92 L302 124 L220 156 Z"/>
+      <path d="M118 124 L118 230 L220 262 L220 156 Z"/>
+      <path d="M302 124 L302 230 L220 262 L220 156 Z"/>
+
+      {%- comment -%} The tape, in gold: over the crown and down the corner. {%- endcomment -%}
+      <path class="sv-rp-gold" d="M159 108 L261 140"/>
+      <path class="sv-rp-gold" d="M220 156 L220 262"/>
+
+      {%- comment -%} The seal, unbroken. {%- endcomment -%}
+      <circle class="sv-rp-gold" cx="220" cy="196" r="13"/>
+      <circle class="sv-rp-fill" cx="220" cy="196" r="13"/>
+
+      <path class="sv-rp-dim" d="M112 274 Q220 296 328 274"/>
+
+    {%- when 'label' -%}
+      {%- comment -%}
+        Frame two. The label, close enough to read. It is the only
+        thing that ties a parcel to an order once the packaging is in
+        the bin, so it gets a frame of its own.
+      {%- endcomment -%}
+      <rect x="104" y="74" width="208" height="164" rx="4"/>
+      <path d="M104 108 L312 108"/>
+
+      {%- comment -%} The barcode. {%- endcomment -%}
+      <g class="sv-rp-gold">
+        <path d="M128 128 L128 168"/>
+        <path d="M135 128 L135 168"/>
+        <path d="M145 128 L145 168"/>
+        <path d="M152 128 L152 168"/>
+        <path d="M164 128 L164 168"/>
+        <path d="M171 128 L171 168"/>
+        <path d="M181 128 L181 168"/>
+        <path d="M192 128 L192 168"/>
+        <path d="M199 128 L199 168"/>
+        <path d="M209 128 L209 168"/>
+        <path d="M216 128 L216 168"/>
+        <path d="M228 128 L228 168"/>
+        <path d="M239 128 L239 168"/>
+        <path d="M246 128 L246 168"/>
+      </g>
+
+      {%- comment -%} The address block. {%- endcomment -%}
+      <g class="sv-rp-dim">
+        <path d="M128 192 L272 192"/>
+        <path d="M128 208 L240 208"/>
+        <path d="M128 224 L256 224"/>
+      </g>
+
+      {%- comment -%} The lens over it. {%- endcomment -%}
+      <circle cx="284" cy="178" r="52"/>
+      <path d="M320 214 L350 246"/>
+
+    {%- when 'opening' -%}
+      {%- comment -%}
+        Frame three. The cut, on camera. The flaps are already lifting,
+        which is what distinguishes this from a parcel simply sitting
+        there — the shot has to include the moment it is opened.
+      {%- endcomment -%}
+      <path d="M126 152 L126 254 L274 254 L274 152"/>
+      <path d="M126 152 L98 98 L168 122"/>
+      <path d="M274 152 L302 98 L232 122"/>
+
+      {%- comment -%} The tape, parting. {%- endcomment -%}
+      <path class="sv-rp-gold" d="M200 254 L200 182"/>
+      <path class="sv-rp-gold" d="M190 160 L184 140"/>
+      <path class="sv-rp-gold" d="M210 160 L216 140"/>
+
+      {%- comment -%} The blade. {%- endcomment -%}
+      <path d="M212 176 L246 128 L262 139 L228 187 Z"/>
+      <path d="M228 187 L250 202"/>
+
+    {%- when 'contents' -%}
+      {%- comment -%}
+        Frame four. Everything out and counted, still in shot. A claim
+        for a missing item is settled here or not at all.
+      {%- endcomment -%}
+      <path d="M96 176 L96 258 L206 258 L206 176"/>
+      <path d="M96 176 L74 132 L128 152"/>
+      <path d="M206 176 L228 132 L174 152"/>
+
+      {%- comment -%} The garments, laid out and counted. {%- endcomment -%}
+      <rect x="244" y="132" width="104" height="36" rx="4"/>
+      <path class="sv-rp-dim" d="M270 132 L270 168"/>
+
+      <rect x="244" y="180" width="104" height="36" rx="4"/>
+      <path class="sv-rp-dim" d="M270 180 L270 216"/>
+
+      <rect x="244" y="228" width="104" height="36" rx="4"/>
+      <path class="sv-rp-dim" d="M270 228 L270 264"/>
+
+      <g class="sv-rp-gold">
+        <path d="M360 150 L366 156 L376 144"/>
+        <path d="M360 198 L366 204 L376 192"/>
+        <path d="M360 246 L366 252 L376 240"/>
+      </g>
+
+  {%- endcase -%}
+
+</svg>

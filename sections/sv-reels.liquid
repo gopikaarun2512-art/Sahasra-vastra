@@ -1,0 +1,227 @@
+{%- comment -%}
+  Reels — "on real little ones" (the mom & zoey band), built from the
+  store's OWN uploaded videos rather than Instagram embeds. Embeds load
+  Instagram's script, a login wall and a cookie banner per tile; a
+  Shopify-hosted clip is one lazy MP4 on the store's CDN.
+
+  Each clip plays muted and inline only while it is on screen (an
+  IntersectionObserver, never a scroll listener) and a tap toggles
+  sound. Under reduced motion nothing autoplays; the poster stands and a
+  tap plays it. With no clips added the section renders nothing at all.
+{%- endcomment -%}
+
+{%- liquid
+  assign clips = section.blocks | where: 'type', 'reel'
+  assign has_clip = false
+  for b in clips
+    if b.settings.video != blank
+      assign has_clip = true
+      break
+    endif
+  endfor
+-%}
+
+{%- if has_clip -%}
+<section class="sv-reels" data-sv data-sv-reels>
+  <div class="w">
+    <header class="sv-reels__head">
+      {%- if section.settings.eyebrow != blank -%}<p class="lab lab--grey">{{ section.settings.eyebrow }}</p>{%- endif -%}
+      {%- if section.settings.heading != blank -%}<h2 class="sv-reels__h">{{ section.settings.heading }}</h2>{%- endif -%}
+      {%- if section.settings.sub != blank -%}<p class="sv-reels__sub">{{ section.settings.sub }}</p>{%- endif -%}
+    </header>
+
+    <ul class="sv-reels__row" role="list">
+      {%- for block in clips -%}
+        {%- if block.settings.video == blank -%}{%- continue -%}{%- endif -%}
+        <li class="sv-reel" {{ block.shopify_attributes }}>
+          <button type="button" class="sv-reel__frame" data-sv-reel aria-label="Play with sound{% if block.settings.caption != blank %}: {{ block.settings.caption | escape }}{% endif %}">
+            {{
+              block.settings.video
+              | video_tag:
+                image_size: '540x',
+                muted: true,
+                loop: true,
+                playsinline: true,
+                preload: 'none',
+                class: 'sv-reel__video'
+            }}
+            <span class="sv-reel__sound" aria-hidden="true" data-sv-reel-sound>
+              <svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="m16 9.5 5 5m0-5-5 5"/></svg>
+            </span>
+          </button>
+          {%- if block.settings.caption != blank or block.settings.link != blank -%}
+            <p class="sv-reel__cap">
+              {%- if block.settings.caption != blank -%}{{ block.settings.caption }}{%- endif -%}
+              {%- if block.settings.link != blank %} <a href="{{ block.settings.link }}" target="_blank" rel="noopener">{{ block.settings.link_label | default: 'View on Instagram' }}</a>{%- endif -%}
+            </p>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  </div>
+</section>
+
+<script>
+  (() => {
+    const band = document.currentScript.previousElementSibling;
+    if (!band || band.dataset.svBound) return;
+    band.dataset.svBound = '1';
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const videos = Array.from(band.querySelectorAll('video'));
+
+    if (!still) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(({ target, isIntersecting }) => {
+          if (isIntersecting) target.play().catch(() => {});
+          else target.pause();
+        });
+      }, { threshold: 0.5 });
+      videos.forEach((v) => io.observe(v));
+    }
+
+    band.querySelectorAll('[data-sv-reel]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const v = btn.querySelector('video');
+        if (!v) return;
+        const turningOn = v.muted || v.paused;
+        /* One clip speaks at a time. */
+        videos.forEach((o) => { if (o !== v) o.muted = true; });
+        band.querySelectorAll('.sv-reel.is-loud').forEach((li) => li.classList.remove('is-loud'));
+        v.muted = !turningOn;
+        if (v.paused) v.play().catch(() => {});
+        btn.closest('.sv-reel').classList.toggle('is-loud', turningOn);
+        btn.setAttribute('aria-label', turningOn ? 'Mute' : 'Play with sound');
+      });
+    });
+  })();
+</script>
+{%- endif -%}
+
+{% stylesheet %}
+  section[data-sv].sv-reels {
+    padding: var(--d) 0 0;
+  }
+
+  .sv-reels__head {
+    text-align: center;
+    margin-bottom: var(--c);
+  }
+
+  [data-sv] .sv-reels__h {
+    margin: 8px 0 0;
+    font-family: var(--serif);
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+    font-weight: 500;
+  }
+
+  [data-sv] .sv-reels__sub {
+    max-width: 52ch;
+    margin: 10px auto 0;
+    color: var(--grey);
+  }
+
+  [data-sv] .sv-reels__row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 280px);
+    justify-content: center;
+    gap: var(--a);
+    margin: 0;
+    padding: 0 0 6px;
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .sv-reel {
+    scroll-snap-align: center;
+  }
+
+  .sv-reel__frame {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 9 / 16;
+    padding: 0;
+    border: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--cream-2);
+    cursor: pointer;
+  }
+
+  .sv-reel__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sv-reel__sound {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgba(26, 26, 26, 0.55);
+    color: var(--cream);
+  }
+
+  .sv-reel__sound svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sv-reel.is-loud .sv-reel__sound {
+    background: var(--emerald);
+  }
+
+  .sv-reel.is-loud .sv-reel__sound path:last-child {
+    display: none;
+  }
+
+  [data-sv] .sv-reel__cap {
+    margin: 10px 4px 0;
+    font-size: 0.86rem;
+    color: var(--grey);
+  }
+
+  .sv-reel__cap a {
+    color: var(--emerald);
+  }
+
+  @media (max-width: 760px) {
+    [data-sv] .sv-reels__row {
+      grid-auto-columns: 64%;
+      justify-content: start;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Reels",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Small label", "default": "Loved by parents" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "See it on real little ones" },
+    { "type": "text", "id": "sub", "label": "Line under the heading" }
+  ],
+  "blocks": [
+    {
+      "type": "reel",
+      "name": "Reel",
+      "settings": [
+        { "type": "video", "id": "video", "label": "Video", "info": "Upload the clip itself (vertical, under 30 seconds works best). Only real customer or shoot footage — this band is presented as real." },
+        { "type": "text", "id": "caption", "label": "Caption" },
+        { "type": "url", "id": "link", "label": "Link (e.g. the Instagram post)" },
+        { "type": "text", "id": "link_label", "label": "Link text", "default": "View on Instagram" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "SV Reels" }]
+}
+{% endschema %}

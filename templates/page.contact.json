@@ -1,0 +1,199 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+/*
+ * ------------------------------------------------------------
+ * Sahasra Vastra — Contact, rebuilt (Sep 2026).
+ *
+ * Was: `sv-page` rendering a serif title over an EMPTY Admin body,
+ * followed by Horizon's stock `contact-form` section at half width.
+ * A brand title on top of an un-themed form, and the only page on the
+ * site with no idea what it was for.
+ *
+ * Now: one section, `sv-contact`. The three other contact surfaces
+ * already own something — /policies/contact-information is the
+ * statutory record, /pages/report-a-problem is the claim desk with its
+ * 24-hour clock, /pages/faq is the answer where we have one. What is
+ * left for this page is everything that is not a claim, for a business
+ * that runs on WhatsApp and answers once a working day. On that
+ * promise a vague first message costs a whole day, so the page's job
+ * is to make the first message a good one.
+ *
+ * Nothing here is business data: the number, the email, the hours, the
+ * address, the GSTIN and the Grievance Officer all read from Admin.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "sv-contact",
+      "blocks": {
+        "r_size": {
+          "type": "reason",
+          "settings": {
+            "label": "Choosing a size",
+            "note": "Send the chest and the height and we will tell you which size to order.",
+            "art": "size",
+            "prefill": "I need help choosing a size — my child's chest is ___ cm and height is ___ cm.",
+            "needs_order": false
+          }
+        },
+        "r_stock": {
+          "type": "reason",
+          "settings": {
+            "label": "A piece, or a size that has gone",
+            "note": "Our lots are small. We can tell you whether it is coming back.",
+            "art": "stock",
+            "prefill": "I would like to ask about a piece on your site — whether it is coming back, or available in another size.",
+            "needs_order": false
+          }
+        },
+        "r_transit": {
+          "type": "reason",
+          "settings": {
+            "label": "An order on its way",
+            "note": "Tracking, timing, or a change of address before it leaves.",
+            "art": "transit",
+            "prefill": "I would like an update on my order.",
+            "needs_order": true
+          }
+        },
+        "r_wrong": {
+          "type": "reason",
+          "settings": {
+            "label": "Something arrived wrong",
+            "note": "Damaged, missing, or not what you ordered.",
+            "art": "wrong",
+            "prefill": "",
+            "needs_order": false,
+            "handoff_url": "/pages/report-a-problem",
+            "handoff_label": "This one has a clock on it",
+            "handoff_title": "Report it at the claim desk, not here.",
+            "handoff_body": "Tell us within 24 hours of delivery and we put it right at our cost — a replacement or a full refund, whichever you prefer. But the claim needs your unboxing video and photographs, and this page cannot take them. The claim desk can.",
+            "handoff_cta": "Go to the claim desk"
+          }
+        },
+        "r_other": {
+          "type": "reason",
+          "settings": {
+            "label": "Something else",
+            "note": "Collection, a bulk order, or anything we have not thought of.",
+            "art": "other",
+            "prefill": "I have a question.",
+            "needs_order": false
+          }
+        },
+        "rt_wa": {
+          "type": "route",
+          "settings": {
+            "kind": "whatsapp",
+            "label": "WhatsApp",
+            "meta": "Usually the same day",
+            "note": "The fastest way in. Photos and videos go straight through.",
+            "art": "chat"
+          }
+        },
+        "rt_mail": {
+          "type": "route",
+          "settings": {
+            "kind": "email",
+            "label": "Email",
+            "meta": "Within one working day",
+            "note": "Better when you want a written record, or need to attach something.",
+            "art": "mail"
+          }
+        },
+        "rt_form": {
+          "type": "route",
+          "settings": {
+            "kind": "link",
+            "label": "The form below",
+            "meta": "Within one working day",
+            "note": "The same inbox, without opening another app.",
+            "art": "clock",
+            "url": "#sv-ct-form"
+          }
+        },
+        "f_addr": {
+          "type": "fact",
+          "settings": { "label": "Registered address", "source": "address" }
+        },
+        "f_hours": {
+          "type": "fact",
+          "settings": { "label": "At the desk", "source": "hours" }
+        },
+        "f_gstin": {
+          "type": "fact",
+          "settings": { "label": "GSTIN", "source": "gstin" }
+        },
+        "f_officer": {
+          "type": "fact",
+          "settings": { "label": "Grievance Officer", "source": "officer" }
+        }
+      },
+      "block_order": [
+        "r_size",
+        "r_stock",
+        "r_transit",
+        "r_wrong",
+        "r_other",
+        "rt_wa",
+        "rt_mail",
+        "rt_form",
+        "f_addr",
+        "f_hours",
+        "f_gstin",
+        "f_officer"
+      ],
+      "settings": {
+        "eyebrow": "Talk to us",
+        "title_a": "One family,",
+        "title_b": "one inbox.",
+        "lead": "The people who packed your parcel are the people who answer. Tell us what it is about, and we will help you write a message worth sending.",
+        "open_days": "1,2,3,4,5,6",
+        "open_from": 10,
+        "open_until": 19,
+        "state_open": "At the desk now",
+        "state_shut": "Away from the desk",
+        "step_reason": "What is it about?",
+        "step_order": "Your order number",
+        "order_placeholder": "SV-1043",
+        "order_note": "It begins with SV and is on your confirmation email and your packing slip.",
+        "step_extra": "Anything to add",
+        "extra_placeholder": "Optional — a size, a style name, a date.",
+        "prefill_opener": "Hi Sahasra Vastra,",
+        "draft_label": "Your message",
+        "draft_note": "We answer once a working day, so the more your first message says, the sooner it is settled.",
+        "routes_label": "Send it",
+        "plain_label": "Or plainly:",
+        "mail_subject": "A question for Sahasra Vastra",
+        "rule_label": "Before you travel",
+        "rule_title": "The address is an office, not a shop.",
+        "rule_body": "<p>There is no counter and no rail to browse. Collection is free and genuinely welcome, but by appointment only — message us first, agree a time, and bring your order number. Please do not travel without arranging a slot.</p>",
+        "rule_link_label": "How collection works",
+        "rule_link_url": "/pages/faq",
+        "form_label": "The slow way",
+        "form_title": "Or write it here",
+        "form_note": "This reaches the same inbox as the email above, and is answered in the same working day. Use it if you would rather not open another app — it fills itself in from whatever you chose above.",
+        "f_name": "Your name",
+        "f_email": "Email",
+        "f_phone": "Phone (optional)",
+        "f_order": "Order number (if you have one)",
+        "f_body": "Your message",
+        "form_submit": "Send it",
+        "form_success": "Thank you — it is with us. We answer within one working day.",
+        "form_fine": "We use what you send only to answer you, and we never sell it. See our Privacy Policy.",
+        "foot_link_label": "Full contact information",
+        "foot_link_url": "/policies/contact-information",
+        "bg_motion": "full"
+      }
+    }
+  },
+  "order": ["main"]
+}

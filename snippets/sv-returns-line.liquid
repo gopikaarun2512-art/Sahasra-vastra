@@ -1,0 +1,84 @@
+{% doc %}
+  The returns position, in one line, before purchase.
+
+  HANDOFF.md leaves the exchange policy open and instructs: "build the
+  returns line as a single Liquid include so one edit changes the product
+  page, the FAQ and the confirmation page together." This is that include.
+  Nothing else in the theme may state the returns position in its own words.
+
+  ── Which line renders ────────────────────────────────────────────────
+  `shop.metafields.custom.returns_mode` chooses. The field does not exist on
+  the live store yet; absent, this renders the CLAIMS-ONLY line, which is
+  what the published Refund Policy actually says today. Create the metafield
+  and set it to `exchange` on the day Option B is adopted — the product page,
+  and every other surface rendering this snippet, change together.
+
+      (absent) | claims  → Option A, CONTENT.md §09 — no size returns
+      exchange            → Option B, CONTENT.md §09 — size exchange only
+
+  ── Why the wording here is not CONTENT.md's verbatim ─────────────────
+  CONTENT.md §09 Option A says a 48-hour claim window. The PUBLISHED refund
+  policy on the live store says 24 hours and additionally requires a
+  continuous unboxing video for every claim. The published policy is the one
+  in force, so it wins; a product page promising 48 hours would contradict
+  the document a customer is held to. Flagged in ADMIN-TODO — if 48 hours is
+  the intended figure, the policy page is what needs correcting, then this.
+
+  @param {string} [class] - extra classes on the wrapper
+  @param {boolean} [show_label] - render the "Returns" label. Default false.
+
+  @example
+  {% render 'sv-returns-line', class: 'sv-pdp__fact', show_label: true %}
+{% enddoc %}
+
+{%- liquid
+  assign mode = shop.metafields.custom.returns_mode.value
+-%}
+
+<div class="sv-returns {{ class }}">
+  {%- if show_label -%}
+    <span class="lab lab--grey sv-returns__lab">Returns</span>
+  {%- endif -%}
+
+  {%- if mode == 'exchange' -%}
+    <p class="sv-returns__body">
+      <strong>Wrong size? Send it back within 7 days and we&rsquo;ll swap it.</strong>
+      Same design, different size, unworn and with tags on. You cover the return
+      postage; we cover sending the replacement. We do not refund for change of
+      mind. If your order arrives damaged, incorrect or incomplete, message us
+      within 24 hours with your unboxing video and we replace it and pay the
+      postage both ways.
+    </p>
+  {%- else -%}
+    <p class="sv-returns__body">
+      <strong>We do not accept size or change-of-mind returns</strong> &mdash; which is
+      why this garment&rsquo;s measurements are on this page rather than in a chart
+      somewhere else. If it arrives damaged, incorrect or incomplete, message us
+      within 24 hours with your unboxing video and we replace it or refund it in
+      full, and we pay the postage.
+    </p>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  /* The reading pass (sv-system.css §03c). This is a paragraph someone reads
+     before spending money, so it takes ink at regular weight, not the warm
+     grey 300 that [data-sv] p ships for campaign surfaces. Compound selector
+     because that rule is (0,1,1). */
+  [data-sv] .sv-returns__body {
+    max-width: 62ch;
+    font-size: 0.92rem;
+    font-weight: 400;
+    line-height: 1.66;
+    color: var(--ink);
+  }
+
+  .sv-returns__body strong {
+    font-weight: 500;
+  }
+
+  .sv-returns__lab {
+    display: block;
+    margin-bottom: 0.7em;
+  }
+{% endstylesheet %}

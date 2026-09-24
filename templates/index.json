@@ -1,0 +1,186 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */{
+  "sections": {
+    "sv_hero_film": {
+      "type": "sv-hero-video",
+      "name": "SV Hero — Film",
+      "blocks": {
+        "card_age": {
+          "type": "card",
+          "settings": {
+            "title": "Shop by age",
+            "text": "0–8 years, every design in all five sizes.",
+            "link": "/#shop-by-age",
+            "image": "shopify://shop_images/sv-card-shop-age.jpg"
+          }
+        },
+        "card_new": {
+          "type": "card",
+          "settings": {
+            "title": "New in — the drop",
+            "text": "What's just arrived, in real garment photography.",
+            "link": "shopify://collections/new-arrivals",
+            "image": "shopify://shop_images/sv-card-new-in.jpg"
+          }
+        },
+        "card_packs": {
+          "type": "card",
+          "settings": {
+            "title": "Value packs",
+            "text": "The everyday pieces, priced by the bundle.",
+            "link": "shopify://collections/all"
+          }
+        }
+      },
+      "block_order": [
+        "card_age",
+        "card_new",
+        "card_packs"
+      ],
+      "settings": {
+        "height": "full",
+        "overlay_opacity": 50,
+        "float_nav": true,
+        "show_lockup": true,
+        "eyebrow": "",
+        "heading": "",
+        "body": "",
+        "cta_label": "",
+        "cta_url": "shopify://collections/all",
+        "secondary_label": "",
+        "auto_scroll": true,
+        "tertiary_label": "",
+        "tertiary_url": "shopify://collections/all",
+        "video_url_desktop": "https://cdn.shopify.com/videos/c/o/v/e91b8d834e6f4c0d942a062dd087f846.mp4",
+        "video_url_mobile": "https://cdn.shopify.com/videos/c/o/v/8e63e7878fbe44af8d6f82cf68958fe7.mp4"
+      }
+    },
+    "sv_shop_age": {
+      "type": "sv-shop-by-age",
+      "name": "SV Shop by Age",
+      "blocks": {
+        "age_newborn": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/Baby_wearing_gingerbread_romper_lifestyle_photo_1.png",
+            "focus": 10,
+            "title": "Newborn",
+            "range": "0–12 months",
+            "link": "shopify://collections/newborn-0-12-months",
+            "sub_1_label": "0–3 m",
+            "sub_2_label": "3–6 m",
+            "sub_3_label": "6–9 m",
+            "sub_4_label": "9–12 m",
+            "sub_1_url": "/collections/newborn-0-12-months/age-0-3m",
+            "sub_2_url": "/collections/newborn-0-12-months/age-3-6m",
+            "sub_3_url": "/collections/newborn-0-12-months/age-6-9m",
+            "sub_4_url": "/collections/newborn-0-12-months/age-9-12m"
+          }
+        },
+        "age_toddler": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/Baby_in_powder_blue_floral_sleepsuit_-_solid_fabric_correction_1_1.png",
+            "title": "Toddler",
+            "range": "1–3 years",
+            "link": "shopify://collections/toddler-1-3-years",
+            "sub_1_label": "12–18 m",
+            "sub_2_label": "18–24 m",
+            "sub_3_label": "2–3 y",
+            "sub_1_url": "/collections/toddler-1-3-years/age-12-18m",
+            "sub_2_url": "/collections/toddler-1-3-years/age-18-24m",
+            "sub_3_url": "/collections/toddler-1-3-years/age-2-3y"
+          }
+        },
+        "age_kids": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/Girl_wearing_Minnie_Mouse_top_and_black_flared_pants_in_wildflower_field_2.png",
+            "title": "Kids",
+            "range": "3–6 years",
+            "link": "shopify://collections/kids-3-6-years",
+            "sub_1_label": "3–4 y",
+            "sub_2_label": "4–5 y",
+            "sub_3_label": "5–6 y",
+            "sub_1_url": "/collections/kids-3-6-years/age-3-4y",
+            "sub_2_url": "/collections/kids-3-6-years/age-4-5y",
+            "sub_3_url": "/collections/kids-3-6-years/age-5-6y"
+          }
+        },
+        "age_bigkids": {
+          "type": "category",
+          "settings": {
+            "image": "shopify://shop_images/Boy_wearing_white_van_sweatshirt_and_gray_sweatpants_1.png",
+            "focus": 30,
+            "title": "Big kids",
+            "range": "6–8 years",
+            "link": "shopify://collections/big-kids-6-8-years",
+            "sub_1_label": "6–7 y",
+            "sub_2_label": "7–8 y",
+            "sub_1_url": "/collections/big-kids-6-8-years/age-6-7y",
+            "sub_2_url": "/collections/big-kids-6-8-years/age-7-8y"
+          }
+        }
+      },
+      "block_order": [
+        "age_newborn",
+        "age_toddler",
+        "age_kids",
+        "age_bigkids"
+      ],
+      "settings": {
+        "eyebrow": "Start with the age",
+        "title": ""
+      }
+    },
+    "sv_new_drop": {
+      "type": "sv-new-in",
+      "name": "SV New In — The Drop",
+      "settings": {
+        "eyebrow": "New in — the drop",
+        "line": "",
+        "banner": "shopify://shop_images/Nine_Babies_Playing_in_Sunny_Playroom_Banner.png",
+        "campaign": "shopify://shop_images/Two_children_in_reference_pose_wearing_their_outfits_2.png",
+        "campaign_label": "The first drop",
+        "collection": "new-arrivals",
+        "limit": 8,
+        "auto_scroll": true,
+        "cta_label": "View everything new"
+      },
+      "blocks": {
+        "frame_playroom": {
+          "type": "frame",
+          "settings": {
+            "image": "shopify://shop_images/Nine_Babies_Playing_in_Sunny_Playroom_Banner.png",
+            "label": "",
+            "link": "shopify://collections/new-arrivals"
+          }
+        },
+        "frame_first_drop": {
+          "type": "frame",
+          "settings": {
+            "image": "shopify://shop_images/sv-drop-first-drop-full.jpg",
+            "label": "The first drop",
+            "link": "shopify://collections/new-arrivals"
+          }
+        }
+      },
+      "block_order": [
+        "frame_playroom",
+        "frame_first_drop"
+      ]
+    }
+  },
+  "order": [
+    "sv_hero_film",
+    "sv_shop_age",
+    "sv_new_drop"
+  ]
+}

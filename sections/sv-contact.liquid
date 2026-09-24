@@ -1,0 +1,1863 @@
+{% doc %}
+  Contact — the switchboard.
+
+  Replaces the `sv-page` + Horizon `contact-form` pair on /pages/contact,
+  which rendered a serif title over an empty Admin body and then a stock
+  form at half width. It was the only page on the site not speaking the
+  system, and it was also the only one with no idea what it was for.
+
+  ── What this page is for ─────────────────────────────────────────────
+  Three contact surfaces already exist and each owns something:
+
+    /policies/contact-information   the statutory record — registered
+                                    address, GSTIN, Grievance Officer.
+                                    Furnished by sv-policy.
+    /pages/report-a-problem         anything WRONG with an order. It has
+                                    a 24-hour clock and needs a video.
+    /pages/faq                      the answer, where we already have one.
+
+  What is left for this page is everything that is not a claim: which
+  size, is it coming back, where is my parcel, can I collect, and the
+  long tail nobody anticipated. And the business it belongs to runs on
+  WhatsApp and answers once a working day.
+
+  That is the whole design brief. On a one-reply-a-day promise, a vague
+  first message costs a full day — the reply is a question, and the
+  answer arrives tomorrow. So this page is not a form with a title on
+  it. Its job is to make the first message a good one.
+
+  ── How it is built ───────────────────────────────────────────────────
+    desk     two columns. You compose on the left, and the message you
+             are about to send is written out on the right, in the words
+             it will arrive in. Nothing is hidden behind a submit.
+    reasons  five. Four compose; the fifth — something arrived wrong —
+             does not, and hands off to the claim desk instead. That
+             interception is the most important thing on the page: a
+             damaged parcel that goes into a contact form loses its
+             video and, often, its 24 hours.
+    routes   WhatsApp, email, the form. Each carries the same composed
+             message, so the channel is a preference and never a
+             different conversation.
+    desk     the address is an office, not a shop — the one line on this
+             page a reader can act on wrongly. The page's single emerald
+             moment, as on /policies/contact-information.
+    form     in-system rather than Horizon's default, prefilled from the
+             draft, and honest about being the slowest way in.
+    foot     the statutory record, read from metafields, never typed.
+
+  Every business value — number, email, hours, GSTIN, officer, address —
+  comes from Admin. There is no `default:` on any of them: a default is
+  a hard-coded business value in disguise and it goes on rendering the
+  stale figure after Admin is corrected (ARCHITECTURE.md rule 11).
+
+  Motion contract, per sv-system.css §08: transform and opacity only.
+  Every route out is a plain anchor that works with script disabled, the
+  form submits without script, and with script off the composer simply
+  offers the generic opener rather than a tailored one.
+{% enddoc %}
+
+{%- liquid
+  # Read from Admin, never typed. Two pages that print two different
+  # numbers is exactly what a theme setting here would buy us.
+  assign wa_raw = shop.metafields.custom.whatsapp_number.value
+  assign wa = wa_raw | remove: ' ' | remove: '+' | remove: '-'
+  assign mail = shop.metafields.custom.support_email.value
+  assign hours = shop.metafields.custom.support_hours.value
+  assign officer = shop.metafields.custom.grievance_officer.value
+  assign gstin = shop.metafields.custom.gstin.value
+
+  # The number, grouped for reading. Derived from the metafield rather
+  # than typed beside it — a second, hand-formatted copy is how the two
+  # fall out of step. Any shape we do not recognise is printed whole.
+  assign wa_disp = ''
+  if wa != blank
+    if wa.size == 12
+      assign cc = wa | slice: 0, 2
+      assign p1 = wa | slice: 2, 5
+      assign p2 = wa | slice: 7, 5
+      assign wa_disp = '+' | append: cc | append: ' ' | append: p1 | append: ' ' | append: p2
+    else
+      assign wa_disp = '+' | append: wa
+    endif
+  endif
+
+  assign addr = shop.address
+  assign bg = section.settings.bg_motion
+  assign opener = section.settings.prefill_opener
+  assign title_a = section.settings.title_a | default: page.title
+
+  # Counted first so a rail can be skipped whole rather than rendering an
+  # empty frame around nothing.
+  assign n_reason = 0
+  assign n_route = 0
+  assign n_fact = 0
+  for block in section.blocks
+    case block.type
+      when 'reason'
+        assign n_reason = n_reason | plus: 1
+      when 'route'
+        assign n_route = n_route | plus: 1
+      when 'fact'
+        assign n_fact = n_fact | plus: 1
+    endcase
+  endfor
+-%}
+
+{%- comment -%}
+  The registered address, assembled once from the shop's own record
+  rather than typed into a block. Guarded on the first line: a shop with
+  no address on file would otherwise produce ", , " and render it as a
+  fact, which is worse than rendering nothing.
+{%- endcomment -%}
+{%- assign addr_line = '' -%}
+{%- if addr.address1 != blank -%}
+  {%- capture addr_line -%}
+    {{ addr.address1 }}{% if addr.address2 != blank %}, {{ addr.address2 }}{% endif %}, {{ addr.city }}, {{ addr.province }} {{ addr.zip }}
+  {%- endcapture -%}
+  {%- assign addr_line = addr_line | strip -%}
+{%- endif -%}
+
+<section class="sv-ct sv-ct--bg-{{ bg }}" data-sv data-sv-contact>
+
+  {%- comment -%}
+    Arms the entrance before the section paints — see the snippet's own
+    note on why this must be the first child.
+  {%- endcomment -%}
+  {%- render 'sv-motion-gate' -%}
+
+  {%- comment -%}
+    ── The ground ────────────────────────────────────────────────────
+    The same weave, lights and petals as the FAQ and the claim desk, so
+    the three support pages read as one set rather than three designs.
+    Decorative only: aria-hidden, no pointer events, carries nothing.
+  {%- endcomment -%}
+  {%- unless bg == 'off' -%}
+    <div class="sv-ct__bg" aria-hidden="true">
+      <div class="sv-ct__weave"></div>
+      <div class="sv-ct__glow sv-ct__glow--a"></div>
+      <div class="sv-ct__glow sv-ct__glow--b"></div>
+      {%- for i in (1..4) -%}
+        <svg class="sv-ct__petal sv-ct__petal--{{ i }}" viewBox="-14 -86 28 92" focusable="false">
+          <path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z"/>
+        </svg>
+      {%- endfor -%}
+    </div>
+  {%- endunless -%}
+
+  <div class="w sv-ct__inner">
+
+    {%- comment -%} ── Masthead ────────────────────────────────────── {%- endcomment -%}
+    <header class="sv-ct__head" data-sv-motion>
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+      {%- endif -%}
+
+      {%- comment -%}
+        Line reveal, by line — §08 permits no finer grain. The spans are
+        always in the markup; only the motion-ready class turns them
+        into a mask, so the title is never left hidden if script fails.
+      {%- endcomment -%}
+      <h1 class="sv-ct__title">
+        <span class="sv-ct__line"><span>{{ title_a }}</span></span>
+        {%- if section.settings.title_b != blank -%}
+          <span class="sv-ct__line"><span>{{ section.settings.title_b }}</span></span>
+        {%- endif -%}
+      </h1>
+
+      {%- if section.settings.lead != blank -%}
+        <p class="sv-ct__lead lead">{{ section.settings.lead }}</p>
+      {%- endif -%}
+
+      {%- comment -%}
+        ── The desk state ──────────────────────────────────────────
+        The hours line is always printed, because it is true whether or
+        not script runs. The open / closed pill is not: it is a claim
+        about right now, and a claim about right now that is rendered
+        server-side is wrong for most of the day it is cached. Script
+        fills it against IST and reveals it; with no script the visitor
+        simply reads the hours, which is what the page said before.
+      {%- endcomment -%}
+      {%- if hours != blank -%}
+        <p class="sv-ct__hours">
+          <span class="sv-ct__state" data-sv-state hidden></span>
+          <span class="sv-ct__hourstext">{{ hours }}</span>
+        </p>
+      {%- endif -%}
+    </header>
+
+    {%- comment -%}
+      ── The desk ──────────────────────────────────────────────────────
+      Two columns, and the split is the argument: what you are building
+      on the left, and what it will actually say on the right. The right
+      column is sticky, so the message and the way to send it stay
+      beside the choice being made rather than waiting at the bottom.
+    {%- endcomment -%}
+    <div class="sv-ct__desk">
+
+      {%- comment -%} ── Compose ─────────────────────────────────── {%- endcomment -%}
+      <div class="sv-ct__compose">
+
+        {%- if n_reason > 0 -%}
+          <div class="sv-ct__step" data-sv-motion>
+            <p class="lab sv-ct__steplab">
+              <span class="sv-ct__stepnum">01</span>{{ section.settings.step_reason }}
+            </p>
+
+            <ul class="sv-ct__reasons" role="list">
+              {%- for block in section.blocks -%}
+                {%- if block.type == 'reason' -%}
+                  {%- liquid
+                    # A reason that names a handoff does not compose a
+                    # message at all — it sends the visitor somewhere
+                    # this page cannot help them. Everything about the
+                    # card changes accordingly, so the distinction is
+                    # made once, here.
+                    assign is_handoff = false
+                    if block.settings.handoff_url != blank
+                      assign is_handoff = true
+                    endif
+                  -%}
+                  <li class="sv-ct__reasonwrap" {{ block.shopify_attributes }}>
+                    <button class="sv-ct__reason{% if is_handoff %} sv-ct__reason--away{% endif %}"
+                            type="button"
+                            aria-pressed="false"
+                            data-sv-reason="{{ block.id }}"
+                            data-sv-text="{{ block.settings.prefill | escape }}"
+                            data-sv-order="{% if block.settings.needs_order %}1{% else %}0{% endif %}"
+                            data-sv-away="{% if is_handoff %}1{% else %}0{% endif %}">
+                      <span class="sv-ct__reasonart">
+                        {%- render 'sv-contact-icon', art: block.settings.art -%}
+                      </span>
+                      <span class="sv-ct__reasonbody">
+                        <span class="sv-ct__reasonlab">{{ block.settings.label }}</span>
+                        {%- if block.settings.note != blank -%}
+                          <span class="sv-ct__reasonnote">{{ block.settings.note }}</span>
+                        {%- endif -%}
+                      </span>
+                    </button>
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+          </div>
+
+          {%- comment -%}
+            ── Order number ────────────────────────────────────────
+            Hidden until a reason asks for it, because on three of the
+            five reasons there is no order yet and an empty field is a
+            question the visitor cannot answer. Revealed rather than
+            inserted, so nothing is ever created after paint.
+          {%- endcomment -%}
+          <div class="sv-ct__step sv-ct__step--slot" data-sv-orderstep hidden>
+            <label class="lab sv-ct__steplab" for="sv-ct-order">
+              <span class="sv-ct__stepnum">02</span>{{ section.settings.step_order }}
+            </label>
+            <input class="sv-ct__field" id="sv-ct-order" type="text"
+                   inputmode="text" autocomplete="off" spellcheck="false"
+                   placeholder="{{ section.settings.order_placeholder | escape }}"
+                   data-sv-orderin>
+            {%- if section.settings.order_note != blank -%}
+              <p class="sv-ct__fieldnote">{{ section.settings.order_note }}</p>
+            {%- endif -%}
+          </div>
+
+          <div class="sv-ct__step sv-ct__step--slot" data-sv-extrastep hidden>
+            <label class="lab sv-ct__steplab" for="sv-ct-extra">
+              <span class="sv-ct__stepnum" data-sv-extranum>03</span>{{ section.settings.step_extra }}
+            </label>
+            <textarea class="sv-ct__field sv-ct__field--area" id="sv-ct-extra"
+                      rows="3" data-sv-extrain
+                      placeholder="{{ section.settings.extra_placeholder | escape }}"></textarea>
+          </div>
+        {%- endif -%}
+
+      </div>
+
+      {%- comment -%}
+        ── The draft ─────────────────────────────────────────────────
+        The message, written out in the words it will arrive in. This is
+        the page's one real idea: a person who can see their own opening
+        line writes a better one, and a better opening line is a day
+        saved on a promise of one reply a day.
+
+        The paragraph is a live region so the change is announced rather
+        than only drawn, and it holds the generic opener from the
+        server, which is exactly what an unscripted visitor sends.
+      {%- endcomment -%}
+      <aside class="sv-ct__side">
+        <div class="sv-ct__draft" data-sv-motion>
+          <p class="lab sv-ct__draftlab" data-sv-draftlab>{{ section.settings.draft_label }}</p>
+
+          <p class="sv-ct__drafttext" data-sv-draft aria-live="polite">{{ opener }}</p>
+
+          {%- comment -%}
+            The handoff. Not a card that appears from nowhere: it is the
+            draft's other face, and it replaces the message because when
+            this reason is chosen there is no message to send from here.
+          {%- endcomment -%}
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'reason' and block.settings.handoff_url != blank -%}
+              <div class="sv-ct__away" data-sv-awaycard="{{ block.id }}" hidden>
+                {%- if block.settings.handoff_label != blank -%}
+                  <p class="lab sv-ct__awaylab">{{ block.settings.handoff_label }}</p>
+                {%- endif -%}
+                {%- if block.settings.handoff_title != blank -%}
+                  <p class="sv-ct__awaytitle">{{ block.settings.handoff_title }}</p>
+                {%- endif -%}
+                {%- if block.settings.handoff_body != blank -%}
+                  <p class="sv-ct__awaybody">{{ block.settings.handoff_body }}</p>
+                {%- endif -%}
+                <a class="btn sv-ct__awaygo" href="{{ block.settings.handoff_url }}">
+                  {{ block.settings.handoff_cta }}
+                </a>
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- if section.settings.draft_note != blank -%}
+            <p class="sv-ct__draftnote" data-sv-draftnote>{{ section.settings.draft_note }}</p>
+          {%- endif -%}
+        </div>
+
+        {%- comment -%}
+          ── Routes ────────────────────────────────────────────────
+          Three ways out, carrying the same message. Every one is a
+          plain anchor with the generic opener already in its href, so
+          the page works whole before a line of script runs; the script
+          only makes the message more specific than it was.
+        {%- endcomment -%}
+        {%- if n_route > 0 -%}
+          <div class="sv-ct__routes" data-sv-motion data-sv-routes>
+            <p class="lab sv-ct__routelab">{{ section.settings.routes_label }}</p>
+
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'route' -%}
+                {%- liquid
+                  assign kind = block.settings.kind
+                  assign opener_enc = opener | url_encode
+                  assign href = block.settings.url
+                  assign ext = false
+
+                  case kind
+                    when 'whatsapp'
+                      assign href = 'https://wa.me/' | append: wa | append: '?text=' | append: opener_enc
+                      assign ext = true
+                    when 'email'
+                      assign subj = section.settings.mail_subject | url_encode
+                      assign href = 'mailto:' | append: mail | append: '?subject=' | append: subj | append: '&body=' | append: opener_enc
+                  endcase
+
+                  # A route whose channel has no value in Admin is not
+                  # rendered at all. A WhatsApp button with no number
+                  # behind it is worse than no button.
+                  assign usable = true
+                  if kind == 'whatsapp' and wa == blank
+                    assign usable = false
+                  endif
+                  if kind == 'email' and mail == blank
+                    assign usable = false
+                  endif
+                  if kind == 'link' and href == blank
+                    assign usable = false
+                  endif
+                -%}
+
+                {%- if usable -%}
+                  <a class="sv-ct__route sv-ct__route--{{ kind }}"
+                     href="{{ href }}"
+                     {% if ext %}target="_blank" rel="noopener"{% endif %}
+                     {% if kind == 'whatsapp' %}data-sv-wa{% elsif kind == 'email' %}data-sv-mail{% endif %}
+                     {{ block.shopify_attributes }}>
+                    <span class="sv-ct__routeart">
+                      {%- render 'sv-contact-icon', art: block.settings.art -%}
+                    </span>
+                    <span class="sv-ct__routebody">
+                      <span class="sv-ct__routetop">
+                        <span class="sv-ct__routename">{{ block.settings.label }}</span>
+                        {%- if block.settings.meta != blank -%}
+                          <span class="sv-ct__routemeta">{{ block.settings.meta }}</span>
+                        {%- endif -%}
+                      </span>
+                      {%- if block.settings.note != blank -%}
+                        <span class="sv-ct__routenote">{{ block.settings.note }}</span>
+                      {%- endif -%}
+                    </span>
+                    <span class="sv-ct__routego" aria-hidden="true">→</span>
+                  </a>
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+
+            {%- if wa_disp != blank -%}
+              <p class="sv-ct__plain">
+                {{ section.settings.plain_label }}
+                <a href="tel:+{{ wa }}">{{ wa_disp }}</a>
+                {%- if mail != blank %} · <a href="mailto:{{ mail }}">{{ mail }}</a>{% endif -%}
+              </p>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </aside>
+    </div>
+
+    {%- comment -%}
+      ── The form ──────────────────────────────────────────────────────
+      Kept, and kept honest. It is the slowest route on the page and the
+      copy says so; it exists for the person who will not open another
+      app, and for anyone who wants a written record of what they asked.
+
+      Built from Liquid's own contact form tag rather than Horizon's
+      block, so the draft can prefill it and the fields can carry the
+      order number and the reason as named custom fields. It posts to
+      the same inbox either way.
+    {%- endcomment -%}
+    <div class="sv-ct__formwrap" id="sv-ct-form" data-sv-motion>
+      <div class="sv-ct__formhead">
+        <p class="lab">{{ section.settings.form_label }}</p>
+        <h2 class="sv-ct__formtitle">{{ section.settings.form_title }}</h2>
+        {%- if section.settings.form_note != blank -%}
+          <p class="sv-ct__formnote">{{ section.settings.form_note }}</p>
+        {%- endif -%}
+      </div>
+
+      {%- form 'contact', class: 'sv-ct__form', id: 'sv-ct-contact-form' -%}
+        {%- if form.posted_successfully? -%}
+          <p class="sv-ct__sent" role="status" tabindex="-1" data-sv-sent>
+            {{ section.settings.form_success }}
+          </p>
+        {%- endif -%}
+
+        {%- if form.errors -%}
+          <div class="sv-ct__errors" role="alert">
+            {{ form.errors | default_errors }}
+          </div>
+        {%- endif -%}
+
+        <div class="sv-ct__grid">
+          <p class="sv-ct__f">
+            <label class="sv-ct__flab" for="sv-ct-name">{{ section.settings.f_name }}</label>
+            <input class="sv-ct__field" id="sv-ct-name" type="text" name="contact[name]"
+                   autocomplete="name" value="{{ form.name }}" required>
+          </p>
+
+          <p class="sv-ct__f">
+            <label class="sv-ct__flab" for="sv-ct-email">{{ section.settings.f_email }}</label>
+            <input class="sv-ct__field" id="sv-ct-email" type="email" name="contact[email]"
+                   autocomplete="email" spellcheck="false" value="{{ form.email }}" required>
+          </p>
+
+          <p class="sv-ct__f">
+            <label class="sv-ct__flab" for="sv-ct-phone">{{ section.settings.f_phone }}</label>
+            <input class="sv-ct__field" id="sv-ct-phone" type="tel" name="contact[phone]"
+                   autocomplete="tel" value="{{ form.phone }}">
+          </p>
+
+          <p class="sv-ct__f">
+            <label class="sv-ct__flab" for="sv-ct-orderno">{{ section.settings.f_order }}</label>
+            <input class="sv-ct__field" id="sv-ct-orderno" type="text"
+                   name="contact[Order number]" autocomplete="off" spellcheck="false"
+                   data-sv-formorder>
+          </p>
+
+          <p class="sv-ct__f sv-ct__f--wide">
+            <label class="sv-ct__flab" for="sv-ct-body">{{ section.settings.f_body }}</label>
+            <textarea class="sv-ct__field sv-ct__field--area" id="sv-ct-body"
+                      name="contact[body]" rows="6" required
+                      data-sv-formbody>{{ form.body }}</textarea>
+          </p>
+        </div>
+
+        {%- comment -%}
+          Named so the reply lands with the reason already attached —
+          the same triage the composer made, carried into the inbox.
+        {%- endcomment -%}
+        <input type="hidden" name="contact[Reason]" value="" data-sv-formreason>
+
+        <div class="sv-ct__submit">
+          <button class="btn" type="submit">{{ section.settings.form_submit }}</button>
+          {%- if section.settings.form_fine != blank -%}
+            <span class="sv-ct__fine sv-fine">{{ section.settings.form_fine }}</span>
+          {%- endif -%}
+        </div>
+      {%- endform -%}
+    </div>
+
+    {%- comment -%}
+      ── The one clause, stated once ───────────────────────────────────
+      The single dark object on the page, and it only works while there
+      is exactly one of it — which is why it sits HERE and not up in the
+      composer column, where it would have stood shoulder to shoulder
+      with the claim-desk handoff and turned the page's one emerald
+      moment into two competing ones.
+
+      Here is also where it belongs on the merits. It is a fact about
+      the address, so it introduces the address: the switchboard first,
+      then the ways in, then the record — and the warning at the top of
+      the record, where somebody reading off a postal address is about
+      to act on it. It is the one line on a contact page a reader can
+      act on wrongly and end up standing outside an office in Anayara
+      with nothing to collect.
+    {%- endcomment -%}
+    {%- if section.settings.rule_title != blank -%}
+      <aside class="sv-ct__rule" data-sv-motion>
+        <span class="sv-ct__ruleart">{%- render 'sv-contact-icon', art: 'door' -%}</span>
+        <div class="sv-ct__rulebody">
+          {%- if section.settings.rule_label != blank -%}
+            <p class="lab sv-ct__rulelab">{{ section.settings.rule_label }}</p>
+          {%- endif -%}
+          <h2 class="sv-ct__ruletitle">{{ section.settings.rule_title }}</h2>
+          {%- if section.settings.rule_body != blank -%}
+            <div class="sv-ct__rulecopy">{{ section.settings.rule_body }}</div>
+          {%- endif -%}
+          {%- if section.settings.rule_link_url != blank and section.settings.rule_link_label != blank -%}
+            <a class="sv-ct__rulelink" href="{{ section.settings.rule_link_url }}">
+              {{ section.settings.rule_link_label }}
+            </a>
+          {%- endif -%}
+        </div>
+      </aside>
+    {%- endif -%}
+
+    {%- comment -%}
+      ── The statutory foot ────────────────────────────────────────────
+      The record, not the conversation. Each value reads from Admin, and
+      a fact with nothing behind it contributes nothing — no label, no
+      dash, no placeholder (ARCHITECTURE.md rule 11).
+    {%- endcomment -%}
+    {%- if n_fact > 0 -%}
+      <div class="sv-ct__foot" data-sv-motion>
+        <dl class="sv-ct__facts">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'fact' -%}
+              {%- liquid
+                assign val = ''
+                case block.settings.source
+                  when 'address'
+                    assign val = addr_line
+                  when 'gstin'
+                    assign val = gstin
+                  when 'officer'
+                    assign val = officer
+                  when 'hours'
+                    assign val = hours
+                  when 'email'
+                    assign val = mail
+                  when 'whatsapp'
+                    assign val = wa_disp
+                  else
+                    assign val = block.settings.value
+                endcase
+              -%}
+              {%- if val != blank -%}
+                <div class="sv-ct__fact" {{ block.shopify_attributes }}>
+                  <dt class="lab lab--grey">{{ block.settings.label }}</dt>
+                  <dd class="sv-ct__factval">{{ val }}</dd>
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </dl>
+
+        {%- if section.settings.foot_link_url != blank and section.settings.foot_link_label != blank -%}
+          <a class="act sv-ct__footlink" href="{{ section.settings.foot_link_url }}">
+            {{ section.settings.foot_link_label }}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+
+  <script>
+    (function () {
+      var root = document.currentScript && document.currentScript.closest('[data-sv-contact]');
+      if (!root) return;
+
+      var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      var WA    = {{ wa | json }};
+      var MAIL  = {{ mail | json }};
+      var OPEN  = {{ opener | json }};
+      var SUBJ  = {{ section.settings.mail_subject | json }};
+
+      /* ── The desk state ───────────────────────────────────────────
+         A claim about right now, so it is made in the browser and
+         never in a cached page. Computed in IST regardless of where
+         the visitor's clock is set — the desk is in Kerala and the
+         question is whether anyone is at it. */
+      (function () {
+        var el = root.querySelector('[data-sv-state]');
+        if (!el) return;
+
+        var days  = {{ section.settings.open_days | json }};   /* 1=Mon … 7=Sun */
+        var from  = {{ section.settings.open_from | json }};
+        var until = {{ section.settings.open_until | json }};
+        if (!days) return;
+
+        var now  = new Date();
+        var ist  = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (5.5 * 3600000));
+        var dow  = ist.getUTCDay() || 7;                        /* JS Sunday 0 → 7 */
+        var mins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+
+        var open = days.split(',').indexOf(String(dow)) !== -1 &&
+                   mins >= from * 60 && mins < until * 60;
+
+        el.textContent = open
+          ? {{ section.settings.state_open | json }}
+          : {{ section.settings.state_shut | json }};
+        el.className = 'sv-ct__state sv-ct__state--' + (open ? 'open' : 'shut');
+        el.hidden = false;
+      })();
+
+      /* ── Shared state ─────────────────────────────────────────────
+         One object, one writer. The reason, the order number and the
+         extra line all funnel through paint(), so the draft, the
+         WhatsApp link, the mailto and the form can never disagree
+         about what the visitor is asking. */
+      var reason = null;   /* { id, text, needsOrder, away } */
+      var order  = '';
+      var extra  = '';
+
+      var btns      = Array.prototype.slice.call(root.querySelectorAll('[data-sv-reason]'));
+      var waLinks   = Array.prototype.slice.call(root.querySelectorAll('[data-sv-wa]'));
+      var mailLinks = Array.prototype.slice.call(root.querySelectorAll('[data-sv-mail]'));
+      var awayCards = Array.prototype.slice.call(root.querySelectorAll('[data-sv-awaycard]'));
+
+      var draftEl  = root.querySelector('[data-sv-draft]');
+      var draftLab = root.querySelector('[data-sv-draftlab]');
+      var noteEl   = root.querySelector('[data-sv-draftnote]');
+      var routesEl = root.querySelector('[data-sv-routes]');
+      var orderStep = root.querySelector('[data-sv-orderstep]');
+      var extraStep = root.querySelector('[data-sv-extrastep]');
+      var extraNum  = root.querySelector('[data-sv-extranum]');
+      var orderIn   = root.querySelector('[data-sv-orderin]');
+      var extraIn   = root.querySelector('[data-sv-extrain]');
+
+      var formBody   = root.querySelector('[data-sv-formbody]');
+      var formOrder  = root.querySelector('[data-sv-formorder]');
+      var formReason = root.querySelector('[data-sv-formreason]');
+
+      /* The composer is only ever useful with script. Revealing it here
+         rather than in the markup means a visitor without script sees
+         the routes and the form and nothing that does not work. */
+      root.classList.add('sv-ct--live');
+
+      /* An entrance an element never got to play. A block that was
+         `hidden` while the observer swept has no box, so it never
+         intersects and would come back at opacity 0 for good. When we
+         put it back we finish its entrance outright rather than
+         animating in something the visitor has already seen. */
+      function settle(el) {
+        el.classList.add('sv-vis');
+        el.classList.add('sv-settled');
+      }
+
+      /* ── The message ──────────────────────────────────────────────
+         Composed rather than templated, so an empty field drops its
+         clause instead of leaving "Order ." hanging. */
+      function message() {
+        var out = OPEN;
+        if (reason && reason.text) out += ' ' + reason.text;
+        if (order) out += ' My order number is ' + order + '.';
+        if (extra) out += ' ' + extra;
+        return out;
+      }
+
+      function paint() {
+        var away = reason && reason.away;
+        var msg  = message();
+
+        /* The draft and the handoff are one slot with two faces. When
+           the reason is one this page cannot serve, there is no message
+           to show, so the message is not shown — label, text, note and
+           the routes under it all step aside together. */
+        if (draftEl)  draftEl.hidden  = !!away;
+        if (draftLab) draftLab.hidden = !!away;
+        if (noteEl)   noteEl.hidden   = !!away;
+        if (routesEl) { routesEl.hidden = !!away; if (!away) settle(routesEl); }
+        awayCards.forEach(function (card) {
+          card.hidden = !(away && card.getAttribute('data-sv-awaycard') === reason.id);
+        });
+
+        if (away) return;
+
+        if (draftEl) draftEl.textContent = msg;
+
+        waLinks.forEach(function (a) {
+          a.href = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
+        });
+
+        mailLinks.forEach(function (a) {
+          var subject = SUBJ + (order ? ' — ' + order : '');
+          a.href = 'mailto:' + MAIL +
+            '?subject=' + encodeURIComponent(subject) +
+            '&body=' + encodeURIComponent(msg);
+        });
+
+        /* The form is prefilled, never overwritten. Once somebody has
+           typed into it, it is theirs — a composer that keeps clearing
+           a half-written paragraph is worse than one that does nothing. */
+        if (formBody && !formBody.dataset.svTouched) formBody.value = msg;
+        if (formOrder && !formOrder.dataset.svTouched) formOrder.value = order;
+        if (formReason) formReason.value = reason ? reason.label : '';
+      }
+
+      function applyReason(next) {
+        reason = next;
+
+        btns.forEach(function (b) {
+          var on = !!next && b.getAttribute('data-sv-reason') === next.id;
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.classList.toggle('is-on', on);
+        });
+
+        /* The order field is asked for only where there is an order to
+           name, and the numbering closes up behind it rather than
+           leaving a gap where step 02 used to be. */
+        var wantsOrder = !!next && next.needsOrder && !next.away;
+        if (orderStep) orderStep.hidden = !wantsOrder;
+        if (!wantsOrder && orderIn) { orderIn.value = ''; order = ''; }
+
+        if (extraStep) extraStep.hidden = !next || next.away;
+        if (extraNum)  extraNum.textContent = wantsOrder ? '03' : '02';
+
+        paint();
+      }
+
+      btns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id = b.getAttribute('data-sv-reason');
+
+          /* A second click on the chosen reason clears it. Nothing on
+             this page should be a one-way door. */
+          if (reason && reason.id === id) { applyReason(null); return; }
+
+          applyReason({
+            id: id,
+            text: b.getAttribute('data-sv-text') || '',
+            label: (b.querySelector('.sv-ct__reasonlab') || {}).textContent || '',
+            needsOrder: b.getAttribute('data-sv-order') === '1',
+            away: b.getAttribute('data-sv-away') === '1'
+          });
+        });
+      });
+
+      if (orderIn) {
+        orderIn.addEventListener('input', function () {
+          order = orderIn.value.trim();
+          paint();
+        });
+      }
+
+      if (extraIn) {
+        extraIn.addEventListener('input', function () {
+          extra = extraIn.value.trim().replace(/\s+/g, ' ');
+          paint();
+        });
+      }
+
+      [formBody, formOrder].forEach(function (el) {
+        if (!el) return;
+        el.addEventListener('input', function () { el.dataset.svTouched = '1'; });
+      });
+
+      /* A returning visitor lands on the confirmation, not the top of a
+         page they have already read. */
+      var sent = root.querySelector('[data-sv-sent]');
+      if (sent) sent.focus();
+
+      paint();
+
+      /* ── Reveal on scroll ─────────────────────────────────────────
+         Same contract as sv-faq, sv-policy and the claim desk: fires
+         once, then unobserves, and a timer pins each entrance to its
+         finished state shortly after it should have arrived. Nothing
+         here may depend on a transition completing in order to be
+         read, and a throttled tab does not advance transitions. */
+      if (!calm && 'IntersectionObserver' in window) {
+        root.classList.add('sv-motion-ready');
+
+        var held = Array.prototype.slice.call(root.querySelectorAll('[data-sv-motion]'));
+
+        var reveal = function (el) {
+          if (el.classList.contains('sv-vis')) return;
+          el.classList.add('sv-vis');
+          mo.unobserve(el);
+          setTimeout(function () { el.classList.add('sv-settled'); }, 1800);
+        };
+
+        var mo = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) reveal(en.target); });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+
+        held.forEach(function (el) { mo.observe(el); });
+
+        /* The masthead is above the fold by definition. Waiting on an
+           observer to confirm what is already on screen buys nothing
+           but a chance of a blank one. */
+        var head = root.querySelector('.sv-ct__head');
+        if (head) reveal(head);
+
+        /* An observer reports a state, not every state an element
+           passed through. Scroll hard enough in one gesture and a
+           block can go from below the fold to above it without a
+           callback seeing it intersect, and it would stay invisible
+           for good. The sweep closes that.
+
+           On `document` in capture, never on `window`: this theme
+           scrolls .page-wrapper, so a window scroll listener never
+           fires here. */
+        var queued = false;
+        var sweep = function () {
+          queued = false;
+          var fold = window.innerHeight;
+          held.forEach(function (el) {
+            if (!el.classList.contains('sv-vis') &&
+                el.getBoundingClientRect().top < fold) reveal(el);
+          });
+        };
+
+        document.addEventListener('scroll', function () {
+          if (queued) return;
+          queued = true;
+          setTimeout(sweep, 180);
+        }, { capture: true, passive: true });
+
+        setTimeout(sweep, 1200);
+      }
+    })();
+  </script>
+</section>
+
+{% stylesheet %}
+  /* Colour, spacing, type scale and motion all come from sv-system.css.
+     Nothing below invents a token; where a value looks new it is a
+     token with an opacity on it. */
+
+  .sv-ct {
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+    padding: var(--d) 0 var(--f);
+  }
+
+  /* Compound, not bare: `.w` sets max-width at (0,1,0) and whichever of
+     the two files loads last would otherwise decide the measure. */
+  .sv-ct .sv-ct__inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1080px;
+  }
+
+  /* ── The ground ─────────────────────────────────────────────────── */
+  .sv-ct__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .sv-ct__weave,
+  .sv-ct__glow,
+  .sv-ct__petal { position: absolute; }
+
+  /* Two crossing thread fields. Each layer translates by exactly one
+     tile of its own gradient, which is what makes the loop seamless —
+     anything else visibly jumps at the wrap. */
+  .sv-ct__weave {
+    inset: -40px;
+    opacity: 0.44;
+    background-image:
+      repeating-linear-gradient(64deg, rgba(198, 161, 91, 0.10) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(-64deg, rgba(20, 82, 74, 0.07) 0 1px, transparent 1px 44px);
+  }
+
+  .sv-ct__glow {
+    width: 62vw;
+    height: 62vw;
+    max-width: 760px;
+    max-height: 760px;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.46;
+  }
+
+  .sv-ct__glow--a {
+    top: -16vw;
+    right: -20vw;
+    background: radial-gradient(circle, rgba(198, 161, 91, 0.30), transparent 68%);
+  }
+
+  .sv-ct__glow--b {
+    bottom: 6vw;
+    left: -22vw;
+    background: radial-gradient(circle, rgba(20, 82, 74, 0.16), transparent 70%);
+  }
+
+  .sv-ct__petal {
+    width: 30px;
+    fill: var(--emerald);
+    opacity: 0.05;
+  }
+
+  .sv-ct__petal--1 { top: 14%; left: 5%;  width: 40px; }
+  .sv-ct__petal--2 { top: 41%; right: 7%; width: 26px; }
+  .sv-ct__petal--3 { top: 68%; left: 9%;  width: 34px; }
+  .sv-ct__petal--4 { top: 88%; right: 5%; width: 44px; }
+
+  .sv-ct--bg-subtle .sv-ct__weave { opacity: 0.22; }
+  .sv-ct--bg-subtle .sv-ct__glow  { opacity: 0.28; }
+  .sv-ct--bg-subtle .sv-ct__petal { opacity: 0.03; }
+
+  /* Slow enough to read as weather rather than animation. */
+  @media (prefers-reduced-motion: no-preference) {
+    .sv-ct--bg-full .sv-ct__weave { animation: sv-ct-weave 44s linear infinite; }
+    .sv-ct--bg-full .sv-ct__glow--a { animation: sv-ct-drift-a 38s ease-in-out infinite alternate; }
+    .sv-ct--bg-full .sv-ct__glow--b { animation: sv-ct-drift-b 46s ease-in-out infinite alternate; }
+    .sv-ct--bg-full .sv-ct__petal { animation: sv-ct-adrift 30s ease-in-out infinite alternate; }
+    .sv-ct--bg-full .sv-ct__petal--2 { animation-duration: 38s; animation-delay: -6s; }
+    .sv-ct--bg-full .sv-ct__petal--3 { animation-duration: 34s; animation-delay: -14s; }
+    .sv-ct--bg-full .sv-ct__petal--4 { animation-duration: 42s; animation-delay: -22s; }
+  }
+
+  @keyframes sv-ct-weave   { to { transform: translate3d(34px, 44px, 0); } }
+  @keyframes sv-ct-drift-a { to { transform: translate3d(-5vw, 6vw, 0) scale(1.1); } }
+  @keyframes sv-ct-drift-b { to { transform: translate3d(6vw, -5vw, 0) scale(1.08); } }
+  @keyframes sv-ct-adrift  {
+    from { transform: translate3d(0, 0, 0) rotate(-8deg); }
+    to   { transform: translate3d(14px, -28px, 0) rotate(10deg); }
+  }
+
+  /* ── Masthead ───────────────────────────────────────────────────── */
+  .sv-ct__head { max-width: 40ch; }
+
+  [data-sv] .sv-ct__title {
+    margin-top: var(--b);
+    font-size: clamp(2.6rem, 6vw, 4.4rem);
+    color: var(--emerald);
+  }
+
+  .sv-ct__line { display: block; overflow: hidden; }
+  .sv-ct__line > span { display: block; }
+
+  [data-sv] .sv-ct__lead {
+    margin-top: var(--b);
+    max-width: 44ch;
+    color: var(--ink);
+    font-weight: 400;
+  }
+
+  /* The desk state. The pill is the only place on the page where gold
+     and emerald sit side by side at small scale, which is what makes it
+     read as a signal rather than a label. */
+  .sv-ct__hours {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px var(--a);
+    margin-top: var(--b);
+    padding-top: var(--a);
+    border-top: 1px solid rgba(198, 161, 91, 0.32);
+  }
+
+  .sv-ct__state {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .sv-ct__state::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .sv-ct__state--open { background: rgba(20, 82, 74, 0.10); color: var(--emerald); }
+  .sv-ct__state--shut { background: rgba(124, 119, 109, 0.12); color: var(--grey); }
+
+  [data-sv] .sv-ct__hourstext {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--grey);
+  }
+
+  /* ── The desk ───────────────────────────────────────────────────── */
+  /* 7:5, not equal columns — the composing is the work and the draft is
+     the witness, and equal columns would claim otherwise. */
+  .sv-ct__desk {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: var(--d) var(--f);
+    align-items: start;
+    margin-top: var(--f);
+  }
+
+  .sv-ct__side { position: sticky; top: var(--b); }
+
+  /* ── Steps ──────────────────────────────────────────────────────── */
+  .sv-ct__step + .sv-ct__step { margin-top: var(--c); }
+
+  .sv-ct__steplab {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: var(--a);
+  }
+
+  .sv-ct__stepnum {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--tan);
+    opacity: 0.7;
+  }
+
+  /* The composer only does anything with script, so it only appears
+     with script. Without it the page is the routes and the form, both
+     of which work. */
+  .sv-ct__step,
+  .sv-ct__reasons { display: none; }
+
+  .sv-ct--live .sv-ct__step { display: block; }
+  .sv-ct--live .sv-ct__step[hidden] { display: none; }
+  .sv-ct--live .sv-ct__reasons { display: grid; }
+
+  /* ── Reasons ────────────────────────────────────────────────────── */
+  .sv-ct__reasons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .sv-ct__reasonwrap { display: block; }
+
+  .sv-ct__reason {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--a);
+    width: 100%;
+    height: 100%;
+    padding: var(--a);
+    text-align: left;
+    background: var(--card);
+    border: 1px solid rgba(198, 161, 91, 0.30);
+    border-radius: var(--r-img);
+    cursor: pointer;
+    transition:
+      border-color var(--micro) var(--e),
+      box-shadow var(--std) var(--e),
+      transform var(--micro) var(--e);
+  }
+
+  .sv-ct__reason:hover {
+    border-color: var(--tan);
+    box-shadow: var(--sh-s);
+    transform: translateY(-2px);
+  }
+
+  .sv-ct__reason.is-on {
+    border-color: var(--emerald);
+    box-shadow: var(--sh-s), inset 0 0 0 1px var(--emerald);
+  }
+
+  /* The handoff reason is marked before it is chosen. A person whose
+     parcel arrived torn should be able to see, at a glance, that this
+     one is not the same kind of thing as the other four. */
+  .sv-ct__reason--away { border-style: dashed; }
+
+  .sv-ct__reasonart {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    margin-top: 2px;
+  }
+
+  .sv-ct__reasonart svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: var(--emerald);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sv-ct__reasonart .sv-ct-gold { stroke: var(--tan); }
+
+  .sv-ct__reasonbody { display: block; }
+
+  .sv-ct__reasonlab {
+    display: block;
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+
+  .sv-ct__reasonnote {
+    display: block;
+    margin-top: 5px;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 300;
+    line-height: 1.5;
+    color: var(--grey);
+  }
+
+  /* ── Fields ─────────────────────────────────────────────────────── */
+  .sv-ct__field {
+    width: 100%;
+    padding: 13px var(--a);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid rgba(198, 161, 91, 0.34);
+    border-radius: var(--r-img);
+    transition: border-color var(--micro) var(--e), box-shadow var(--micro) var(--e);
+  }
+
+  .sv-ct__field::placeholder { color: var(--grey); opacity: 0.66; }
+
+  .sv-ct__field:focus {
+    border-color: var(--emerald);
+    box-shadow: inset 0 -2px 0 var(--tan);
+    outline-offset: 2px;
+  }
+
+  .sv-ct__field--area { resize: vertical; line-height: 1.6; }
+
+  .sv-ct__fieldnote {
+    margin-top: 8px;
+    font-family: var(--sans);
+    font-size: 0.76rem;
+    color: var(--grey);
+  }
+
+  /* ── The one clause ─────────────────────────────────────────────── */
+  /* Sits between the form and the record, and is capped to the record's
+     own measure so the two read as one closing block rather than a card
+     that happens to be above a list. */
+  .sv-ct__rule {
+    display: flex;
+    gap: var(--b);
+    max-width: 780px;
+    margin-top: var(--f);
+    padding: var(--c);
+    background: var(--emerald);
+    color: var(--cream);
+    border-radius: var(--r-card);
+    box-shadow: var(--sh-s);
+  }
+
+  .sv-ct__ruleart { flex: none; width: 40px; height: 40px; }
+
+  .sv-ct__ruleart svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: rgba(251, 247, 239, 0.7);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sv-ct__ruleart .sv-ct-gold { stroke: var(--tan); fill: var(--tan); }
+
+  /* Compound: `.lab` paints gold at (0,1,0), and gold on emerald fails
+     contrast at label scale. */
+  .sv-ct .sv-ct__rulelab { color: rgba(251, 247, 239, 0.56); }
+
+  [data-sv] .sv-ct__ruletitle {
+    margin-top: 10px;
+    font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+    color: var(--cream);
+  }
+
+  [data-sv] .sv-ct__rulecopy p {
+    margin-top: var(--a);
+    max-width: 52ch;
+    font-size: 0.95rem;
+    font-weight: 300;
+    line-height: 1.65;
+    color: rgba(251, 247, 239, 0.8);
+  }
+
+  .sv-ct__rulelink {
+    display: inline-block;
+    margin-top: var(--b);
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--cream);
+    border-bottom: 1px solid var(--tan);
+    padding-bottom: 6px;
+    transition: opacity var(--micro);
+  }
+
+  .sv-ct__rulelink:hover { opacity: 0.66; }
+
+  /* ── The draft ──────────────────────────────────────────────────── */
+  /* Raised above the ground, because it is the one object on the page
+     that is about to leave it. */
+  .sv-ct__draft {
+    padding: var(--b);
+    background: var(--card);
+    border-radius: var(--r-card);
+    box-shadow: var(--sh-s);
+    border: 1px solid rgba(198, 161, 91, 0.26);
+  }
+
+  .sv-ct__draftlab { margin-bottom: var(--a); }
+
+  /* Serif, because this is the only copy on the page written in the
+     visitor's own voice rather than ours. The gold mark before it is
+     the quote opening. */
+  [data-sv] .sv-ct__drafttext {
+    position: relative;
+    max-width: none;
+    padding-left: var(--a);
+    font-family: var(--serif);
+    font-size: 1.16rem;
+    font-weight: 400;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  .sv-ct__drafttext::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--tan);
+    border-radius: 1px;
+  }
+
+  [data-sv] .sv-ct__draftnote {
+    margin-top: var(--a);
+    padding-top: var(--a);
+    border-top: 1px solid var(--cream-2);
+    font-size: 0.76rem;
+    line-height: 1.55;
+    color: var(--grey);
+  }
+
+  /* ── The handoff ────────────────────────────────────────────────── */
+  .sv-ct__away {
+    padding: var(--b);
+    margin: calc(var(--b) * -1);
+    background: var(--emerald);
+    color: var(--cream);
+    border-radius: var(--r-card);
+  }
+
+  .sv-ct .sv-ct__awaylab { color: var(--tan); }
+
+  [data-sv] .sv-ct__awaytitle {
+    margin-top: 10px;
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    line-height: 1.24;
+    max-width: none;
+    color: var(--cream);
+  }
+
+  [data-sv] .sv-ct__awaybody {
+    margin-top: var(--a);
+    max-width: none;
+    font-size: 0.88rem;
+    font-weight: 300;
+    line-height: 1.6;
+    color: rgba(251, 247, 239, 0.8);
+  }
+
+  /* Compound: `.btn` sets background and colour at (0,1,0), and on the
+     emerald card the button has to invert. */
+  .sv-ct .sv-ct__awaygo {
+    margin-top: var(--b);
+    background: var(--cream);
+    color: var(--emerald);
+  }
+
+  .sv-ct .sv-ct__awaygo:hover { background: var(--card); }
+
+  /* ── Routes ─────────────────────────────────────────────────────── */
+  .sv-ct__routes { margin-top: var(--b); }
+  .sv-ct__routelab { margin-bottom: var(--a); }
+
+  .sv-ct__route {
+    display: flex;
+    align-items: center;
+    gap: var(--a);
+    padding: 14px var(--a);
+    text-decoration: none;
+    border-radius: var(--r-img);
+    border: 1px solid transparent;
+    transition:
+      background-color var(--micro) var(--e),
+      border-color var(--micro) var(--e),
+      transform var(--micro) var(--e);
+  }
+
+  .sv-ct__route + .sv-ct__route { margin-top: 6px; }
+
+  .sv-ct__route:hover {
+    background: var(--card);
+    border-color: rgba(198, 161, 91, 0.34);
+    transform: translateX(3px);
+  }
+
+  /* The primary route is the one the business actually answers on, and
+     it is the only one carrying the emerald. */
+  .sv-ct__route--whatsapp {
+    background: var(--emerald);
+    border-color: var(--emerald);
+  }
+
+  .sv-ct__route--whatsapp:hover { background: var(--emerald-d); border-color: var(--emerald-d); }
+  .sv-ct__route--whatsapp .sv-ct__routename { color: var(--cream); }
+  .sv-ct__route--whatsapp .sv-ct__routemeta { color: var(--tan); }
+  .sv-ct__route--whatsapp .sv-ct__routenote { color: rgba(251, 247, 239, 0.72); }
+  .sv-ct__route--whatsapp .sv-ct__routego  { color: var(--cream); }
+  .sv-ct__route--whatsapp .sv-ct__routeart svg { stroke: rgba(251, 247, 239, 0.82); }
+  .sv-ct__route--whatsapp .sv-ct__routeart .sv-ct-gold { stroke: var(--tan); }
+
+  .sv-ct__routeart { flex: none; width: 26px; height: 26px; }
+
+  .sv-ct__routeart svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: var(--emerald);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sv-ct__routeart .sv-ct-gold { stroke: var(--tan); }
+
+  .sv-ct__routebody { flex: 1 1 auto; min-width: 0; }
+
+  .sv-ct__routetop {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+
+  .sv-ct__routename {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .sv-ct__routemeta {
+    font-family: var(--sans);
+    font-size: 0.64rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+
+  .sv-ct__routenote {
+    display: block;
+    margin-top: 3px;
+    font-family: var(--sans);
+    font-size: 0.76rem;
+    font-weight: 300;
+    line-height: 1.5;
+    color: var(--grey);
+  }
+
+  .sv-ct__routego { flex: none; color: var(--tan); font-size: 1rem; }
+
+  /* An email address is one unbreakable token and this line carries two
+     of them. Without this it runs off the side of a phone rather than
+     wrapping. */
+  .sv-ct__plain {
+    margin-top: var(--a);
+    font-family: var(--sans);
+    font-size: 0.76rem;
+    line-height: 1.9;
+    color: var(--grey);
+    overflow-wrap: anywhere;
+  }
+
+  .sv-ct__plain a {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-color: var(--tan);
+  }
+
+  /* ── The form ───────────────────────────────────────────────────── */
+  .sv-ct__formwrap {
+    margin-top: var(--f);
+    padding-top: var(--d);
+    border-top: 1px solid rgba(198, 161, 91, 0.32);
+  }
+
+  .sv-ct__formhead { max-width: 52ch; }
+
+  [data-sv] .sv-ct__formtitle {
+    margin-top: 10px;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    color: var(--emerald);
+  }
+
+  [data-sv] .sv-ct__formnote {
+    margin-top: var(--a);
+    font-size: 0.92rem;
+    color: var(--grey);
+  }
+
+  .sv-ct__form { margin-top: var(--c); max-width: 760px; }
+
+  .sv-ct__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--a) var(--b);
+  }
+
+  /* Each field wrapper is a <p>, and §02's `[data-sv] p` caps it at 56ch
+     from (0,1,1) — which would pinch the inputs inside their columns. */
+  [data-sv] .sv-ct__f { margin: 0; max-width: none; }
+  .sv-ct__f--wide { grid-column: 1 / -1; }
+
+  .sv-ct__flab {
+    display: block;
+    margin-bottom: 8px;
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+
+  .sv-ct__submit {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--a) var(--b);
+    margin-top: var(--b);
+  }
+
+  [data-sv] .sv-ct__fine { max-width: 42ch; color: var(--grey); }
+
+  [data-sv] .sv-ct__sent {
+    max-width: none;
+    margin-bottom: var(--b);
+    padding: var(--a) var(--b);
+    background: rgba(20, 82, 74, 0.08);
+    border-left: 2px solid var(--emerald);
+    border-radius: var(--r-img);
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    color: var(--emerald);
+  }
+
+  .sv-ct__errors {
+    margin-bottom: var(--b);
+    padding: var(--a) var(--b);
+    background: var(--cream-2);
+    border-left: 2px solid var(--tan);
+    border-radius: var(--r-img);
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    color: var(--ink);
+  }
+
+  .sv-ct__errors ul { list-style: disc; padding-left: 1.4em; }
+
+  /* ── The statutory foot ─────────────────────────────────────────── */
+  .sv-ct__foot {
+    margin-top: var(--c);
+    padding-top: var(--c);
+  }
+
+  .sv-ct__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: var(--b) var(--c);
+    margin: 0;
+  }
+
+  .sv-ct__fact { margin: 0; }
+
+  .sv-ct__factval {
+    margin: 10px 0 0;
+    font-family: var(--sans);
+    font-size: 0.86rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  .sv-ct__footlink { display: inline-block; margin-top: var(--c); }
+
+  /* ── Motion ─────────────────────────────────────────────────────── */
+  /* Armed by the gate snippet, released by the observer. Transform and
+     opacity only, per §08. */
+  .sv-ct.sv-motion-ready [data-sv-motion] {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity 0.85s var(--entrance), transform 0.85s var(--entrance);
+  }
+
+  .sv-ct.sv-motion-ready [data-sv-motion].sv-vis {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Once settled, the entrance stops owning the element — a throttled
+     tab must never leave a block half-transitioned. */
+  .sv-ct [data-sv-motion].sv-settled {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .sv-ct.sv-motion-ready .sv-ct__line > span {
+    transform: translateY(108%);
+    transition: transform 0.95s var(--e);
+  }
+
+  .sv-ct.sv-motion-ready .sv-ct__head.sv-vis .sv-ct__line > span { transform: none; }
+  .sv-ct.sv-motion-ready .sv-ct__line:nth-child(2) > span { transition-delay: 0.09s; }
+
+  /* The marks draw themselves as their card arrives. stroke-dashoffset
+     is neither a layout property nor unbounded — the exception §08
+     already allows. */
+  .sv-ct.sv-motion-ready .sv-ct__reasonart svg :is(path, line, circle, rect, polyline) {
+    stroke-dasharray: 260;
+    stroke-dashoffset: 260;
+    transition: stroke-dashoffset 1.1s var(--e);
+  }
+
+  .sv-ct.sv-motion-ready [data-sv-motion].sv-vis .sv-ct__reasonart svg :is(path, line, circle, rect, polyline) {
+    stroke-dashoffset: 0;
+  }
+
+  .sv-ct.sv-motion-ready [data-sv-motion].sv-vis .sv-ct__reasonwrap:nth-child(2) .sv-ct__reasonart svg * { transition-delay: 0.08s; }
+  .sv-ct.sv-motion-ready [data-sv-motion].sv-vis .sv-ct__reasonwrap:nth-child(3) .sv-ct__reasonart svg * { transition-delay: 0.16s; }
+  .sv-ct.sv-motion-ready [data-sv-motion].sv-vis .sv-ct__reasonwrap:nth-child(4) .sv-ct__reasonart svg * { transition-delay: 0.24s; }
+  .sv-ct.sv-motion-ready [data-sv-motion].sv-vis .sv-ct__reasonwrap:nth-child(5) .sv-ct__reasonart svg * { transition-delay: 0.32s; }
+
+  .sv-ct [data-sv-motion].sv-settled .sv-ct__reasonart svg * {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+
+  /* ── Narrow ─────────────────────────────────────────────────────── */
+  @media (max-width: 1000px) {
+    .sv-ct__desk {
+      grid-template-columns: 1fr;
+      gap: var(--c);
+      margin-top: var(--d);
+    }
+
+    /* Sticky in one column would park the draft over the reasons it is
+       meant to be describing. */
+    .sv-ct__side { position: static; }
+  }
+
+  @media (max-width: 760px) {
+    .sv-ct { padding: var(--c) 0 var(--d); }
+
+    .sv-ct__reasons { grid-template-columns: 1fr; }
+    .sv-ct__grid { grid-template-columns: 1fr; }
+    .sv-ct__rule { flex-direction: column; gap: var(--a); padding: var(--b); }
+    .sv-ct__formwrap,
+    .sv-ct__foot { margin-top: var(--d); }
+    .sv-ct__submit .btn { width: 100%; text-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sv-ct__weave,
+    .sv-ct__glow,
+    .sv-ct__petal { animation: none !important; }
+
+    .sv-ct.sv-motion-ready [data-sv-motion],
+    .sv-ct.sv-motion-ready .sv-ct__line > span {
+      opacity: 1;
+      transform: none;
+    }
+
+    .sv-ct.sv-motion-ready .sv-ct__reasonart svg * {
+      stroke-dasharray: none;
+      stroke-dashoffset: 0;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Contact",
+  "tag": "section",
+  "class": "sv-ct-mount",
+  "settings": [
+    { "type": "header", "content": "Masthead" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Talk to us" },
+    {
+      "type": "text",
+      "id": "title_a",
+      "label": "Title, first line",
+      "info": "Blank falls back to the page title.",
+      "default": "One family,"
+    },
+    { "type": "text", "id": "title_b", "label": "Title, second line", "default": "one inbox." },
+    {
+      "type": "textarea",
+      "id": "lead",
+      "label": "Lead",
+      "default": "The people who packed your parcel are the people who answer. Tell us what it is about and we will write a message worth sending."
+    },
+
+    { "type": "header", "content": "The desk state" },
+    {
+      "type": "paragraph",
+      "content": "The hours line itself comes from the shop metafield custom.support_hours. These settings only decide when the open or closed pill shows, in IST."
+    },
+    {
+      "type": "text",
+      "id": "open_days",
+      "label": "Open days",
+      "info": "Comma separated, 1 = Monday to 7 = Sunday.",
+      "default": "1,2,3,4,5,6"
+    },
+    { "type": "range", "id": "open_from", "label": "Opens (IST hour)", "min": 0, "max": 23, "step": 1, "default": 10 },
+    { "type": "range", "id": "open_until", "label": "Closes (IST hour)", "min": 1, "max": 24, "step": 1, "default": 19 },
+    { "type": "text", "id": "state_open", "label": "Open label", "default": "At the desk now" },
+    { "type": "text", "id": "state_shut", "label": "Closed label", "default": "Away from the desk" },
+
+    { "type": "header", "content": "The composer" },
+    { "type": "text", "id": "step_reason", "label": "Step 1 label", "default": "What is it about?" },
+    { "type": "text", "id": "step_order", "label": "Order number label", "default": "Your order number" },
+    { "type": "text", "id": "order_placeholder", "label": "Order number placeholder", "default": "SV-1043" },
+    {
+      "type": "text",
+      "id": "order_note",
+      "label": "Order number note",
+      "default": "On your confirmation email and your packing slip."
+    },
+    { "type": "text", "id": "step_extra", "label": "Extra line label", "default": "Anything to add" },
+    {
+      "type": "text",
+      "id": "extra_placeholder",
+      "label": "Extra line placeholder",
+      "default": "Optional — a size, a style name, a date."
+    },
+    {
+      "type": "text",
+      "id": "prefill_opener",
+      "label": "How every message opens",
+      "info": "The first words of the WhatsApp message, the email and the form. Everything the visitor chooses is added to it.",
+      "default": "Hi Sahasra Vastra,"
+    },
+    { "type": "text", "id": "draft_label", "label": "Draft label", "default": "Your message" },
+    {
+      "type": "textarea",
+      "id": "draft_note",
+      "label": "Draft note",
+      "default": "We answer once a working day, so the more your first message says, the sooner it is settled."
+    },
+
+    { "type": "header", "content": "Routes" },
+    { "type": "text", "id": "routes_label", "label": "Routes label", "default": "Send it" },
+    { "type": "text", "id": "plain_label", "label": "Plain details label", "default": "Or plainly:" },
+    { "type": "text", "id": "mail_subject", "label": "Email subject", "default": "A question for Sahasra Vastra" },
+
+    { "type": "header", "content": "The one clause" },
+    {
+      "type": "paragraph",
+      "content": "The page's single dark card. It only works while there is exactly one of it — leave the title blank to remove it rather than adding a second."
+    },
+    { "type": "text", "id": "rule_label", "label": "Label", "default": "Before you travel" },
+    {
+      "type": "text",
+      "id": "rule_title",
+      "label": "Title",
+      "default": "The address is an office, not a shop."
+    },
+    {
+      "type": "richtext",
+      "id": "rule_body",
+      "label": "Body",
+      "default": "<p>There is no counter and no rail to browse. Collection is free and genuinely welcome, but by appointment only — message us first, agree a time, and bring your order number. Please do not travel without arranging a slot.</p>"
+    },
+    { "type": "text", "id": "rule_link_label", "label": "Link label", "default": "Arrange a collection" },
+    { "type": "url", "id": "rule_link_url", "label": "Link" },
+
+    { "type": "header", "content": "The form" },
+    { "type": "text", "id": "form_label", "label": "Label", "default": "The slow way" },
+    { "type": "text", "id": "form_title", "label": "Title", "default": "Or write it here" },
+    {
+      "type": "textarea",
+      "id": "form_note",
+      "label": "Note",
+      "default": "This reaches the same inbox as the email above and is answered in the same working day. Use it if you would rather not open another app — and it fills itself in from whatever you chose above."
+    },
+    { "type": "text", "id": "f_name", "label": "Name field", "default": "Your name" },
+    { "type": "text", "id": "f_email", "label": "Email field", "default": "Email" },
+    { "type": "text", "id": "f_phone", "label": "Phone field", "default": "Phone (optional)" },
+    { "type": "text", "id": "f_order", "label": "Order field", "default": "Order number (if you have one)" },
+    { "type": "text", "id": "f_body", "label": "Message field", "default": "Your message" },
+    { "type": "text", "id": "form_submit", "label": "Submit label", "default": "Send it" },
+    {
+      "type": "text",
+      "id": "form_success",
+      "label": "Success message",
+      "default": "Thank you — it is with us. We answer within one working day."
+    },
+    {
+      "type": "text",
+      "id": "form_fine",
+      "label": "Fine print",
+      "default": "We use what you send only to answer you. See our Privacy Policy."
+    },
+
+    { "type": "header", "content": "The statutory foot" },
+    { "type": "text", "id": "foot_link_label", "label": "Link label", "default": "Full contact information" },
+    { "type": "url", "id": "foot_link_url", "label": "Link" },
+
+    { "type": "header", "content": "Ground" },
+    {
+      "type": "select",
+      "id": "bg_motion",
+      "label": "Background",
+      "options": [
+        { "value": "full", "label": "Full — weave, lights and petals drift" },
+        { "value": "subtle", "label": "Subtle — the same, quieter and still" },
+        { "value": "off", "label": "Off — plain ivory" }
+      ],
+      "default": "full"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "reason",
+      "name": "Reason",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Choosing a size" },
+        { "type": "text", "id": "note", "label": "Note", "default": "Send the two measurements and we will tell you the size." },
+        {
+          "type": "select",
+          "id": "art",
+          "label": "Mark",
+          "options": [
+            { "value": "size", "label": "Tape measure" },
+            { "value": "transit", "label": "Parcel on the road" },
+            { "value": "stock", "label": "Hanger" },
+            { "value": "wrong", "label": "Opened packet" },
+            { "value": "other", "label": "Speech mark" }
+          ],
+          "default": "other"
+        },
+        {
+          "type": "text",
+          "id": "prefill",
+          "label": "What this adds to the message",
+          "info": "One sentence, written as the visitor. It is appended to the opener.",
+          "default": "I need help choosing a size."
+        },
+        { "type": "checkbox", "id": "needs_order", "label": "Ask for an order number", "default": false },
+        {
+          "type": "header",
+          "content": "Hand off instead"
+        },
+        {
+          "type": "paragraph",
+          "content": "Give a link here and this reason stops composing a message. It shows the card below instead — for anything this page cannot settle."
+        },
+        { "type": "url", "id": "handoff_url", "label": "Hand off to" },
+        { "type": "text", "id": "handoff_label", "label": "Card label", "default": "This one has a clock on it" },
+        { "type": "text", "id": "handoff_title", "label": "Card title" },
+        { "type": "textarea", "id": "handoff_body", "label": "Card body" },
+        { "type": "text", "id": "handoff_cta", "label": "Card button", "default": "Report a problem" }
+      ]
+    },
+    {
+      "type": "route",
+      "name": "Route",
+      "settings": [
+        {
+          "type": "select",
+          "id": "kind",
+          "label": "Channel",
+          "info": "WhatsApp and email read their address from the shop metafields and carry the composed message. A route whose channel is empty in Admin is not rendered.",
+          "options": [
+            { "value": "whatsapp", "label": "WhatsApp" },
+            { "value": "email", "label": "Email" },
+            { "value": "link", "label": "Link" }
+          ],
+          "default": "whatsapp"
+        },
+        { "type": "text", "id": "label", "label": "Label", "default": "WhatsApp" },
+        { "type": "text", "id": "meta", "label": "Speed", "default": "Usually the same day" },
+        { "type": "text", "id": "note", "label": "Note", "default": "The fastest way in. Photos go straight through." },
+        {
+          "type": "select",
+          "id": "art",
+          "label": "Mark",
+          "options": [
+            { "value": "chat", "label": "Two speech marks" },
+            { "value": "mail", "label": "Envelope" },
+            { "value": "door", "label": "Door" },
+            { "value": "clock", "label": "Clock" }
+          ],
+          "default": "chat"
+        },
+        {
+          "type": "text",
+          "id": "url",
+          "label": "Link",
+          "info": "Used by the Link channel only. Text rather than a link picker so an on-page anchor such as #sv-ct-form is allowed."
+        }
+      ]
+    },
+    {
+      "type": "fact",
+      "name": "Statutory fact",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Registered address" },
+        {
+          "type": "select",
+          "id": "source",
+          "label": "Read from",
+          "info": "Everything but Typed comes from Admin and is never restated here. A fact with nothing behind it renders nothing at all.",
+          "options": [
+            { "value": "address", "label": "Shop address" },
+            { "value": "gstin", "label": "GSTIN metafield" },
+            { "value": "officer", "label": "Grievance Officer metafield" },
+            { "value": "hours", "label": "Support hours metafield" },
+            { "value": "email", "label": "Support email metafield" },
+            { "value": "whatsapp", "label": "WhatsApp number metafield" },
+            { "value": "typed", "label": "Typed below" }
+          ],
+          "default": "address"
+        },
+        { "type": "text", "id": "value", "label": "Typed value" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "SV Contact" }]
+}
+{% endschema %}

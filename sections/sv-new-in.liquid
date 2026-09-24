@@ -1,0 +1,803 @@
+{% doc %}
+  New in — the drop. The second band the curtain brings up, directly
+  under Shop by Age: the newest garments, in real photography, four to
+  a row.
+
+  ── Shape ─────────────────────────────────────────────────────────────
+  head   the same centred emerald eyebrow as Shop by Age — the two bands
+         must read as one page — with an optional grey line under it and
+         a View-all hand-off to the collection.
+  cards  product photography at the catalogue ratio (4:5, §06), serif
+         name, serif price. No add-to-cart here: this band's job is the
+         invitation, the product page does the selling.
+
+  ── Source ────────────────────────────────────────────────────────────
+  Admin points it at a collection (New Arrivals). While that collection
+  is empty — as it is before the first drop is assigned — the band
+  falls back to All products rather than rendering an empty frame, and
+  if the store itself has nothing to show the section skips whole.
+
+  Rules kept: tokens only; motion per §08 (transform/opacity, one
+  IntersectionObserver, armed by sv-motion-gate as the FIRST child);
+  links and the collection come from Admin, never typed here.
+{% enddoc %}
+
+{%- liquid
+  assign col = section.settings.collection
+  if col == blank or col.products_count == 0
+    assign col = collections.all
+  endif
+  assign limit = section.settings.limit | default: 4
+-%}
+
+{%- if col.products_count > 0 -%}
+<section class="sv-drop sv-amb-host" data-sv>
+
+  {%- render 'sv-motion-gate' -%}
+
+  {%- comment -%}
+    Ambient ground (sv-system §08c) — the same moving backdrop as the
+    band above, so the page reads as one continuous surface.
+  {%- endcomment -%}
+  {%- render 'sv-ambient' -%}
+
+  <div class="w w--wide">
+
+    <header class="sv-drop__head">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="eyebrow sv-drop__eyebrow" data-sv-motion>{{ section.settings.eyebrow }}</p>
+      {%- endif -%}
+      <h2 class="sv-visually-hidden">{{ section.settings.eyebrow | default: 'New in' }}</h2>
+      {%- if section.settings.line != blank -%}
+        <p class="sv-drop__line" data-sv-motion>{{ section.settings.line }}</p>
+      {%- endif -%}
+    </header>
+
+    {%- comment -%}
+      The campaign strip — where the one wide launch frame used to sit.
+      One frame said one thing about a drop of several; the strip runs
+      two to three narrower frames at a time and scrolls, so the
+      campaign photography leads the section instead of competing for a
+      cell inside the product shelf (owner's direction, Sep 2026: the
+      first-drop portrait moved up here out of the rail).
+
+      Frames come from `campaign frame` blocks. With none set it falls
+      back to the two images the section already held — the wide banner
+      and the campaign portrait — so nothing is lost on a theme that
+      has not been re-edited in Admin. It is a native scroll-snap row:
+      a thumb swipes it with no script at all.
+    {%- endcomment -%}
+    {%- liquid
+      assign frame_count = section.blocks.size
+      if frame_count == 0
+        if section.settings.banner
+          assign frame_count = frame_count | plus: 1
+        endif
+        if section.settings.campaign
+          assign frame_count = frame_count | plus: 1
+        endif
+      endif
+    -%}
+    {%- if frame_count > 0 -%}
+      <div class="sv-drop__strip" data-sv-motion>
+        {%- comment -%}
+          Arrows for a pointer; the row still swipes with a thumb and
+          still advances itself. They hide themselves when every frame
+          already fits, and each one greys out at its end of the run so
+          the strip never pretends there is more to see.
+        {%- endcomment -%}
+        <button type="button" class="sv-drop__arrow sv-drop__arrow--prev" data-drop-strip-prev aria-label="Previous campaign frame" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button type="button" class="sv-drop__arrow sv-drop__arrow--next" data-drop-strip-next aria-label="Next campaign frame" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <div class="sv-drop__strip-row" data-drop-strip>
+          {%- if section.blocks.size > 0 -%}
+            {%- for block in section.blocks -%}
+              {%- if block.settings.image != blank -%}
+                <a
+                  class="sv-drop__frame-slide"
+                  href="{{ block.settings.link | default: col.url }}"
+                  {{ block.shopify_attributes }}
+                >
+                  {%- comment -%}
+                    Slides are as wide as their own picture, so the
+                    served rendition is chosen against the row's height,
+                    not a column width — a wide frame at 470px tall asks
+                    for ~1200px of pixels, and the old 38vw hint fetched
+                    a 558px file for it.
+                  {%- endcomment -%}
+                  {{ block.settings.image | image_url: width: 1800 | image_tag:
+                    loading: 'lazy',
+                    widths: '600,900,1400,1800',
+                    sizes: '(max-width: 760px) 90vw, 1200px',
+                    alt: block.settings.image.alt | default: block.settings.label
+                  }}
+                  {%- if block.settings.label != blank -%}
+                    <span class="sv-drop__frame-label">{{ block.settings.label }}</span>
+                  {%- endif -%}
+                </a>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- else -%}
+            {%- if section.settings.banner -%}
+              <a class="sv-drop__frame-slide" href="{{ col.url }}">
+                {{ section.settings.banner | image_url: width: 1800 | image_tag:
+                  loading: 'lazy',
+                  widths: '600,900,1400,1800',
+                  sizes: '(max-width: 760px) 90vw, 1200px',
+                  alt: section.settings.banner.alt | default: section.settings.eyebrow
+                }}
+              </a>
+            {%- endif -%}
+            {%- if section.settings.campaign -%}
+              <a class="sv-drop__frame-slide" href="{{ col.url }}">
+                {{ section.settings.campaign | image_url: width: 1800 | image_tag:
+                  loading: 'lazy',
+                  widths: '600,900,1400,1800',
+                  sizes: '(max-width: 760px) 90vw, 1200px',
+                  alt: section.settings.campaign.alt | default: section.settings.campaign_label
+                }}
+                {%- if section.settings.campaign_label != blank -%}
+                  <span class="sv-drop__frame-label">{{ section.settings.campaign_label }}</span>
+                {%- endif -%}
+              </a>
+            {%- endif -%}
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+
+    <div class="sv-drop__shelf">
+    {%- comment -%}
+      The shelf glides only when it has something to glide for: the
+      driver arms the rail when there are more cards than a row holds,
+      on a pointer-and-desktop width, outside reduced motion. Hover,
+      focus, a hidden tab or the pause roundel all still it (WCAG
+      2.2.2); phones always scroll it with a thumb.
+    {%- endcomment -%}
+    <div class="sv-drop__grid" {% if section.settings.auto_scroll %}data-drop-rail{% endif %}>
+      {%- comment -%}
+        The shelf is products only now: the campaign portrait moved up
+        into the strip above, where it is read as campaign photography
+        rather than mistaken for a garment on sale.
+      {%- endcomment -%}
+      {%- assign show = limit -%}
+      {%- comment -%}
+        Two passes: photographed products lead the shelf; anything still
+        waiting on its photography joins at the right-hand end, so the
+        plain placeholder frames never break up the pictures.
+      {%- endcomment -%}
+      {%- liquid
+        # dealt counts CELLS on the shelf and doubles as the
+        # reveal-stagger index. budget is the row total.
+        assign dealt = 0
+        assign budget = show
+      -%}
+      {%- for product in col.products -%}
+        {%- if dealt >= budget -%}{%- break -%}{%- endif -%}
+        {%- if product.featured_image -%}
+          {%- render 'sv-drop-card', product: product, idx: dealt -%}
+          {%- assign dealt = dealt | plus: 1 -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- for product in col.products -%}
+        {%- if dealt >= budget -%}{%- break -%}{%- endif -%}
+        {%- unless product.featured_image -%}
+          {%- render 'sv-drop-card', product: product, idx: dealt -%}
+          {%- assign dealt = dealt | plus: 1 -%}
+        {%- endunless -%}
+      {%- endfor -%}
+    </div>
+
+    {%- comment -%}
+      The shelf takes the strip's arrows too: it glides on its own, but
+      a visitor who wants to look at the next garment now should not
+      have to wait for it, and on a phone the row is swiped.
+    {%- endcomment -%}
+    <button type="button" class="sv-drop__arrow sv-drop__arrow--prev sv-drop__arrow--rail" data-drop-rail-prev aria-label="Previous products" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <button type="button" class="sv-drop__arrow sv-drop__arrow--next sv-drop__arrow--rail" data-drop-rail-next aria-label="More products" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+
+    {%- if section.settings.auto_scroll -%}
+      <button class="sv-drop__railtoggle" type="button" data-drop-rail-toggle aria-pressed="false" aria-label="Pause the product rail" hidden>
+        <svg class="sv-drop__glyph sv-drop__glyph--pause" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <path d="M8 5h3v14H8zM13 5h3v14h-3z"/>
+        </svg>
+        <svg class="sv-drop__glyph sv-drop__glyph--play" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <path d="M8 5l11 7-11 7z"/>
+        </svg>
+      </button>
+    {%- endif -%}
+    </div>
+
+    <p class="sv-drop__more" data-sv-motion>
+      <a class="act" href="{{ col.url }}">{{ section.settings.cta_label | default: 'View everything new' }}</a>
+    </p>
+
+  </div>
+
+  {%- comment -%}
+    Motion driver — the section family's, verbatim in shape (sv-about,
+    sv-shop-by-age). Hidden state exists only under .sv-motion-ready.
+  {%- endcomment -%}
+  <script>
+    (() => {
+      const root = document.currentScript.closest('.sv-drop');
+      if (!root) return;
+      const targets = root.querySelectorAll('[data-sv-motion]');
+      if (!('IntersectionObserver' in window) ||
+          matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        targets.forEach(el => el.classList.add('sv-vis'));
+        return;
+      }
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('sv-vis');
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+      targets.forEach(el => io.observe(el));
+      setTimeout(() => {
+        targets.forEach(el => {
+          const r = el.getBoundingClientRect();
+          if (r.top < innerHeight && r.bottom > 0) el.classList.add('sv-vis');
+        });
+      }, 1200);
+
+      /* ── the shelf ─────────────────────────────────────────────────
+         A native scroll-snap row, not a transform marquee. The marquee
+         moved one card per click behind a 0.7s transition and could not
+         be swiped at desktop width: a click felt like waiting for
+         something to load, and a trackpad flick did nothing. Scrolling
+         the row instead is instant, swipes on every device, and keeps
+         the browser's own momentum and back-button behaviour.
+
+         It still drifts on its own — one card every few seconds — and
+         still stops for a pointer, a keyboard, a hidden tab, the pause
+         roundel, or the moment the reader scrolls it themselves. */
+      /* One answer for both rows: 'smooth' unless the visitor asked for
+         less motion, in which case the jump is instant rather than
+         cancelled. */
+      const STILL = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* A scroll we drive ourselves: sets scrollLeft frame by frame, so
+         it cannot be dropped by the browser's own smooth-scroll and it
+         stops dead the moment someone touches the row. */
+      const glideTo = (el, to, ms) => {
+        const from = el.scrollLeft;
+        const span = to - from;
+        if (STILL || !span) {
+          el.scrollLeft = to;
+          return;
+        }
+        /* Stepped on a timer rather than requestAnimationFrame: rAF is
+           throttled to a standstill while the window is occluded, and a
+           glide that never ran left the arrows looking broken. A timer
+           still fires, and the row still lands exactly on the target. */
+        clearInterval(el._svGlide);
+        const started = Date.now();
+        el._svGlide = setInterval(() => {
+          const t = Math.min(1, (Date.now() - started) / ms);
+          const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          el.scrollLeft = from + span * eased;
+          if (t >= 1) clearInterval(el._svGlide);
+        }, 16);
+      };
+
+      const rail = root.querySelector('[data-drop-rail]');
+      const railToggle = root.querySelector('[data-drop-rail-toggle]');
+      if (rail) {
+        const railPrev = root.querySelector('[data-drop-rail-prev]');
+        const railNext = root.querySelector('[data-drop-rail-next]');
+        let paused = false;
+        let touched = false;
+
+        const overflows = () => rail.scrollWidth - rail.clientWidth > 8;
+
+        /* Scroll to a CARD's own left edge rather than by a measured
+           step: with mandatory snapping a step that lands a pixel short
+           is snapped back where it came from, which is why the arrows
+           appeared to do nothing. */
+        const cards = () => Array.from(rail.children);
+
+        const edgeOf = (card) => card.offsetLeft - rail.offsetLeft;
+
+        const nextEdge = (back) => {
+          const here = rail.scrollLeft;
+          const list = cards().map(edgeOf);
+          if (!list.length) return here;
+          return back
+            ? [...list].reverse().find((x) => x < here - 4) ?? 0
+            : list.find((x) => x > here + 4) ?? list[list.length - 1];
+        };
+
+        const paintArrows = () => {
+          const show = overflows();
+          [railPrev, railNext].forEach((b) => { if (b) b.hidden = !show; });
+          if (railToggle) railToggle.hidden = !show;
+          if (!show) return;
+          if (railPrev) railPrev.disabled = rail.scrollLeft <= 2;
+          if (railNext) railNext.disabled = rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2;
+        };
+
+        const go = (back) => {
+          glideTo(rail, nextEdge(back), 420);
+          /* The row's own scroll event can arrive before the glide has
+             finished moving, which left an arrow disabled at a position
+             it had already left. The ends are re-checked once the glide
+             is over. */
+          setTimeout(paintArrows, 480);
+        };
+
+        if (railPrev) railPrev.addEventListener('click', () => { touched = true; go(true); });
+        if (railNext) railNext.addEventListener('click', () => { touched = true; go(false); });
+
+        if (railToggle) {
+          railToggle.addEventListener('click', () => {
+            paused = !paused;
+            railToggle.setAttribute('aria-pressed', String(paused));
+            railToggle.setAttribute('aria-label', paused ? 'Play the product rail' : 'Pause the product rail');
+          });
+        }
+
+        /* §08's reveal only lights an element when it crosses the
+           VIEWPORT, which a horizontal scroller's later cards never do
+           while they sit off to the right: they stayed at opacity 0 and
+           arrived blank, which read as the shelf loading on every click.
+           Cards in a scroller are revealed with the row itself. */
+        const lightCards = () => {
+          rail.querySelectorAll('[data-sv-motion]').forEach((el) => el.classList.add('sv-vis'));
+        };
+        lightCards();
+
+        rail.addEventListener('scroll', paintArrows, { passive: true });
+        rail.addEventListener('pointerdown', () => { touched = true; });
+        window.addEventListener('resize', paintArrows);
+        paintArrows();
+
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          setInterval(() => {
+            if (paused || touched || document.hidden || !overflows()) return;
+            if (rail.matches(':hover') || rail.matches(':focus-within')) return;
+            const end = rail.scrollWidth - rail.clientWidth - 2;
+            glideTo(rail, rail.scrollLeft >= end ? 0 : nextEdge(false), 600);
+          }, 3600);
+        }
+      }
+
+      /* The campaign strip advances itself one frame at a time, and
+         stops for a pointer, a keyboard, a hidden tab or a reader who
+         has scrolled it by hand — the same courtesies the product rail
+         takes. With script off it is still a scroll-snap row. */
+      const strip = root.querySelector('[data-drop-strip]');
+      if (strip) {
+        const prev = root.querySelector('[data-drop-strip-prev]');
+        const next = root.querySelector('[data-drop-strip-next]');
+        const slide = () => {
+          const first = strip.firstElementChild;
+          const gap = parseFloat(getComputedStyle(strip).gap) || 16;
+          return first ? first.offsetWidth + gap : strip.clientWidth * 0.8;
+        };
+        const paintArrows = () => {
+          const over = strip.scrollWidth - strip.clientWidth > 8;
+          [prev, next].forEach((b) => { if (b) b.hidden = !over; });
+          if (!over) return;
+          if (prev) prev.disabled = strip.scrollLeft <= 2;
+          if (next) next.disabled = strip.scrollLeft >= strip.scrollWidth - strip.clientWidth - 2;
+        };
+        if (prev) prev.addEventListener('click', () => glideTo(strip, strip.scrollLeft - slide(), 420));
+        if (next) next.addEventListener('click', () => glideTo(strip, strip.scrollLeft + slide(), 420));
+        strip.addEventListener('scroll', paintArrows, { passive: true });
+        window.addEventListener('resize', paintArrows);
+        paintArrows();
+      }
+      if (strip && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        let touched = false;
+        strip.addEventListener('pointerdown', () => { touched = true; });
+        setInterval(() => {
+          if (touched || document.hidden) return;
+          if (strip.matches(':hover') || strip.matches(':focus-within')) return;
+          const first = strip.firstElementChild;
+          if (!first || strip.children.length < 2) return;
+          const gap = parseFloat(getComputedStyle(strip).gap) || 16;
+          const step = first.offsetWidth + gap;
+          const end = strip.scrollWidth - strip.clientWidth - 2;
+          glideTo(strip, strip.scrollLeft >= end ? 0 : strip.scrollLeft + step, 600);
+        }, 4200);
+      }
+    })();
+  </script>
+</section>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Tokens only; rules written .sv-drop .sv-drop__* at (0,2,0) to clear
+     the §02 reset, same as sv-shop-by-age. */
+
+  /* Close ranks with the band above — the age chips end 28px up, so
+     the two sections read as one page rather than two rooms. */
+  [data-sv].sv-drop {
+    padding: var(--b) 0 var(--d);
+  }
+
+  .sv-drop .sv-drop__head {
+    text-align: center;
+    margin-bottom: var(--c);
+  }
+  .sv-drop .sv-drop__eyebrow {
+    justify-content: center;
+    font-size: .92rem;
+    font-weight: 500;
+    letter-spacing: .26em;
+    color: var(--emerald);
+  }
+  .sv-drop .sv-drop__eyebrow::after {
+    content: "";
+    width: 44px;
+    height: 1px;
+    background: var(--tan);
+  }
+  .sv-drop .sv-drop__line {
+    margin: var(--a) auto 0;
+    font-size: .95rem;
+  }
+
+  /* The campaign strip: two to three narrower frames at a time on a
+     native scroll-snap row, so the drop is shown as a set rather than
+     one wide picture. Slide width is a fraction of the row, which is
+     what makes the next frame peek in and read as scrollable. */
+  .sv-drop .sv-drop__strip {
+    position: relative;
+    margin-block: 0 var(--d, 40px);
+  }
+
+  .sv-drop .sv-drop__arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    inline-size: 46px;
+    block-size: 46px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--cream, #fbf7ef) 92%, transparent);
+    color: var(--emerald, #14524a);
+    box-shadow: 0 2px 12px rgba(26, 26, 26, 0.16);
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  /* `display: grid` above would out-rank the [hidden] attribute, so an
+     arrow asked to hide would stay on screen. */
+  .sv-drop .sv-drop__arrow[hidden] {
+    display: none;
+  }
+
+  .sv-drop .sv-drop__arrow svg {
+    inline-size: 20px;
+    block-size: 20px;
+  }
+
+  .sv-drop .sv-drop__arrow--prev { left: 12px; }
+  .sv-drop .sv-drop__arrow--next { right: 12px; }
+
+  /* On the shelf the arrows sit against the first row of cards rather
+     than the middle of a tall block. */
+  .sv-drop .sv-drop__arrow--rail {
+    top: 40%;
+  }
+
+
+
+  .sv-drop .sv-drop__arrow:hover {
+    transform: translateY(-50%) scale(1.06);
+  }
+
+  .sv-drop .sv-drop__arrow[disabled] {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .sv-drop .sv-drop__arrow:focus-visible {
+    outline: 2px solid var(--emerald, #14524a);
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 760px) {
+    .sv-drop .sv-drop__arrow {
+      inline-size: 38px;
+      block-size: 38px;
+    }
+  }
+
+  .sv-drop .sv-drop__strip-row {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-block-end: 4px;
+  }
+
+  .sv-drop .sv-drop__strip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Frames are never cropped: each slide is as wide as its own
+     photograph at the row's height, so a wide playroom frame stays wide
+     and a portrait stays a portrait. That is what the carousel is for —
+     the row scrolls rather than forcing every picture into one window,
+     which is how the banner lost its edges before. */
+  .sv-drop .sv-drop__frame-slide {
+    position: relative;
+    flex: 0 0 auto;
+    block-size: clamp(260px, 34vw, 470px);
+    border-radius: 20px;
+    overflow: hidden;
+    display: block;
+    background: color-mix(in srgb, var(--emerald, #14524a) 6%, transparent);
+  }
+
+  .sv-drop .sv-drop__frame-slide img {
+    display: block;
+    block-size: 100%;
+    inline-size: auto;
+    max-inline-size: none;
+    object-fit: contain;
+    transition: transform 0.6s cubic-bezier(0.33, 0, 0.2, 1);
+  }
+
+  .sv-drop .sv-drop__frame-slide:hover img {
+    transform: scale(1.02);
+  }
+
+  .sv-drop .sv-drop__frame-label {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: var(--emerald, #14524a);
+    color: var(--cream, #fbf7ef);
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 760px) {
+    .sv-drop .sv-drop__frame-slide {
+      block-size: 240px;
+    }
+
+    .sv-drop .sv-drop__frame-label {
+      left: 12px;
+      bottom: 12px;
+      padding: 8px 14px;
+      font-size: 0.66rem;
+    }
+  }
+
+  /* The campaign portrait keeps its own proportions — a 4:5 crop was
+     taking the second child's legs off. The frame follows the image
+     instead of imposing the catalogue ratio. */
+  .sv-drop .sv-drop__card--campaign .sv-drop__frame {
+    aspect-ratio: auto;
+  }
+  .sv-drop .sv-drop__card--campaign .sv-drop__frame img {
+    position: static;
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: unset;
+  }
+
+  .sv-drop .sv-drop__campaign-label {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 2;
+    background: var(--emerald);
+    color: var(--cream);
+    font-family: var(--sans);
+    font-size: .6rem;
+    font-weight: 500;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-radius: 999px;
+  }
+
+  .sv-drop .sv-drop__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--b);
+  }
+  @media (max-width: 980px) {
+    .sv-drop .sv-drop__grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--c) var(--a);
+    }
+  }
+
+  /* The shelf as a rail — flex row, clipped, each card a quarter of the
+     row so the resting frame matches the grid exactly; the driver only
+     arms it past four cards, on desktop, outside reduced motion. */
+  .sv-drop .sv-drop__shelf {
+    position: relative;
+  }
+  /* The shelf scrolls at every width: four to a view on a desktop, a
+     card and a bit on a phone. */
+  .sv-drop .sv-drop__grid {
+    display: flex;
+    gap: var(--b);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-block-end: 4px;
+  }
+
+  /* No `scroll-behavior: smooth` on either row. On this page a
+     programmatic scroll against it never ran at all — the arrows moved
+     nothing — so the glide is animated in script instead, where it can
+     be seen to work and can be skipped for reduced motion. */
+
+  .sv-drop .sv-drop__grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* No scroll snapping on either row. Snapping clamps every value a
+     scroll passes through, including the frames of an animation, and
+     the glide below lands on a card's own edge anyway — the two
+     together only fought each other. */
+  .sv-drop .sv-drop__grid > * {
+    flex: 0 0 calc((100% - (var(--b) * 3)) / 4);
+  }
+
+  @media (max-width: 899px) {
+    .sv-drop .sv-drop__grid > * {
+      flex-basis: 62%;
+    }
+  }
+
+  .sv-drop .sv-drop__card {
+    display: block;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .sv-drop .sv-drop__frame {
+    display: block;
+    transition: transform var(--std) var(--e), box-shadow var(--std) var(--e);
+    box-shadow: var(--sh-s);
+  }
+  .sv-drop .sv-drop__card:hover .sv-drop__frame {
+    transform: translateY(-4px);
+    box-shadow: var(--sh);
+  }
+  .sv-drop .sv-drop__frame img {
+    transition: transform var(--slow) var(--e);
+  }
+  .sv-drop .sv-drop__card:hover .sv-drop__frame img {
+    transform: scale(1.04);
+  }
+
+  .sv-drop .sv-drop__name {
+    display: block;
+    margin-top: var(--a);
+    font-family: var(--serif);
+    font-size: 1.06rem;
+    line-height: 1.3;
+  }
+  .sv-drop .sv-drop__card:hover .sv-drop__name {
+    color: var(--emerald);
+  }
+  .sv-drop .sv-drop__price {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--serif);
+    font-size: 1rem;
+    color: var(--emerald);
+  }
+  .sv-drop .sv-drop__was {
+    color: var(--grey);
+    margin-right: 8px;
+    font-size: .9em;
+  }
+
+  .sv-drop .sv-drop__more {
+    text-align: center;
+    margin-top: var(--c);
+  }
+
+  /* Motion — armed by the gate, released by the driver, staggered by
+     card index. */
+  .sv-drop.sv-motion-ready [data-sv-motion] {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition: opacity .85s var(--entrance), transform .85s var(--entrance);
+    transition-delay: calc(var(--i, 0) * var(--stagger));
+  }
+  .sv-drop.sv-motion-ready [data-sv-motion].sv-vis {
+    opacity: 1;
+    transform: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV New In — The Drop",
+  "tag": "section",
+  "class": "sv-drop-mount",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "New in — the drop" },
+    {
+      "type": "text",
+      "id": "line",
+      "label": "Line under the eyebrow",
+      "default": "What's just arrived, in real garment photography."
+    },
+    { "type": "header", "content": "Launch imagery" },
+    {
+      "type": "image_picker",
+      "id": "banner",
+      "label": "Launch banner (fallback)",
+      "info": "Used as a strip frame only when no Campaign frame blocks are added."
+    },
+    {
+      "type": "image_picker",
+      "id": "campaign",
+      "label": "Campaign portrait",
+      "info": "Leads the shelf as a launch card in the first cell; one fewer product shows beside it. Blank drops it."
+    },
+    { "type": "text", "id": "campaign_label", "label": "Campaign label (fallback)", "default": "The first drop" },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection",
+      "info": "While this collection is empty the band shows All products instead of an empty frame."
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Products shown",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "auto_scroll",
+      "label": "Glide the shelf",
+      "info": "With more cards than fit one row, the shelf steps sideways on its own — pausable, still under hover or focus, off with reduced motion; phones always scroll it by thumb. Raise \"Products shown\" above 4 to give it something to glide for.",
+      "default": true
+    },
+    { "type": "text", "id": "cta_label", "label": "View-all label", "default": "View everything new" }
+  ],
+  "blocks": [
+    {
+      "type": "frame",
+      "name": "Campaign frame",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Photograph", "info": "Shown in a 4:5 frame; two to three sit side by side." },
+        { "type": "text", "id": "label", "label": "Label", "info": "Optional pill over the frame, e.g. The first drop." },
+        { "type": "url", "id": "link", "label": "Link", "info": "Blank links to the section's collection." }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [
+    { "name": "SV New In — The Drop" }
+  ]
+}
+{% endschema %}

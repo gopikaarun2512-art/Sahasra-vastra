@@ -1,0 +1,58 @@
+{% doc %}
+  The announcement line, composed from shop metafields — never typed.
+  Extracted from sv-announcement.liquid so the homepage hero's floating
+  chrome can carry the same line while the standard bar is hidden there
+  (Phase 1.1). One source, two surfaces, zero drift.
+
+  Renders a <p> (or an <a> when link_url is given), or NOTHING when both
+  metafields are empty — callers capture and blank-check.
+
+  @param {string} [class] - classes for the line element
+  @param {string} [link_url] - wraps the line in a link when present
+
+  @example
+  {% capture line %}{% render 'sv-announcement-line', class: 'sv-fine' %}{% endcapture %}
+{% enddoc %}
+
+{%- liquid
+  assign kerala = shop.metafields.custom.delivery_charge_kerala.value
+  assign threshold = shop.metafields.custom.free_shipping_threshold.value
+
+  # The two fields are different types and need different handling. Verified
+  # against the live store, not assumed:
+  #
+  #   free_shipping_threshold  money           .value is ALREADY in the
+  #                                            currency subunit (₹499 -> 49900),
+  #                                            so the money filter takes it raw.
+  #   delivery_charge_kerala   number_integer  .value is whatever was typed,
+  #                                            i.e. rupees, so it is scaled up.
+  #
+  # Note .value.amount does NOT resolve in Liquid for a money metafield — that
+  # shape belongs to the Admin API. Printing the metafield itself emits raw
+  # JSON, so neither is used. The symbol comes from Shopify's currency
+  # formatting; a typed "₹" never appears.
+  assign threshold_money = threshold | money_without_trailing_zeros
+  assign kerala_money = kerala | times: 100 | round | money_without_trailing_zeros
+-%}
+
+{%- capture raw_parts -%}
+  {%- if kerala != blank -%}Delivery {{ kerala_money }} in Kerala~{%- endif -%}
+  {%- if threshold != blank -%}Free delivery over {{ threshold_money }} across India~{%- endif -%}
+{%- endcapture -%}
+
+{%- assign parts = raw_parts | strip | split: '~' -%}
+
+{%- if parts.size > 0 and raw_parts != blank -%}
+  {%- if link_url != blank -%}
+    <a class="{{ class }}" href="{{ link_url }}">
+  {%- else -%}
+    <p class="{{ class }}">
+  {%- endif -%}
+
+  {%- for part in parts -%}
+    {%- unless forloop.first %} · {% endunless -%}
+    {{- part | strip -}}
+  {%- endfor -%}
+
+  {%- if link_url != blank -%}</a>{%- else -%}</p>{%- endif -%}
+{%- endif -%}

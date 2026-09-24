@@ -1,0 +1,193 @@
+{% doc %}
+  Page — the brand reading page for every Shopify page (Size Guide, FAQ,
+  About Us, Contact, Report a Problem, Review).
+
+  Replaces Horizon's `main-page`, whose heading block rendered the title in
+  the body sans and left the RTE content unstyled. Here the page speaks the
+  system: serif title over a gold rule, measured column, styled lists,
+  tables and links. Content comes from Admin (`page.content`) untouched —
+  this section owns only the frame.
+{% enddoc %}
+
+<article class="sv-page" data-sv>
+  <div class="w sv-page__inner">
+    <header class="sv-page__head">
+      <h1 class="sv-page__title">{{ page.title }}</h1>
+    </header>
+
+    <div class="sv-page__body">
+      {{ page.content }}
+    </div>
+  </div>
+</article>
+
+{% stylesheet %}
+  /* Colour and spacing are tokens only; type comes from sv-system.css
+     primitives ([data-sv] body, serif h1-h3). */
+  [data-sv].sv-page {
+    padding: var(--d) 0 var(--f);
+  }
+
+  /* Reading measure, centred. The .w cap stays for very wide screens; the
+     inner cap is the one that matters. */
+  .sv-page__inner {
+    max-width: 760px;
+  }
+
+  .sv-page__head {
+    margin-bottom: var(--c);
+  }
+
+  [data-sv] .sv-page__title {
+    font-size: clamp(2.1rem, 4.5vw, 3.1rem);
+    color: var(--emerald);
+  }
+
+  /* The gold rule under the title — the same gesture as the lockup's. */
+  .sv-page__head::after {
+    content: '';
+    display: block;
+    width: 56px;
+    height: 2px;
+    margin-top: var(--b);
+    background: var(--tan);
+  }
+
+  /* ── RTE content ──────────────────────────────────────────────────── */
+  .sv-page__body > * + * {
+    margin-top: var(--a);
+  }
+
+  /* The reading pass (sv-system.css §03c): ink rather than the warm grey
+     [data-sv] p ships, regular rather than 300, higher size floor. These
+     are pages people read start to finish — Report a Problem, About,
+     Contact — so they take the size guide's settings, not the campaign
+     surfaces'. */
+  [data-sv] .sv-page__body p,
+  [data-sv] .sv-page__body li,
+  [data-sv] .sv-page__body td {
+    font-size: clamp(1.02rem, 1.1vw, 1.1rem);
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  [data-sv] .sv-page__body h2 {
+    font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+    color: var(--emerald);
+    margin-top: var(--c);
+  }
+
+  [data-sv] .sv-page__body h3 {
+    font-size: clamp(1.2rem, 2vw, 1.4rem);
+    color: var(--emerald);
+    margin-top: var(--b);
+  }
+
+  /* Measure: [data-sv] p already caps at body measure; lists match it.
+     list-style is explicit — Horizon's reset strips it. */
+  .sv-page__body ul,
+  .sv-page__body ol {
+    padding-left: 1.5em;
+    max-width: 56ch;
+    display: grid;
+    gap: calc(var(--a) / 2);
+  }
+
+  .sv-page__body ul {
+    list-style: disc;
+  }
+
+  .sv-page__body ol {
+    list-style: decimal;
+  }
+
+  .sv-page__body li::marker {
+    color: var(--tan);
+    font-weight: 400;
+  }
+
+  .sv-page__body a {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-color: var(--tan);
+  }
+
+  .sv-page__body a:hover {
+    color: var(--emerald-d);
+  }
+
+  .sv-page__body strong {
+    font-weight: 500;
+  }
+
+  .sv-page__body em {
+    font-family: var(--serif);
+    font-size: 1.05em;
+  }
+
+  .sv-page__body blockquote {
+    border-left: 2px solid var(--tan);
+    padding-left: var(--b);
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    color: var(--grey);
+  }
+
+  /* ── Tables (the size chart) ──────────────────────────────────────── */
+  .sv-page__body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-block: var(--b);
+    background: var(--card);
+    box-shadow: var(--sh-s);
+    border-radius: var(--r-img);
+    overflow: hidden;
+  }
+
+  .sv-page__body th {
+    font-family: var(--sans);
+    font-weight: 400;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--cream);
+    background: var(--emerald);
+    padding: 12px var(--a);
+  }
+
+  .sv-page__body td {
+    padding: 10px var(--a);
+    border-bottom: 1px solid var(--cream-2);
+  }
+
+  .sv-page__body tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .sv-page__body tbody tr:nth-child(even) td {
+    background: var(--cream);
+  }
+
+  @media (max-width: 760px) {
+    [data-sv].sv-page {
+      padding: var(--c) 0 var(--d);
+    }
+
+    /* The chart scrolls in place rather than stretching the page. */
+    .sv-page__body table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Page",
+  "tag": "section",
+  "settings": []
+}
+{% endschema %}

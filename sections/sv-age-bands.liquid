@@ -1,0 +1,559 @@
+{% doc %}
+  Age bands — the size chips that sit at the top of an age collection.
+
+  "Shop by Age → Newborn" answers half a question: a parent shopping for
+  a four-month-old lands on 0–12 months and still has to read every card.
+  This strip splits the shelf the way the menu already splits it, and
+  filters it in place.
+
+  ── How the filtering works ───────────────────────────────────────────
+  Each chip is a tag URL — /collections/<handle>/<tag> — so Shopify
+  itself narrows `collection.products` before the grid renders. No
+  JavaScript, no second collection to keep in step with the first, and
+  the browser's back button behaves. The active chip is read back from
+  `collection.current_tags`, so a bookmarked or shared link opens with
+  the same chip lit.
+
+  A size nothing is made in yet is drawn but not linked. Shopify answers
+  a tag URL that matches no product by silently redirecting to the whole
+  collection, which would show a parent every size after they asked for
+  one — so the chip says "not in this size yet" instead of lying. The
+  test is `collection.all_tags`, which lists the tags actually carried by
+  the products on this shelf, so the strip stays right by itself as stock
+  changes.
+
+  ── Where the chips come from ─────────────────────────────────────────
+  Admin's navigation, never typed here. The section walks the chosen
+  menu for the entry whose URL is this collection, and renders that
+  entry's children in their menu order. Nothing to re-type when a band
+  is added, and the header dropdown, the phone sheet and this strip can
+  never drift apart — they read the same three levels.
+
+  The section renders nothing at all off an age collection, so it is
+  safe to leave in the collection template for every collection.
+{% enddoc %}
+
+{%- liquid
+  assign menu = linklists[section.settings.menu]
+  assign group = blank
+
+  for link in menu.links
+    for child in link.links
+      if child.url == collection.url and child.links.size > 0
+        assign group = child
+        break
+      endif
+    endfor
+    if group != blank
+      break
+    endif
+  endfor
+-%}
+
+{%- if group != blank -%}
+  {%- liquid
+    # The tag a chip filters by is the last segment of its own URL, so
+    # Admin owns the pairing of label to tag and this file never guesses.
+    #
+    # Which tag is live comes from the global `current_tags`: on this
+    # theme `collection.current_tags` comes back empty on a tag URL, and
+    # reading it alone lit "All ages" on a filtered shelf. The collection
+    # form is kept as a fallback in case a future template populates it.
+    assign active = ''
+    for tag in current_tags
+      assign active = tag
+      break
+    endfor
+    if active == ''
+      for tag in collection.current_tags
+        assign active = tag
+        break
+      endfor
+    endif
+  -%}
+
+  {%- comment -%}
+    A thumbnail per size, uploaded in Admin. One block per band, keyed by
+    the same tag the chip filters on, so a photograph is attached to a
+    size rather than to a position — reorder the menu and the pictures
+    follow. A band with no block, or a block with no photograph, falls
+    back to the plain pill, so the run is never half-built.
+  {%- endcomment -%}
+  {%- liquid
+    assign shot_tags = ''
+    for block in section.blocks
+      assign shot_tags = shot_tags | append: ',' | append: block.settings.tag
+    endfor
+  -%}
+
+  {%- comment -%}
+    Horizon's own page grid, not sv-system's `.w`: the collection title
+    and the filter row below both sit in the middle column of
+    `.section--page-width` (40px | content | 40px), and a chip row that
+    used the `.w` column started 43px to their right. Borrowing the
+    theme's container is what keeps the three rows on one left edge at
+    every width.
+  {%- endcomment -%}
+  <section class="sv-bands section section--page-width" data-sv>
+    <div class="sv-bands__col">
+      <nav class="sv-bands__row" aria-label="{{ 'sections.collection.age_filter' | t | default: 'Filter by age' }}">
+        {%- comment -%}
+          Every chip is the same tile, photograph or not: a run of pills
+          and tiles side by side read as two different controls and the
+          row lost its line. "All ages" gets four dots rather than a
+          face — it is the reset, not an age.
+        {%- endcomment -%}
+        {%- liquid
+          # "Everything 0–12 months" rather than "All ages": the range is
+          # already written in the menu entry's own title — "Newborn
+          # (0–12 months)" — so the reset chip names the span it clears
+          # to, and Toddler or Kids say their own years without a second
+          # setting to keep in step.
+          assign all_label = section.settings.all_label | default: 'Everything'
+          if group.title contains '('
+            assign span = group.title | split: '(' | last | split: ')' | first
+            assign all_label = all_label | append: ' ' | append: span
+          endif
+        -%}
+        {%- comment -%}
+          The reset chip shows the ages it clears to rather than a symbol:
+          the sizes' own photographs, quartered into one circle. It is
+          built from the same blocks, so it can never show a picture the
+          run below does not. With no photographs set it falls back to
+          four dots and the row still reads.
+        {%- endcomment -%}
+        {%- liquid
+          assign collage = 0
+          for chip in group.links
+            assign parts = chip.url | split: '/'
+            assign t = parts.last
+            for block in section.blocks
+              if block.settings.tag == t and block.settings.image != blank
+                assign collage = collage | plus: 1
+                break
+              endif
+            endfor
+            if collage >= 4
+              break
+            endif
+          endfor
+        -%}
+        <a
+          class="sv-bands__chip sv-bands__chip--all{% if active == '' %} is-on{% endif %}"
+          href="{{ collection.url }}"
+          {% if active == '' %}aria-current="true"{% endif %}
+        >
+          <span class="sv-bands__shot sv-bands__shot--all">
+            {%- if collage > 0 -%}
+              <span class="sv-bands__collage sv-bands__collage--{{ collage }}">
+                {%- assign drawn = 0 -%}
+                {%- for chip in group.links -%}
+                  {%- if drawn >= 4 -%}{%- break -%}{%- endif -%}
+                  {%- assign parts = chip.url | split: '/' -%}
+                  {%- assign t = parts.last -%}
+                  {%- for block in section.blocks -%}
+                    {%- if block.settings.tag == t and block.settings.image != blank -%}
+                      {{ block.settings.image | image_url: width: 220 | image_tag:
+                        loading: 'lazy',
+                        widths: '110,220',
+                        sizes: '60px',
+                        alt: '',
+                        aria-hidden: 'true',
+                        class: 'sv-bands__tile'
+                      }}
+                      {%- assign drawn = drawn | plus: 1 -%}
+                      {%- break -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                {%- endfor -%}
+              </span>
+            {%- else -%}
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentColor">
+                <circle cx="8" cy="8" r="2.6"/><circle cx="16" cy="8" r="2.6"/>
+                <circle cx="8" cy="16" r="2.6"/><circle cx="16" cy="16" r="2.6"/>
+              </svg>
+            {%- endif -%}
+          </span>
+          <span class="sv-bands__label">{{ all_label }}</span>
+        </a>
+
+        {%- for chip in group.links -%}
+          {%- liquid
+            assign parts = chip.url | split: '/'
+            assign tag = parts.last
+            assign shot = blank
+            if shot_tags contains tag
+              for block in section.blocks
+                if block.settings.tag == tag and block.settings.image != blank
+                  assign shot = block.settings.image
+                  break
+                endif
+              endfor
+            endif
+            assign made = false
+            if collection.all_tags contains tag
+              assign made = true
+            endif
+          -%}
+
+          {%- capture inner -%}
+            {%- if shot == blank -%}
+              {%- liquid
+                capture r
+                  render 'sv-age-range', label: chip.title
+                endcapture
+                assign start_m = r | split: ',' | first | plus: 0
+                assign stage = 'big'
+                if start_m < 3
+                  assign stage = 'newborn'
+                elsif start_m < 6
+                  assign stage = 'swaddle'
+                elsif start_m < 9
+                  assign stage = 'sit'
+                elsif start_m < 12
+                  assign stage = 'crawl'
+                elsif start_m < 18
+                  assign stage = 'toddle'
+                elsif start_m < 24
+                  assign stage = 'toddle2'
+                elsif start_m < 36
+                  assign stage = 'twos'
+                elsif start_m < 48
+                  assign stage = 'walk'
+                elsif start_m < 72
+                  assign stage = 'kid'
+                endif
+              -%}
+              <span class="sv-bands__shot sv-bands__shot--drawn">
+                {% render 'sv-baby', stage: stage, class: 'sv-bands__figure' %}
+              </span>
+            {%- else -%}
+              <span class="sv-bands__shot">
+                {{ shot | image_url: width: 220 | image_tag:
+                  loading: 'lazy',
+                  widths: '110,220',
+                  sizes: '56px',
+                  alt: '',
+                  aria-hidden: 'true',
+                  class: 'sv-bands__img'
+                }}
+              </span>
+            {%- endif -%}
+            <span class="sv-bands__label">{{ chip.title }}</span>
+          {%- endcapture -%}
+
+          {%- if made -%}
+            <a
+              class="sv-bands__chip{% if active == tag %} is-on{% endif %}"
+              href="{{ chip.url }}"
+              {% if active == tag %}aria-current="true"{% endif %}
+            >{{ inner }}</a>
+          {%- else -%}
+            <span
+              class="sv-bands__chip is-none"
+              title="{{ section.settings.empty_text | escape }}"
+            >{{ inner }}<span class="sv-bands__note">{{ section.settings.empty_text }}</span></span>
+          {%- endif -%}
+        {%- endfor -%}
+      </nav>
+
+    </div>
+  </section>
+
+  {%- if active != '' -%}
+    {%- comment -%}
+      Horizon builds its sort and facet forms against `collection.url`,
+      which has no tag in it — so sorting a 6–9 m shelf, or ticking
+      "In stock", threw the shopper back to every size without saying so.
+      The forms are corrected to the path actually being viewed, on load
+      and again on submit, because the facet block re-renders itself
+      through the Section Rendering API and would otherwise come back
+      with the untagged action. Progressive: with the script blocked the
+      chips still work, exactly as before this file existed.
+    {%- endcomment -%}
+    <script>
+      (() => {
+        const bare = {{ collection.url | json }};
+        const tagged = {{ collection.url | append: '/' | append: active | json }};
+        const fix = (root) => {
+          (root.querySelectorAll ? root.querySelectorAll('form[action]') : []).forEach((f) => {
+            const a = f.getAttribute('action');
+            if (a === bare || a === bare + '/') f.setAttribute('action', tagged);
+          });
+        };
+        fix(document);
+        document.addEventListener('submit', (e) => { if (e.target instanceof HTMLFormElement) fix(e.target.parentNode || document); }, true);
+        new MutationObserver((records) => {
+          for (const r of records) {
+            for (const n of r.addedNodes) if (n.nodeType === 1) fix(n);
+          }
+        }).observe(document.body, { childList: true, subtree: true });
+      })();
+    </script>
+  {%- endif -%}
+{%- endif -%}
+
+{% stylesheet %}
+  /* §02 of sv-system.css pads a bare <section> by 160px and paints it
+     the cream ground; both are wrong for a filter row that belongs to
+     the header above it. The host class on the section wrapper wins the
+     cascade without touching the reset. */
+  .sv-bands-host .sv-bands {
+    padding-block: 0;
+    background: transparent;
+  }
+
+  .sv-bands-host .sv-bands__col {
+    padding-block-end: 8px;
+  }
+
+  .sv-bands__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px 18px;
+    align-items: flex-start;
+  }
+
+  /* No card, no pill: the photograph is the control. Each tile is the
+     same width so the labels sit on one baseline however long the run
+     is, and the circle carries every state. */
+  .sv-bands__chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    inline-size: 128px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink, #23201c);
+    text-decoration: none;
+    text-align: center;
+    transition: color 0.18s ease;
+  }
+
+  .sv-bands__shot {
+    display: block;
+    inline-size: 120px;
+    block-size: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--emerald, #17433a) 7%, transparent);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .sv-bands__img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .sv-bands__label {
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+
+  .sv-bands__chip:hover .sv-bands__shot {
+    transform: translateY(-2px);
+  }
+
+  /* Selected: a ring set off the photograph by a hairline of the page's
+     own ground, so it reads as a ring around the circle rather than a
+     border drawn on its edge — which fought the collage's seams. */
+  .sv-bands__chip.is-on .sv-bands__shot {
+    box-shadow:
+      0 0 0 3px var(--cream, #fbf7ef),
+      0 0 0 5px var(--emerald, #17433a);
+  }
+
+  .sv-bands__chip.is-on .sv-bands__label {
+    font-weight: 600;
+    color: var(--emerald, #17433a);
+  }
+
+  .sv-bands__chip:focus-visible {
+    outline: none;
+  }
+
+  .sv-bands__chip:focus-visible .sv-bands__shot {
+    outline: 2px solid var(--emerald, #17433a);
+    outline-offset: 4px;
+  }
+
+  /* "All ages" is the reset, not an age: four dots on the brand ground
+     rather than a face. */
+  .sv-bands__shot--all,
+  .sv-bands__shot--drawn {
+    display: grid;
+    place-items: center;
+    color: var(--emerald, #17433a);
+  }
+
+  .sv-bands__chip--all {
+    inline-size: 150px;
+  }
+
+  /* The quartered circle: two columns when there are enough pictures to
+     fill them, one when there are not, so a half-built collage never
+     shows a gap where a photograph should be. */
+  /* The tiles must divide the circle, never overflow it: rows are stated
+     as fractions of the circle's own height, because auto rows sized to
+     the images made a two-photo collage twice as tall as its circle and
+     only the first one showed. */
+  .sv-bands__collage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    inline-size: 100%;
+    block-size: 100%;
+    gap: 1px;
+  }
+
+  .sv-bands__collage--1 {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
+  /* Two: side by side, full height each. */
+  .sv-bands__collage--2 {
+    grid-template-rows: 1fr;
+  }
+
+  /* Three: one across the top, two beneath. */
+  .sv-bands__collage--3 .sv-bands__tile:first-child {
+    grid-column: span 2;
+  }
+
+  .sv-bands__tile {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .sv-bands__shot--all svg {
+    inline-size: 42px;
+    block-size: 42px;
+  }
+
+  .sv-bands__figure {
+    inline-size: 62px;
+    block-size: 62px;
+  }
+
+  /* A photographed stage sits in the same circle as the line figures, so
+     it is drawn a little larger and lifted to put its head on their eye
+     line — a seated pose otherwise reads as sunk to the bottom of the
+     circle beside a standing drawing. */
+  img.sv-bands__figure {
+    inline-size: 98px;
+    block-size: 98px;
+    object-fit: contain;
+    transform: translateY(-4%);
+  }
+
+  /* A size nothing is made in yet: still shown, so the run of ages reads
+     whole, but plainly not a destination. */
+  .sv-bands__chip.is-none {
+    cursor: default;
+  }
+
+  /* An empty size keeps its photograph in full colour — the owner reads
+     a drained picture as a fault, not as a message — and says what it is
+     in the label instead. */
+  .sv-bands__chip.is-none .sv-bands__shot {
+    opacity: 1;
+  }
+
+  /* Muted, not faint: against the cream ground the old 55% tint fell
+     below comfortable reading. These hold the "not yet" reading while
+     staying legible. */
+  .sv-bands__chip.is-none .sv-bands__label {
+    color: color-mix(in srgb, var(--ink, #1a1a1a) 78%, transparent);
+  }
+
+  .sv-bands__chip.is-none .sv-bands__note {
+    display: block;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    color: color-mix(in srgb, var(--ink, #1a1a1a) 66%, transparent);
+  }
+
+  @media (max-width: 749px) {
+    .sv-bands__row {
+      gap: 16px 12px;
+    }
+
+    .sv-bands__chip {
+      inline-size: 96px;
+    }
+
+    .sv-bands__chip--all {
+      inline-size: 112px;
+    }
+
+    .sv-bands__shot {
+      inline-size: 88px;
+      block-size: 88px;
+    }
+
+    .sv-bands__label {
+      font-size: 0.8125rem;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV Age bands",
+  "tag": "section",
+  "class": "sv-bands-host",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Shows the size chips from your navigation on age collections (Newborn, Toddler, Kids, Big Kids) and filters the grid by the chip's tag. Renders nothing on other collections."
+    },
+    {
+      "type": "text",
+      "id": "menu",
+      "label": "Menu to read",
+      "default": "main-menu",
+      "info": "The menu whose third level holds the size chips."
+    },
+    {
+      "type": "text",
+      "id": "all_label",
+      "label": "First chip label",
+      "default": "Everything",
+      "info": "The age range in the menu entry's title is added after it, e.g. Everything 0–12 months."
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty-size note",
+      "default": "not made in this size yet",
+      "info": "Shown on hover and to screen readers for a size with no products."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "shot",
+      "name": "Size photograph",
+      "settings": [
+        {
+          "type": "text",
+          "id": "tag",
+          "label": "Size tag",
+          "info": "Exactly as it appears in the chip's link, e.g. age-0-3m or age-2-3y."
+        },
+        { "type": "image_picker", "id": "image", "label": "Photograph", "info": "Square crop; shown in a circle." }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [{ "name": "SV Age bands" }]
+}
+{% endschema %}

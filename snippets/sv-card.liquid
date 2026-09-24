@@ -1,0 +1,69 @@
+{% doc %}
+  One product card for the product-page shelves — "You may also like"
+  (sv-recommendations) and "Recently viewed" (sv-recently-viewed, which
+  builds the same markup in script from /products/{handle}.js, so the two
+  shelves are indistinguishable).
+
+  A product still waiting on photography shows sv-system §06's
+  placeholder field in the frame rather than a broken image.
+
+  @param {object} product
+
+  @example
+  {% render 'sv-card', product: product %}
+
+  Styles live in assets/sv-product.css §20, not a {% stylesheet %} here:
+  the storefront bundles a snippet's stylesheet only when the snippet
+  RENDERS, and the Recently viewed shelf builds its cards in script.
+{% enddoc %}
+
+{%- comment -%}
+  The card carries the facts the shelf ranks on — the size run it is made
+  in, which of those sizes can actually be bought today, its type and its
+  tags. Rendered here rather than fetched again in script: the shelf
+  already has the product in hand, and a second request per card to learn
+  what size it comes in would be a request per card.
+{%- endcomment -%}
+{%- liquid
+  assign sizes_all = ''
+  assign sizes_live = ''
+  for v in product.variants
+    assign sizes_all = sizes_all | append: v.title | append: '|'
+    if v.available
+      assign sizes_live = sizes_live | append: v.title | append: '|'
+    endif
+  endfor
+-%}
+<li
+  class="sv-card"
+  data-sv-card
+  data-handle="{{ product.handle }}"
+  data-type="{{ product.type | escape }}"
+  data-tags="{{ product.tags | join: '|' | escape }}"
+  data-sizes="{{ sizes_all | escape }}"
+  data-sizes-live="{{ sizes_live | escape }}"
+  data-price="{{ product.price }}"
+>
+  <a class="sv-card__link" href="{{ product.url }}">
+    <span class="im r-product sv-card__frame">
+      {%- if product.featured_image -%}
+        {{
+          product.featured_image
+          | image_url: width: 700
+          | image_tag:
+            widths: '300, 450, 600, 700',
+            sizes: '(max-width: 760px) 70vw, 300px',
+            loading: 'lazy',
+            alt: product.featured_image.alt | default: product.title | escape
+        }}
+      {%- endif -%}
+    </span>
+    <span class="sv-card__name">{{ product.title }}</span>
+    <span class="sv-card__price">
+      {%- if product.compare_at_price > product.price -%}
+        <s>{{ product.compare_at_price | money }}</s>
+      {%- endif -%}
+      {{ product.price | money }}
+    </span>
+  </a>
+</li>

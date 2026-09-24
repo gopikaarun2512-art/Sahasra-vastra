@@ -1,0 +1,72 @@
+{% doc %}
+  The Saved (wishlist) link — a heart with a live count, beside the cart
+  in both headers (owner's direction, Sep 2026). The list lives on the
+  device only: localStorage `sv_saved`, written by the Save button on
+  the product page (sv-product.js), read here and on /pages/wishlist.
+
+  The count is painted by a small inline script, once per page however
+  many times this renders, and repaints on `sv:saved-change` (same tab)
+  and the `storage` event (other tabs).
+
+  @param {string} class - the host header's round-button class
+  @param {string} [icon_class] - class for the svg
+
+  @example
+  {% render 'sv-saved-link', class: 'sv-header__roundbtn' %}
+{% enddoc %}
+
+<a class="{{ class }} sv-savedlink" href="{{ routes.root_url | append: 'pages/wishlist' | replace: '//', '/' }}" aria-label="Wishlist" data-sv-saved-link>
+  {% render 'sv-icon', name: 'heart', class: icon_class %}
+  <span class="sv-savedlink__count" data-sv-saved-count aria-hidden="true" hidden></span>
+</a>
+
+<script>
+  (() => {
+    if (window.__svSavedCount) return;
+    window.__svSavedCount = true;
+    const paint = () => {
+      let n = 0;
+      try {
+        const list = JSON.parse(localStorage.getItem('sv_saved') || '[]');
+        n = Array.isArray(list) ? list.length : 0;
+      } catch (e) {}
+      document.querySelectorAll('[data-sv-saved-count]').forEach((el) => {
+        el.textContent = String(n);
+        el.hidden = n === 0;
+      });
+      document.querySelectorAll('[data-sv-saved-link]').forEach((a) => {
+        a.setAttribute('aria-label', n ? `Wishlist (${n})` : 'Wishlist');
+      });
+    };
+    document.addEventListener('DOMContentLoaded', paint);
+    document.addEventListener('sv:saved-change', paint);
+    window.addEventListener('storage', (e) => { if (e.key === 'sv_saved') paint(); });
+    paint();
+  })();
+</script>
+
+{% stylesheet %}
+  .sv-savedlink {
+    position: relative;
+  }
+
+  /* Matches the cart badge (sv-header__count): tan pill, top-right. */
+  .sv-savedlink__count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--tan, #c6a15b);
+    color: var(--ink, #1a1a1a);
+    font-family: var(--sans, 'Jost', system-ui, sans-serif);
+    font-size: 0.65rem;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  .sv-savedlink__count[hidden] {
+    display: none;
+  }
+{% endstylesheet %}

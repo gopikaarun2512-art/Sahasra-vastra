@@ -1,0 +1,1329 @@
+{%- comment -%}
+  SV Launch — the pre-launch reveal + countdown page (password page).
+  GENERATED from preview/index.html — edit the preview, then rebuild; see shopify/README.md.
+{%- endcomment -%}
+
+{% style %}
+/* ============ Tokens ============ */
+:root{
+  --sv-emerald:#14524A;
+  --sv-emerald-deep:#0A2723;
+  --sv-ivory:#FBF7EF;
+  --sv-cocoa:#4A3B34;
+  --sv-cocoa2:#7A6A60;
+  --sv-warm:#F3D9A4;
+  --sv-gold:#C6A15B;
+  --sv-font-latin:"Jost","Avenir Next","Century Gothic","Futura",system-ui,sans-serif;
+  --sv-font-dev:"Tiro Devanagari Hindi","Noto Serif Devanagari","Kohinoor Devanagari",serif;
+  --sv-font-display:"Cinzel","Cormorant Garamond",Georgia,"Times New Roman",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+/* NOTE: no `scroll-behavior:smooth` here — it breaks ScrollTrigger's pin measurements;
+   JS scrolls pass behavior:'smooth' explicitly instead */
+html{background:#071E1B} /* overscroll/rubber-band regions blend into the page */
+body{
+  font-family:var(--sv-font-latin);
+  font-weight:400;
+  color:var(--sv-ivory);
+  background:linear-gradient(180deg,#0D332D 0%,#0A2723 55%,#071E1B 100%);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+a{color:var(--sv-gold)}
+:focus-visible{outline:2px solid var(--sv-gold);outline-offset:3px;border-radius:2px}
+.sv-vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.sv-needs-js{display:none}
+html.sv-js .sv-needs-js{display:revert}
+
+/* ============ Grand stage set ============ */
+:root{
+  --sv-wingw:clamp(120px,16vw,300px);
+}
+.sv-set{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.sv-wing{
+  position:absolute;top:0;bottom:0;width:var(--sv-wingw);overflow:hidden;
+  background:linear-gradient(180deg,#0D332D 0%,#0A2723 55%,#071E1B 100%);
+}
+.sv-wing-l{left:0}
+.sv-wing-r{right:0}
+/* crossed gold deco lines on the wings */
+.sv-wing::before,.sv-wing::after{
+  content:"";position:absolute;left:-45%;right:-45%;top:48%;height:2px;
+  background:linear-gradient(90deg,rgba(198,161,91,0),rgba(198,161,91,.55),rgba(198,161,91,0));
+}
+.sv-wing::before{transform:rotate(52deg)}
+.sv-wing::after{transform:rotate(-52deg)}
+.sv-backdrop{
+  position:absolute;top:0;bottom:0;
+  left:calc(var(--sv-wingw) - 6px);right:calc(var(--sv-wingw) - 6px);
+  background:linear-gradient(180deg,#0D332D 0%,#0A2723 55%,#071E1B 100%);
+  will-change:transform,opacity;
+}
+.sv-threads{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+@media (max-width:640px){
+  :root{--sv-wingw:16px}
+}
+
+/* ============ Page shell ============ */
+.sv-page{position:relative;z-index:2}
+.sv-scene{
+  display:flex;flex-direction:column;align-items:center;
+  padding:clamp(20px,4vh,44px) 20px 40px;
+  position:relative;
+}
+.sv-hero{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  will-change:transform;position:relative;z-index:2;
+}
+.sv-reveal{display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:clamp(24px,4vh,44px);position:relative;z-index:2}
+
+/* story mode: scene pinned to one viewport, layers stacked */
+.sv-scene.is-story{
+  height:100vh;height:100svh;
+  overflow:hidden;padding:0;
+}
+.sv-scene.is-story .sv-hero{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 20px;
+}
+.sv-scene.is-story .sv-reveal{
+  position:absolute;inset:0;margin:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding:0 20px 32px;
+  pointer-events:none;
+}
+.sv-scene.is-story .sv-reveal > *{pointer-events:auto}
+.sv-scene.is-story .sv-opening{
+  position:absolute;top:34vh;left:0;right:0;margin:0;z-index:8;
+  font-size:clamp(1.8rem,7vw,3rem);
+  color:var(--sv-ivory);
+  text-shadow:0 0 26px rgba(243,217,164,.55), 0 0 60px rgba(243,217,164,.3);
+  padding:0 24px;
+}
+.sv-scene.is-story .sv-date{margin-top:10px}
+
+/* ============ Stage light layers ============ */
+.sv-stage{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+.sv-glow{
+  position:absolute;left:50%;top:38%;width:min(150vw,1200px);aspect-ratio:1;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side,
+    rgba(243,217,164,.5), rgba(243,217,164,.16) 42%, rgba(243,217,164,0) 72%);
+  opacity:.85;
+  will-change:transform,opacity;
+}
+.is-open .sv-glow{opacity:1;
+  background:radial-gradient(closest-side,
+    rgba(243,217,164,.95), rgba(243,217,164,.4) 46%, rgba(243,217,164,0) 74%)}
+.sv-ambient-on .sv-glow{animation:sv-breathe 5s ease-in-out infinite}
+@keyframes sv-breathe{0%,100%{opacity:1}50%{opacity:.7}}
+
+.sv-rays{
+  position:absolute;left:50%;top:46%;width:0;height:0;
+  opacity:.3;will-change:opacity;
+}
+.sv-rays i{
+  position:absolute;left:-4vmax;top:-70vmax;width:8vmax;height:140vmax;display:block;
+  background:linear-gradient(180deg,
+    rgba(243,217,164,0) 6%, rgba(243,217,164,.16) 40%,
+    rgba(243,217,164,.16) 60%, rgba(243,217,164,0) 94%);
+}
+.sv-rays i:nth-child(1){transform:rotate(18deg)}
+.sv-rays i:nth-child(2){transform:rotate(-24deg);width:5vmax;left:-2.5vmax}
+.sv-rays i:nth-child(3){transform:rotate(64deg);width:4vmax;left:-2vmax}
+.sv-rays-spin{position:absolute;inset:0;animation:sv-spin 90s linear infinite}
+@media (prefers-reduced-motion:reduce){.sv-rays-spin{animation:none}}
+@keyframes sv-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* darkness that parts (story only; invisible by default) */
+.sv-shade{
+  position:absolute;top:-2%;bottom:-2%;width:56%;z-index:6;
+  opacity:0;pointer-events:none;will-change:transform,opacity;
+  overflow:hidden;
+}
+/* premium ambient motion video lives inside each parting shade */
+.sv-shadevid{
+  position:absolute;top:0;height:100%;width:100vw;
+  object-fit:cover;opacity:.94;
+}
+/* shades sit 2vw outside the viewport; nudge the videos back so both halves align at the seam */
+.sv-shade-l .sv-shadevid{left:2vw}
+.sv-shade-r .sv-shadevid{right:2vw}
+.sv-shade-l{left:-2%;
+  background:linear-gradient(100deg, var(--sv-emerald-deep) 0%, #123A34 72%, rgba(10,39,35,0) 100%);
+  -webkit-mask-image:linear-gradient(90deg,#000 0%,#000 calc(100% - 80px),rgba(0,0,0,0) 100%);
+  mask-image:linear-gradient(90deg,#000 0%,#000 calc(100% - 80px),rgba(0,0,0,0) 100%)}
+.sv-shade-r{right:-2%;
+  background:linear-gradient(260deg, var(--sv-emerald-deep) 0%, #123A34 72%, rgba(10,39,35,0) 100%);
+  -webkit-mask-image:linear-gradient(270deg,#000 0%,#000 calc(100% - 80px),rgba(0,0,0,0) 100%);
+  mask-image:linear-gradient(270deg,#000 0%,#000 calc(100% - 80px),rgba(0,0,0,0) 100%)}
+.sv-seam{
+  position:absolute;left:50%;top:0;bottom:0;width:3px;z-index:7;
+  transform:translateX(-50%);
+  background:linear-gradient(180deg,
+    rgba(243,217,164,0), rgba(243,217,164,.95) 22%,
+    rgba(243,217,164,.95) 78%, rgba(243,217,164,0));
+  box-shadow:0 0 18px 4px rgba(243,217,164,.55), 0 0 60px 18px rgba(243,217,164,.25);
+  opacity:0;pointer-events:none;will-change:transform,opacity;
+}
+/* seam wakes up once when the story starts — CSS-only so it never fights the scrubbed timeline.
+   sv-fresh is set only on fresh loads, so mid-story rebuilds don't replay the flash */
+@keyframes sv-seamin{from{opacity:0}}
+.sv-scene.is-story.sv-fresh .sv-seam{animation:sv-seamin 1.6s ease-out}
+/* soft cinematic vignette while the story plays */
+.sv-vignette{
+  position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 90% at 50% 46%, rgba(10,39,35,0) 55%, rgba(10,39,35,.4) 100%);
+  will-change:opacity;
+}
+
+/* gold dust */
+.sv-dust{position:absolute;inset:0;z-index:4;pointer-events:none;display:none;overflow:hidden}
+.sv-stage-open .sv-dust,.sv-ambient-on .sv-dust{display:block}
+.sv-dust i{
+  position:absolute;bottom:-4vh;display:block;width:5px;height:5px;border-radius:50%;
+  background:rgba(198,161,91,.8);
+  box-shadow:0 0 8px 2px rgba(243,217,164,.6);
+  opacity:0;
+  animation:sv-rise linear infinite;
+}
+@keyframes sv-rise{
+  0%{transform:translate(0,0) scale(.7);opacity:0}
+  12%{opacity:.5}
+  60%{opacity:.35}
+  100%{transform:translate(4vw,-108vh) scale(1.1);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){.sv-dust{display:none!important}}
+
+/* ============ Opening line + hint ============ */
+.sv-opening{
+  font-family:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  font-style:italic;font-weight:400;
+  font-size:clamp(1.5rem,5.5vw,2.4rem);
+  letter-spacing:.06em;color:rgba(251,247,239,.85);
+  margin-bottom:clamp(18px,3.2vh,32px);text-align:center;
+}
+.sv-hint{
+  opacity:0;pointer-events:none;z-index:8;
+  position:absolute;left:0;right:0;bottom:6vh;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-size:.8rem;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(251,247,239,.8);
+}
+.sv-scene:not(.is-story) .sv-hint{display:none}
+.sv-hint svg{display:block;animation:sv-bob 1.8s ease-in-out infinite}
+.sv-hint svg path{stroke:rgba(251,247,239,.8)}
+@keyframes sv-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+
+/* ============ Emblem ============ */
+.sv-emblem{
+  width:min(56vw,320px);
+  will-change:transform,opacity;
+}
+.sv-emblem svg{display:block;width:100%;height:auto;overflow:visible}
+
+/* ============ Brand block ============ */
+.sv-brandwrap{will-change:transform;position:relative;z-index:3}
+/* metallic gold letters with a travelling shine */
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+  .sv-brand{
+    background-image:
+      linear-gradient(115deg, rgba(255,252,235,0) 40%, rgba(255,252,235,1) 50%, rgba(255,252,235,0) 60%),
+      linear-gradient(180deg,#FFFBE6 0%,#FAE9AE 30%,#F2C75D 54%,#DCA83E 76%,#C69233 88%,#F6E3A6 100%);
+    background-size:260% 100%, 100% 100%;
+    background-position:150% 0, 0 0;
+    background-repeat:no-repeat;
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent;-webkit-text-fill-color:transparent;
+    text-shadow:none;
+    filter:drop-shadow(0 1px 2px rgba(7,30,27,.9)) drop-shadow(0 3px 12px rgba(7,30,27,.55));
+    animation:sv-brandshine 4.5s ease-in-out infinite;
+  }
+  /* while the story splits the name into moving letters, gild each letter instead
+     (the parent's clipped background can't follow transformed spans) */
+  .sv-brand:has(.sv-ltr){
+    background-image:none;animation:none;filter:none;
+    color:#E7C887;-webkit-text-fill-color:currentColor;
+    text-shadow:0 1px 2px rgba(7,30,27,.55), 0 0 30px rgba(198,161,91,.3);
+  }
+  .sv-brand .sv-ltr{
+    background-image:linear-gradient(180deg,#FFFBE6 0%,#FAE9AE 30%,#F2C75D 54%,#DCA83E 76%,#C69233 88%,#F6E3A6 100%);
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent;-webkit-text-fill-color:transparent;
+  }
+}
+@keyframes sv-brandshine{0%,40%{background-position:150% 0, 0 0}100%{background-position:-80% 0, 0 0}}
+@media (prefers-reduced-motion:reduce){.sv-brand{animation:none}}
+/* the emblem turns imperceptibly once the page is at rest */
+.sv-ambient-on .sv-emblem svg{animation:sv-slowspin 160s linear infinite}
+@keyframes sv-slowspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .sv-ambient-on .sv-brand{animation:none}
+  .sv-ambient-on .sv-emblem svg{animation:none}
+}
+.sv-brand{
+  margin-top:clamp(-56px,-5vw,-16px); /* tucks under the emblem's transparent viewBox padding */
+  line-height:1;
+  font-family:var(--sv-font-display);
+  font-weight:600;
+  font-size:clamp(2.1rem,8.3vw,8rem);
+  letter-spacing:.12em;text-indent:.12em;
+  color:#E7C887;
+  text-shadow:0 1px 2px rgba(7,30,27,.55), 0 0 30px rgba(198,161,91,.3);
+  white-space:nowrap;text-align:center;
+}
+.sv-brand .sv-ltr{display:inline-block;will-change:transform,opacity}
+/* sparkle glints that pop as the shine sweep crosses the name */
+.sv-sparkles{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.sv-sparkles i{position:absolute;width:16px;height:16px;display:block;opacity:0;
+  filter:drop-shadow(0 0 6px rgba(243,217,164,.9))}
+.sv-sparkles svg{display:block;width:100%;height:100%}
+@media (prefers-reduced-motion:reduce){.sv-sparkles{display:none}}
+.sv-dev{
+  font-family:var(--sv-font-dev);font-weight:400;
+  font-size:clamp(1.2rem,4.2vw,1.7rem);
+  color:rgba(251,247,239,.75);
+  margin-top:8px;letter-spacing:.08em;text-align:center;
+}
+.sv-divider{
+  display:flex;align-items:center;gap:12px;
+  margin-top:clamp(10px,1.8vh,16px);
+  width:min(58vw,290px);
+  will-change:transform,opacity;
+}
+.sv-divider i{flex:1;height:1px;display:block}
+.sv-divider i:first-child{background:linear-gradient(90deg,rgba(198,161,91,0),rgba(198,161,91,.75))}
+.sv-divider i:last-child{background:linear-gradient(270deg,rgba(198,161,91,0),rgba(198,161,91,.75))}
+.sv-divider span{color:var(--sv-gold);font-size:.78rem;line-height:1}
+.sv-tagline{
+  font-weight:300;
+  font-size:clamp(1rem,3.2vw,1.3rem);
+  letter-spacing:.06em;color:var(--sv-ivory);
+  margin-top:clamp(12px,2vh,20px);text-align:center;
+}
+.sv-tagline .sv-word{display:inline-block;will-change:transform,opacity}
+
+/* ============ Countdown plaque ============ */
+.sv-plaque{
+  position:relative;
+  will-change:transform,opacity;
+  background:linear-gradient(180deg,#124840 0%,#0A2723 100%);
+  border:1px solid rgba(198,161,91,.8);
+  border-radius:14px;
+  padding:clamp(14px,2.4vh,22px) clamp(18px,4.5vw,40px) clamp(10px,1.8vh,16px);
+  box-shadow:
+    0 14px 34px rgba(7,30,27,.45),
+    inset 0 0 0 3px rgba(7,30,27,.9),
+    inset 0 0 0 4px rgba(198,161,91,.5);
+}
+.sv-colon{
+  font-family:var(--sv-font-display);
+  font-weight:400;font-size:clamp(1.4rem,5.2vw,2.2rem);line-height:1;
+  color:var(--sv-gold);opacity:.75;
+  align-self:flex-start;margin-top:.3em;
+}
+.sv-countdown{
+  display:flex;gap:clamp(8px,2.4vw,20px);
+  justify-content:center;align-items:flex-start;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum";
+  will-change:transform,opacity;
+  transition:transform .5s ease;
+}
+.sv-unit{display:flex;flex-direction:column;align-items:center;gap:6px}
+.sv-digits{display:flex;font-family:var(--sv-font-display);font-weight:400;font-size:clamp(1.9rem,7vw,2.9rem);line-height:1;color:var(--sv-warm)}
+.sv-digit{position:relative;width:.64em;height:1em;overflow:hidden;display:inline-block}
+.sv-digit span{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  transition:transform .25s cubic-bezier(.3,.7,.25,1);
+}
+.sv-digit span.sv-out{transform:translateY(-105%)}
+.sv-digit span.sv-in{transform:translateY(105%)}
+.sv-label{font-size:.68rem;letter-spacing:.3em;text-indent:.3em;color:rgba(251,247,239,.65)}
+.sv-progress{
+  margin-top:clamp(8px,1.4vh,12px);height:3px;border-radius:2px;
+  background:rgba(198,161,91,.22);overflow:hidden;
+}
+.sv-progress i{
+  display:block;height:100%;width:0;border-radius:2px;
+  background:linear-gradient(90deg,#C6A15B,#F3D9A4);
+  box-shadow:0 0 8px rgba(243,217,164,.55);
+  transition:width .6s ease;
+}
+.sv-countdown.is-final{transform:scale(1.05)}
+.sv-countdown.is-final .sv-digits{animation:sv-pulse 1s ease-in-out infinite}
+@keyframes sv-pulse{0%,100%{transform:scale(1)}30%{transform:scale(1.06)}}
+.sv-reduced .sv-countdown.is-final .sv-digits{animation:none}
+
+.sv-date{
+  margin-top:clamp(14px,2.2vh,22px);
+  font-weight:400;
+  font-size:clamp(.9rem,2.7vw,1.1rem);
+  letter-spacing:.24em;text-indent:.24em;text-transform:uppercase;
+  color:var(--sv-ivory);text-align:center;
+}
+
+/* ============ Form ============ */
+.sv-form-wrap{width:min(92vw,420px);margin-top:6px}
+.sv-form{display:flex;flex-direction:column;gap:10px}
+@media (min-width:480px){
+  .sv-form{flex-direction:row}
+  .sv-form input[type=email]{flex:1}
+}
+.sv-form input[type=email]{
+  font:inherit;font-weight:300;
+  padding:13px 16px;
+  border:1px solid rgba(122,106,96,.45);
+  border-radius:999px;
+  background:var(--sv-ivory);color:var(--sv-cocoa);
+  min-width:0;
+}
+.sv-form input[type=email]::placeholder{color:var(--sv-cocoa2)}
+.sv-btn{
+  font:inherit;font-weight:500;letter-spacing:.05em;
+  padding:13px 24px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--sv-gold);
+  background:linear-gradient(180deg,#E7C887,#C6A15B);color:var(--sv-emerald-deep);
+  white-space:nowrap;text-decoration:none;display:inline-block;text-align:center;
+  transition:opacity .2s ease;
+}
+.sv-btn:hover{opacity:.92}
+.sv-btn-ghost{
+  font:inherit;font-weight:500;letter-spacing:.05em;
+  padding:9px 18px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--sv-gold);
+  background:transparent;color:var(--sv-warm);
+  text-decoration:none;white-space:nowrap;
+}
+.sv-consent{margin-top:10px;font-size:.8rem;font-weight:300;color:rgba(251,247,239,.6);letter-spacing:.03em;text-align:center}
+.sv-success{font-size:1rem;color:var(--sv-warm);letter-spacing:.04em;padding:12px 0;text-align:center}
+.sv-error{font-size:.85rem;color:#E8A896;margin-top:8px;text-align:center}
+
+/* ============ Open state ============ */
+.sv-open-block{display:none;flex-direction:column;align-items:center;gap:18px;margin-top:clamp(18px,3vh,30px)}
+.is-open .sv-open-block{display:flex}
+.sv-open-line{font-weight:300;font-size:clamp(1.4rem,5vw,2rem);letter-spacing:.12em;color:var(--sv-ivory)}
+.is-open .sv-reveal-item{display:none}
+.is-open .sv-sticky{display:none}
+
+/* ============ Footer ============ */
+.sv-footer{
+  position:relative;z-index:1;
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 14px;
+  padding:26px 20px;
+  font-weight:300;font-size:.88rem;color:rgba(251,247,239,.72);letter-spacing:.05em;
+  text-align:center;
+  background:rgba(7,30,27,.88);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  border-top:1px solid rgba(198,161,91,.35);
+}
+.sv-social{
+  flex-basis:100%;
+  display:flex;justify-content:center;gap:clamp(24px,7vw,52px);
+}
+.sv-social a{
+  display:flex;align-items:center;color:var(--sv-gold);
+  transition:color .25s ease, transform .25s ease, filter .25s ease;
+}
+.sv-social a:hover{
+  color:var(--sv-warm);transform:translateY(-2px);
+  filter:drop-shadow(0 0 10px rgba(243,217,164,.55));
+}
+.sv-social svg{display:block;width:38px;height:38px}
+
+/* ============ Sticky bar ============ */
+.sv-sticky{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;align-items:center;justify-content:center;gap:12px 18px;flex-wrap:wrap;
+  padding:10px 16px;
+  background:rgba(7,30,27,.92);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border-top:1px solid rgba(198,161,91,.3);
+  font-size:.88rem;letter-spacing:.05em;color:var(--sv-ivory);
+  transform:translateY(0);transition:transform .35s ease;
+}
+.sv-sticky.is-hidden{transform:translateY(110%)}
+.sv-sticky-count{font-variant-numeric:tabular-nums;color:var(--sv-warm);font-weight:500}
+
+/* ============ Ambient falling petals ============ */
+.sv-fall{position:fixed;inset:0;z-index:1;pointer-events:none;display:none;overflow:hidden}
+.sv-ambient-on .sv-fall{display:block}
+.sv-fall i{
+  position:absolute;top:-6vh;display:block;width:13px;opacity:.12;
+  animation:sv-fall linear infinite;
+}
+.sv-fall svg{display:block;width:100%;height:auto}
+@keyframes sv-fall{
+  from{transform:translateY(-8vh) rotate(0deg)}
+  to{transform:translateY(112vh) rotate(200deg)}
+}
+
+/* ============ Burst petals ============ */
+.sv-burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:3}
+.sv-burst i{position:absolute;left:-7px;top:-10px;width:14px;display:block}
+.sv-burst svg{display:block;width:100%;height:auto}
+
+/* ============ Reduced motion ============ */
+@media (prefers-reduced-motion:reduce){
+  .sv-hint svg,.sv-glow,.sv-countdown.is-final .sv-digits{animation:none!important}
+  .sv-fall{display:none!important}
+  .sv-progress i{transition:none}
+  .sv-digit span{transition:none}
+  .sv-sticky{transition:none}
+}
+
+/* ============ Shopify password-page adjustments ============ */
+/* Horizon's password layout footer (its own enter-password link) is replaced by ours */
+body > footer{display:none}
+#MainContent.password-main-content{padding:0}
+.sv-owner-row{flex-basis:100%;margin-top:4px}
+.sv-owner{font-size:.78rem;font-weight:300;letter-spacing:.05em;color:rgba(251,247,239,.45);text-decoration:underline;text-underline-offset:3px}
+.sv-owner:hover{color:rgba(251,247,239,.7)}
+{% endstyle %}
+
+{%- assign sv_wa_number = section.settings.whatsapp_number | default: '918547629251' | replace: ' ', '' | replace: '+', '' -%}
+{%- assign sv_wa_url = 'https://wa.me/' | append: sv_wa_number -%}
+{%- assign sv_video_url = 'sv-stage.mp4' | asset_url -%}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&family=Tiro+Devanagari+Hindi&family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+
+<div class="sv-launch" id="sv-launch">
+<div class="sv-set" id="sv-set" aria-hidden="true">
+  <div class="sv-wing sv-wing-l"></div>
+  <div class="sv-wing sv-wing-r"></div>
+  <div class="sv-backdrop" id="sv-backdrop">
+    <svg class="sv-threads" viewBox="0 0 800 1000" preserveAspectRatio="none">
+      <path d="M120 0 C 260 300 40 620 210 1000" fill="none" stroke="#C6A15B" stroke-opacity=".22" stroke-width="1.4"/>
+      <path d="M620 0 C 520 340 760 660 560 1000" fill="none" stroke="#C6A15B" stroke-opacity=".18" stroke-width="1.2"/>
+      <path d="M400 0 C 430 380 340 700 460 1000" fill="none" stroke="#C6A15B" stroke-opacity=".12" stroke-width="1"/>
+    </svg>
+  </div>
+</div>
+
+<div class="sv-page" id="sv-page">
+
+  <section class="sv-scene" id="sv-scene" aria-label="Sahasra Vastra opening announcement">
+
+    <div class="sv-stage" aria-hidden="true">
+      <div class="sv-glow" id="sv-glow"></div>
+      <div class="sv-rays-spin"><div class="sv-rays" id="sv-rays"><i></i><i></i><i></i></div></div>
+      <div class="sv-dust" id="sv-dust"></div>
+      <div class="sv-vignette" id="sv-vignette"></div>
+      <div class="sv-shade sv-shade-l" id="sv-shade-l"><video class="sv-shadevid" data-src="{{ sv_video_url }}" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+      <div class="sv-shade sv-shade-r" id="sv-shade-r"><video class="sv-shadevid" data-src="{{ sv_video_url }}" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+      <div class="sv-seam" id="sv-seam"></div>
+      <div class="sv-burst" id="sv-burst"></div>
+    </div>
+
+    <div class="sv-hero" id="sv-hero">
+      <p class="sv-opening" id="sv-opening">{{ section.settings.headline | default: 'Something new is unfolding.' }}</p>
+
+      <div class="sv-emblem" id="sv-emblem" role="img" aria-label="Sahasra Vastra emblem">
+        <!-- Brand emblem: gold outer petals, emerald inner petals (matches docs/emblem-colour.svg) -->
+        <svg viewBox="-132 -132 264 264" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <g id="sv-outer">
+            <g transform="rotate(0)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(15)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(30)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(45)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(60)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(75)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(90)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(105)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(120)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(135)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(150)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(165)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(180)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(195)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(210)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(225)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(240)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(255)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(270)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(285)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(300)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(315)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(330)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+            <g transform="rotate(345)"><path class="sv-po" d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></g>
+          </g>
+          <g id="sv-inner">
+            <g transform="rotate(15)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(45)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(75)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(105)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(135)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(165)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(195)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(225)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(255)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(285)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(315)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+            <g transform="rotate(345)"><path class="sv-pi" d="M0 0 C -6 -18 -4 -37 0 -48 C 4 -37 6 -18 0 0 Z" fill="#F3D9A4"/></g>
+          </g>
+          <circle id="sv-hub-a" r="13" fill="#C6A15B"/>
+          <circle id="sv-hub-b" r="5.5" fill="#14524A"/>
+        </svg>
+      </div>
+
+      <div class="sv-brandwrap" id="sv-brandwrap">
+        <h1 class="sv-brand" id="sv-brand" aria-label="SAHASRA VASTRA">SAHASRA VASTRA</h1>
+        <span class="sv-sparkles" id="sv-sparkles" aria-hidden="true"></span>
+      </div>
+      <p class="sv-dev" id="sv-dev" lang="hi">सहस्र वस्त्र</p>
+      <div class="sv-divider" id="sv-divider" aria-hidden="true"><i></i><span>✦</span><i></i></div>
+      <p class="sv-tagline" id="sv-tagline">{{ section.settings.tagline | default: 'Little Moments, Beautifully Dressed.' }}</p>
+
+      <div class="sv-hint" id="sv-hint" aria-hidden="true">
+        <span>Scroll to unfold</span>
+        <svg width="14" height="18" viewBox="0 0 14 18" fill="none"><path d="M7 1v14M2 10.5 7 16l5-5.5" stroke="#7A6A60" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+
+    <div class="sv-reveal" id="sv-reveal">
+      <div class="sv-plaque sv-reveal-item sv-needs-js" id="sv-plaque">
+        <div class="sv-countdown" id="sv-countdown" role="timer" aria-label="Countdown to opening">
+          <div class="sv-unit" id="sv-unit-days">
+            <div class="sv-digits" data-unit="days" aria-hidden="true"></div>
+            <div class="sv-label">DAYS</div>
+          </div>
+          <span class="sv-colon" id="sv-colon-days" aria-hidden="true">:</span>
+          <div class="sv-unit">
+            <div class="sv-digits" data-unit="hours" aria-hidden="true"></div>
+            <div class="sv-label">HOURS</div>
+          </div>
+          <span class="sv-colon" aria-hidden="true">:</span>
+          <div class="sv-unit">
+            <div class="sv-digits" data-unit="minutes" aria-hidden="true"></div>
+            <div class="sv-label">MINUTES</div>
+          </div>
+          <span class="sv-colon" aria-hidden="true">:</span>
+          <div class="sv-unit">
+            <div class="sv-digits" data-unit="seconds" aria-hidden="true"></div>
+            <div class="sv-label">SECONDS</div>
+          </div>
+          <span class="sv-vh" id="sv-count-sr" aria-live="off"></span>
+        </div>
+        <div class="sv-progress" aria-hidden="true"><i id="sv-progress-fill"></i></div>
+      </div>
+
+      <p class="sv-date sv-reveal-item" id="sv-date">{{ section.settings.date_text | default: '27 September &middot; 3 PM' }}</p>
+
+      <div class="sv-open-block" id="sv-open-block">
+        <p class="sv-open-line">We're open.</p>
+        <a class="sv-btn" href="/collections/all">Start shopping</a>
+      </div>
+    </div>
+
+  </section>
+
+  <footer class="sv-footer">
+    <div class="sv-social">
+      <a href="https://www.instagram.com/sahasravastraofficial" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5.2"/><circle cx="12" cy="12" r="4.1"/><circle cx="17.2" cy="6.8" r="1.15" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="https://www.facebook.com/profile.php?id=61593205679462" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.4 7.3h-1.2c-1.05 0-1.75.75-1.75 1.8v7.6"/><path d="M9.9 11.7h4.3"/></svg>
+      </a>
+      <a href="{{ sv_wa_url }}" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2a8.8 8.8 0 0 0-7.6 13.2L3.2 20.8l4.5-1.17A8.8 8.8 0 1 0 12 3.2Z"/><path d="M9.2 8.6c-.3 0-.7.1-.9.5-.3.5-.5 1.3.2 2.5.8 1.4 2 2.7 3.6 3.6 1.5.8 2.2.7 2.8.4.5-.2.8-.8.7-1.3-.1-.3-1.2-.8-1.6-.9-.3-.1-.5 0-.7.2l-.4.5c-.2.2-.4.2-.6.1a6.6 6.6 0 0 1-2.5-2.2c-.1-.2 0-.4.1-.5l.5-.5c.2-.2.2-.4.1-.6l-.7-1.5c-.1-.3-.3-.3-.6-.3Z" fill="currentColor" stroke="none"/></svg>
+      </a>
+    </div>
+    <div class="sv-form-wrap sv-reveal-item" id="sv-form-wrap">
+      {% form 'customer', id: 'sv-waitlist', class: 'sv-form' %}
+        <input type="hidden" name="contact[tags]" value="prospect,password page,launch-waitlist">
+        {% if form.posted_successfully? %}
+          <p class="sv-success" role="status" id="sv-form-status" data-sv-posted>Thank you. We'll write to you the moment we open.</p>
+        {% else %}
+          {% if form.errors %}
+            <p class="sv-error" role="alert" id="sv-form-status">Sorry, that email didn't go through. Please check the address and try again.</p>
+          {% endif %}
+          <label class="sv-vh" for="sv-email">Email address</label>
+          <input type="email" id="sv-email" name="contact[email]" placeholder="Your email address" autocomplete="email" required>
+          <button type="submit" class="sv-btn">Be the first to know</button>
+        {% endif %}
+      {% endform %}
+      <p class="sv-error" id="sv-form-error" hidden></p>
+      <p class="sv-consent">We'll only email you about our opening. Unsubscribe any time.</p>
+      <p class="sv-owner-row"><a href="#" class="sv-owner" id="sv-owner-link">Store owner? Enter</a></p>
+    </div>
+  </footer>
+
+</div>
+
+<div class="sv-sticky" id="sv-sticky">
+  <span>{{ section.settings.sticky_text | default: 'Opens 27 Sep · 3 PM' }}</span>
+  <span class="sv-sticky-count sv-needs-js" id="sv-sticky-count"></span>
+  <a href="#sv-form-wrap" class="sv-btn-ghost" id="sv-notify-btn">Notify me</a>
+</div>
+
+<div class="sv-fall" id="sv-fall" aria-hidden="true"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script>
+(function(){
+  'use strict';
+
+  function boot(){
+
+  'use strict';
+
+  /* ---------- setup ---------- */
+  document.documentElement.classList.add('sv-js');
+  try{ history.scrollRestoration = 'manual'; }catch(e){}
+
+  var TARGET = Date.parse({{ section.settings.launch_iso | default: '2026-09-27T15:00:00+05:30' | json }});
+  if(isNaN(TARGET)) TARGET = Date.parse('2026-09-27T15:00:00+05:30');
+  var LAUNCH = Date.parse('2026-09-10T00:00:00+05:30'); /* campaign start, for the progress bar */
+
+  /* preview-only demo hooks: ?sv_demo=open | ?sv_demo=final */
+  var demoActive = false;
+  try{
+    var demo = new URLSearchParams(location.search).get('sv_demo');
+    if(demo === 'open'){ TARGET = Date.now() - 1000; demoActive = true; }
+    if(demo === 'final'){ TARGET = Date.now() + 14000; demoActive = true; }
+  }catch(e){}
+
+  var reduced = false;
+  try{ reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  if(reduced) document.documentElement.classList.add('sv-reduced');
+
+  function lsSet(k,v){ try{ window.localStorage.setItem(k,v); }catch(e){} }
+
+  var $ = function(id){ return document.getElementById(id); };
+  var scene = $('sv-scene'), hero = $('sv-hero'), opening = $('sv-opening'),
+      hint = $('sv-hint'), glow = $('sv-glow'), rays = $('sv-rays'),
+      seam = $('sv-seam'), vignette = $('sv-vignette'),
+      emblem = $('sv-emblem'), brandwrap = $('sv-brandwrap'),
+      brand = $('sv-brand'), dev = $('sv-dev'), tagline = $('sv-tagline'),
+      countdown = $('sv-countdown'), reveal = $('sv-reveal'),
+      sticky = $('sv-sticky'), stickyCount = $('sv-sticky-count'),
+      formWrap = $('sv-form-wrap'), form = $('sv-waitlist'), formStatus = $('sv-form-status');
+
+  var isOpen = false;
+  var storyActive = false, storyTrigger = null, storyTl = null, storyBrandW = 0;
+
+  /* ---------- countdown ---------- */
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+
+  function setDigits(unit, str){
+    var box = countdown.querySelector('[data-unit="' + unit + '"]');
+    if(!box) return;
+    while(box.children.length > str.length) box.removeChild(box.firstChild);
+    while(box.children.length < str.length){
+      var d = document.createElement('span');
+      d.className = 'sv-digit';
+      var v = document.createElement('span');
+      v.textContent = '';
+      d.appendChild(v);
+      box.insertBefore(d, box.firstChild);
+    }
+    for(var i = 0; i < str.length; i++){
+      var cell = box.children[i], ch = str.charAt(i);
+      while(cell.children.length > 1) cell.removeChild(cell.firstChild);
+      var cur = cell.firstChild;
+      cur.classList.remove('sv-in', 'sv-out');
+      if(cur.textContent === ch) continue;
+      if(reduced || cur.textContent === ''){
+        cur.textContent = ch;
+        continue;
+      }
+      /* roll: old slides up out, new slides up in (~250ms) */
+      cur.classList.add('sv-out');
+      (function(old){ setTimeout(function(){ if(old.parentNode) old.parentNode.removeChild(old); }, 320); })(cur);
+      var inc = document.createElement('span');
+      inc.className = 'sv-in';
+      inc.textContent = ch;
+      cell.appendChild(inc);
+      void inc.offsetWidth; /* force reflow so the transition always runs */
+      inc.classList.remove('sv-in');
+    }
+  }
+
+  var clockTimer = null, lastDays = null, finalBurstDone = false;
+  function tick(){
+    var now = Date.now(), diff = TARGET - now;
+    if(diff <= 0){ enterOpen(); return; }
+    var total = Math.floor(diff / 1000);
+    var days = Math.floor(total / 86400),
+        hrs  = Math.floor((total % 86400) / 3600),
+        mins = Math.floor((total % 3600) / 60),
+        secs = total % 60;
+
+    var pf = $('sv-progress-fill');
+    if(pf){
+      var p = Math.min(1, Math.max(0, (now - LAUNCH) / (TARGET - LAUNCH)));
+      pf.style.width = (p * 100).toFixed(2) + '%';
+    }
+    /* a day rolls over, or the last ten seconds begin: small celebration from the plaque */
+    if(!reduced){
+      if(lastDays !== null && days < lastDays) plaqueBurst();
+      if(total <= 10 && !finalBurstDone){ finalBurstDone = true; plaqueBurst(); }
+    }
+    lastDays = days;
+
+    var daysUnit = $('sv-unit-days'), daysColon = $('sv-colon-days');
+    var hideDays = (diff < 86400000) ? 'none' : '';
+    if(daysUnit) daysUnit.style.display = hideDays;
+    if(daysColon) daysColon.style.display = hideDays;
+
+    setDigits('days', pad2(days));
+    setDigits('hours', pad2(hrs));
+    setDigits('minutes', pad2(mins));
+    setDigits('seconds', pad2(secs));
+
+    countdown.classList.toggle('is-final', total <= 10);
+
+    if(stickyCount){
+      stickyCount.textContent = (days > 0)
+        ? days + 'd ' + pad2(hrs) + 'h'
+        : pad2(hrs) + 'h ' + pad2(mins) + 'm';
+    }
+    var sr = $('sv-count-sr');
+    if(sr && (secs === 0 || !sr.textContent)){ /* immediately on load, then once a minute */
+      sr.textContent = days + ' days, ' + hrs + ' hours and ' + mins + ' minutes until opening';
+    }
+    clockTimer = setTimeout(tick, 1000 - (Date.now() % 1000) + 20);
+  }
+
+  /* ---------- open state ---------- */
+  function enterOpen(){
+    if(isOpen) return;
+    isOpen = true;
+    if(clockTimer) clearTimeout(clockTimer);
+    if(storyActive && storyTrigger){
+      storyTrigger.kill(true);
+      storyTrigger = null;
+      teardownStoryStyles();
+    }
+    if(!demoActive) lsSet('sv_reveal_seen', '1');
+    document.documentElement.classList.add('is-open');
+    document.documentElement.classList.remove('sv-ambient-on');
+    if(!reduced) burstPetals();
+  }
+
+  function petalBurst(host, n, baseDist, spread){
+    if(!host || !host.animate) return;
+    var petal = '<svg viewBox="-10 -82 20 84" xmlns="http://www.w3.org/2000/svg"><path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></svg>';
+    for(var i = 0; i < n; i++){
+      var el = document.createElement('i');
+      el.innerHTML = petal;
+      host.appendChild(el);
+      var ang = (i / n) * Math.PI * 2 + (i % 3) * 0.12,
+          dist = baseDist + ((i * 53) % spread),
+          x = Math.cos(ang) * dist, y = Math.sin(ang) * dist,
+          rot = ((i * 137) % 360) - 180,
+          dur = 1400 + ((i * 97) % 900);
+      el.animate([
+        { transform: 'translate(0,0) rotate(0deg) scale(.4)', opacity: 0.9 },
+        { transform: 'translate(' + x + 'px,' + y + 'px) rotate(' + rot + 'deg) scale(1)', opacity: 0 }
+      ], { duration: dur, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+      (function(node, t){ setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, t + 100); })(el, dur);
+    }
+  }
+  function burstPetals(){ petalBurst($('sv-burst'), 26, 120, 190); }
+  function plaqueBurst(){
+    var plaque = $('sv-plaque');
+    if(!plaque) return;
+    var host = document.createElement('span');
+    host.style.cssText = 'position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:2';
+    host.className = 'sv-burst';
+    plaque.appendChild(host);
+    petalBurst(host, 10, 50, 90);
+    setTimeout(function(){ if(host.parentNode) host.parentNode.removeChild(host); }, 2600);
+  }
+
+  /* ---------- ambient loops ---------- */
+  var ambientBuilt = false;
+  function buildDust(){
+    var dust = $('sv-dust');
+    if(!dust || dust.children.length) return;
+    var lefts = [6, 14, 24, 33, 41, 50, 58, 66, 74, 83, 90, 96];
+    for(var i = 0; i < lefts.length; i++){
+      var el = document.createElement('i');
+      el.style.left = lefts[i] + 'vw';
+      el.style.animationDuration = (11 + (i % 5) * 3.5) + 's';
+      el.style.animationDelay = (-i * 2.7) + 's';
+      var sc = 0.6 + ((i * 37) % 10) / 14;
+      el.style.width = el.style.height = (4 * sc).toFixed(1) + 'px';
+      dust.appendChild(el);
+    }
+  }
+  /* sparkle glints timed to the 4.5s shine sweep across the brand */
+  var sparklesArmed = false;
+  function armSparkles(){
+    if(sparklesArmed || reduced) return;
+    sparklesArmed = true;
+    var box = $('sv-sparkles');
+    if(!box || !box.animate) return;
+    var star = '<svg viewBox="0 0 24 24"><path d="M12 0 L14.3 9.7 L24 12 L14.3 14.3 L12 24 L9.7 14.3 L0 12 L9.7 9.7 Z" fill="#FFF6D9"/></svg>';
+    function spawn(){
+      if(document.hidden || isOpen) return;
+      if(!document.documentElement.classList.contains('sv-ambient-on')) return;
+      var r = box.getBoundingClientRect();
+      if(r.bottom < 0 || r.top > window.innerHeight) return; /* off-screen */
+      for(var i = 0; i < 3; i++){
+        (function(i){
+          setTimeout(function(){
+            var el = document.createElement('i');
+            el.innerHTML = star;
+            el.style.left = (6 + Math.random() * 86) + '%';
+            el.style.top = (Math.random() * 70) + '%';
+            box.appendChild(el);
+            el.animate([
+              { transform: 'scale(0) rotate(0deg)',    opacity: 0 },
+              { transform: 'scale(1) rotate(45deg)',   opacity: 1, offset: .4 },
+              { transform: 'scale(0) rotate(90deg)',   opacity: 0 }
+            ], { duration: 650, easing: 'ease-in-out' });
+            setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 700);
+          }, i * 160);
+        })(i);
+      }
+    }
+    /* the shine band crosses the letters in the later part of each 4.5s cycle */
+    setTimeout(function(){ spawn(); setInterval(spawn, 4500); }, 2600);
+  }
+
+  function startAmbient(){
+    if(reduced || isOpen) return;
+    document.documentElement.classList.add('sv-ambient-on');
+    buildDust();
+    armSparkles();
+    if(ambientBuilt) return;
+    ambientBuilt = true;
+    var fall = $('sv-fall');
+    if(!fall) return;
+    var petal = '<svg viewBox="-10 -82 20 84" xmlns="http://www.w3.org/2000/svg"><path d="M0 0 C -9 -30 -6 -62 0 -80 C 6 -62 9 -30 0 0 Z" fill="#C6A15B"/></svg>';
+    var lefts = [8, 22, 37, 55, 68, 81, 92];
+    for(var i = 0; i < 7; i++){
+      var el = document.createElement('i');
+      el.innerHTML = petal;
+      el.style.left = lefts[i] + 'vw';
+      el.style.animationDuration = (26 + i * 5) + 's';
+      el.style.animationDelay = (-i * 7) + 's';
+      fall.appendChild(el);
+    }
+  }
+
+  /* ---------- sticky bar ---------- */
+  if('IntersectionObserver' in window && formWrap){
+    new IntersectionObserver(function(entries){
+      var inView = entries[0].isIntersecting && entries[0].intersectionRatio > 0.15;
+      /* during the story the form overlays the viewport while still invisible —
+         only count it as "in view" once it has actually faded in */
+      if(inView && storyTrigger && storyTrigger.isActive){
+        inView = parseFloat(window.getComputedStyle(formWrap).opacity || '1') > 0.4;
+      }
+      sticky.classList.toggle('is-hidden', inView);
+    }, { threshold: [0, 0.15, 0.5] }).observe(formWrap);
+    /* while pinned it's opacity (not geometry) that changes, so poll gently */
+    setInterval(function(){
+      if(!storyTrigger || !storyTrigger.isActive) return;
+      var r = formWrap.getBoundingClientRect();
+      var inView = r.top < window.innerHeight && r.bottom > 0 &&
+        parseFloat(window.getComputedStyle(formWrap).opacity || '1') > 0.4;
+      sticky.classList.toggle('is-hidden', inView);
+    }, 600);
+  }
+  $('sv-notify-btn').addEventListener('click', function(ev){
+    ev.preventDefault();
+    formWrap.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+    var em = $('sv-email');
+    if(em) setTimeout(function(){ try{ em.focus({ preventScroll: true }); }catch(e){} }, reduced ? 0 : 700);
+  });
+
+  /* ---------- email form: client check, then the real Shopify POST ---------- */
+  if(form) form.addEventListener('submit', function(ev){
+    var input = $('sv-email'), err = $('sv-form-error');
+    if(!input) return;
+    var val = (input.value || '').trim();
+    var ok = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val);
+    if(!ok){
+      ev.preventDefault();
+      if(err){ err.textContent = 'Please enter a valid email address.'; err.hidden = false; }
+      input.setAttribute('aria-invalid', 'true');
+      input.setAttribute('aria-describedby', 'sv-form-error');
+      input.focus();
+      return;
+    }
+    if(err) err.hidden = true;
+    input.removeAttribute('aria-invalid');
+  });
+
+  /* ---------- store owner: open Horizon's password dialog ---------- */
+  var ownerLink = $('sv-owner-link');
+  if(ownerLink) ownerLink.addEventListener('click', function(ev){
+    ev.preventDefault();
+    var dlg = document.querySelector('#password-form dialog');
+    if(dlg){ try{ dlg.showModal(); }catch(e){ dlg.setAttribute('open', ''); } }
+  });
+
+  /* ---------- scroll story ---------- */
+  function splitLetters(){
+    if(brand.querySelector('.sv-ltr')) return;
+    var text = brand.textContent;
+    brand.textContent = '';
+    for(var i = 0; i < text.length; i++){
+      var ch = text.charAt(i);
+      if(ch === ' '){
+        brand.appendChild(document.createTextNode(' '));
+      }else{
+        var s = document.createElement('span');
+        s.className = 'sv-ltr';
+        s.setAttribute('aria-hidden', 'true');
+        s.textContent = ch;
+        brand.appendChild(s);
+      }
+    }
+  }
+  function splitWords(){
+    if(tagline.querySelector('.sv-word')) return;
+    var full = tagline.textContent;
+    var words = full.split(' ');
+    tagline.textContent = '';
+    tagline.setAttribute('aria-label', full);
+    for(var i = 0; i < words.length; i++){
+      var s = document.createElement('span');
+      s.className = 'sv-word';
+      s.setAttribute('aria-hidden', 'true');
+      s.textContent = words[i];
+      tagline.appendChild(s);
+      if(i < words.length - 1) tagline.appendChild(document.createTextNode(' '));
+    }
+  }
+  function rnd(i, spread){ /* deterministic scatter */
+    var x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+    return ((x - Math.floor(x)) * 2 - 1) * spread;
+  }
+
+  function teardownStoryStyles(){
+    storyActive = false;
+    scene.classList.remove('is-story');
+    document.documentElement.classList.remove('sv-stage-open');
+    if(window.gsap){
+      gsap.set([hero, reveal, opening, hint, glow, rays, seam, vignette, emblem, brandwrap, dev,
+                '#sv-shade-l', '#sv-shade-r',
+                '#sv-backdrop', '#sv-divider',
+                '.sv-ltr', '.sv-word', '.sv-reveal-item'], { clearProps: 'all' });
+      scene.querySelectorAll('.sv-po, .sv-pi, #sv-hub-a, #sv-hub-b').forEach(function(el){
+        el.removeAttribute('transform');
+      });
+    }
+  }
+
+  function flattenBrand(){
+    /* letter spans + shimmer's background-clip don't mix (painted boxes),
+       so once the story is done the brand goes back to plain text */
+    if(brand.querySelector('.sv-ltr')){
+      brand.textContent = brand.getAttribute('aria-label') || 'SAHASRA VASTRA';
+    }
+  }
+
+  function storyDone(){
+    flattenBrand();
+    pauseShadeVideos(); /* the shades are offscreen now — stop compositing video */
+    startAmbient();
+  }
+  var rebuildQueued = false;
+  function storyResume(){
+    /* the visitor scrolled back into the story from the resting page */
+    document.documentElement.classList.remove('sv-ambient-on');
+    loadShadeVideos();
+    if(!brand.querySelector('.sv-ltr') && !rebuildQueued){
+      /* the flatten removed the letter spans the timeline animates — rebuild in place */
+      rebuildQueued = true;
+      setTimeout(function(){ rebuildQueued = false; rebuildStory(); }, 0);
+    }
+  }
+  function rebuildStory(){
+    if(!storyActive || !storyTrigger || isOpen) return;
+    var p = storyTrigger.progress;
+    storyTrigger.kill(true); storyTrigger = null;
+    if(storyTl){ storyTl.kill(); storyTl = null; }
+    teardownStoryStyles();
+    if(Date.now() >= TARGET) return;
+    initStory(true);
+    if(storyTrigger){
+      window.scrollTo(0, storyTrigger.start + (storyTrigger.end - storyTrigger.start) * p);
+      ScrollTrigger.update();
+      /* snap the scrub to the restored position — otherwise it REPLAYS the whole
+         story to catch up (Act I's headline streaks across the settled page) */
+      if(storyTrigger && storyTrigger.getTween){
+        var tw = storyTrigger.getTween();
+        if(tw) tw.progress(1);
+      }
+    }
+  }
+
+  function loadShadeVideos(){
+    scene.querySelectorAll('.sv-shadevid').forEach(function(v){
+      if(!v.src){
+        v.src = v.getAttribute('data-src');
+        v.addEventListener('error', function(){ v.remove(); }); /* gradient shade remains */
+      }
+      var p = v.play();
+      if(p && p.catch) p.catch(function(){});
+    });
+  }
+  function pauseShadeVideos(){
+    scene.querySelectorAll('.sv-shadevid').forEach(function(v){
+      try{ v.pause(); }catch(e){}
+    });
+  }
+
+  var videosOn = false;
+  function requestShadeVideos(){
+    if(videosOn) return;
+    videosOn = true;
+    loadShadeVideos(); /* lazy: 2×4MB only starts downloading once the visitor scrolls */
+  }
+
+  function initStory(keepScroll){
+    storyActive = true;
+    try{ history.scrollRestoration = 'manual'; }catch(e){}
+    if(!keepScroll) window.scrollTo(0, 0);
+    document.documentElement.classList.remove('sv-ambient-on'); /* no shimmer mid-story */
+    scene.classList.add('is-story');
+    scene.classList.toggle('sv-fresh', !keepScroll);
+    requestShadeVideos(); /* the silk motion IS the opening frame — load it right away */
+    splitLetters();
+    splitWords();
+    buildDust();
+    gsap.registerPlugin(ScrollTrigger);
+
+    var letters = brand.querySelectorAll('.sv-ltr');
+    var words = tagline.querySelectorAll('.sv-word');
+    var outer = scene.querySelectorAll('.sv-po');
+    var inner = scene.querySelectorAll('.sv-pi');
+
+    /* measure so the final frame always fits the viewport */
+    var vh = window.innerHeight, vw = window.innerWidth;
+    var heroH = 0;
+    (function(){
+      var a = emblem.getBoundingClientRect(),
+          t = tagline.getBoundingClientRect();
+      heroH = Math.max(360, t.bottom - a.top);
+    })();
+    var rvKids = reveal.querySelectorAll('.sv-reveal-item');
+    var rvH = 0;
+    rvKids.forEach(function(k){
+      if(k.offsetParent !== null || k.getBoundingClientRect().height){
+        rvH += k.getBoundingClientRect().height + 14;
+      }
+    });
+    storyBrandW = brand.offsetWidth; /* fingerprint for the late-font rebuild check */
+    var s0 = Math.min(1, Math.max(0.92, (vh * 0.7) / heroH)); /* >1 would clip the full-width name */
+    var sEnd = Math.min(s0 * 0.85, Math.max(0.55, (vh - rvH - 44) / heroH));
+    /* centre the final frame as ONE stack (hero + reveal), not hero-at-top / reveal-at-bottom */
+    var GAP = 24;
+    var totalH = heroH * sEnd + GAP + rvH;
+    var heroTop = Math.max(12, (vh - totalH) / 2);
+    var yEnd = heroTop - (vh - heroH * sEnd) / 2;
+    /* the reveal naturally stacks at the viewport bottom; lift it up under the hero */
+    var revealY = Math.min(0, (heroTop + heroH * sEnd + GAP) - (vh - 32 - rvH));
+
+    /* before states (finished state is the CSS default) */
+    gsap.set(hero, { scale: s0, y: 0, transformOrigin: '50% 50%' });
+
+    /* the brand starts as a screen-filling overlay, then settles into its slot */
+    var bRect = brand.getBoundingClientRect();
+    var bFill = Math.min((vw * 0.96) / bRect.width, 5);
+    var yFill = (vh / 2) - (bRect.top + bRect.height / 2);
+    /* the translation happens INSIDE the s0-scaled hero, so divide it back out */
+    gsap.set(brandwrap, { y: yFill / s0, scale: bFill, transformOrigin: '50% 50%' });
+
+    /* the stage set assembles as the darkness parts */
+    gsap.set('#sv-backdrop', { opacity: 0 });
+
+    gsap.set('#sv-shade-l', { opacity: 1, xPercent: 0, skewX: 0 });
+    gsap.set('#sv-shade-r', { opacity: 1, xPercent: 0, skewX: 0 });
+    gsap.set(seam, { opacity: 0.55, scaleX: 1 });
+    gsap.set(vignette, { opacity: 0.9 });
+    gsap.set(glow, { scale: 0.25, opacity: 0, transformOrigin: '50% 50%' });
+    gsap.set(rays, { opacity: 0 });
+    gsap.set(emblem, { opacity: 1, scale: 1 });
+    gsap.set(outer, { attr: { transform: 'scale(0)' } });
+    gsap.set(inner, { attr: { transform: 'scale(0)' } });
+    gsap.set(['#sv-hub-a', '#sv-hub-b'], { attr: { transform: 'scale(0)' } });
+    letters.forEach(function(l, i){
+      gsap.set(l, { x: rnd(i, 60), y: rnd(i + 40, 44), rotation: rnd(i + 80, 30), scale: 1.5, opacity: 0 });
+    });
+    gsap.set(dev, { opacity: 0, y: 12 });
+    gsap.set('#sv-divider', { opacity: 0, scaleX: 0.4 });
+    gsap.set(words, { opacity: 0, y: 14 });
+    gsap.set(['#sv-plaque', '#sv-date'], { autoAlpha: 0, y: 60 }); /* autoAlpha: invisible AND unfocusable */
+    gsap.set(formWrap, { autoAlpha: 0 }); /* fade only — a y-shift would poke out of the footer box */
+    gsap.set(hint, { opacity: 1 });
+
+    /* intro: the seam fades in via CSS (sv-seamin); the opening line greets fresh loads only */
+    if(!keepScroll){
+      gsap.fromTo(opening, { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 1.5, ease: 'power2.out', delay: 0.3 });
+    }
+
+    var tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: scene,
+        start: 'top top',
+        end: '+=350%',
+        pin: true,
+        scrub: 0.6,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onUpdate: function(self){
+          if(self.progress > 0.002) requestShadeVideos();
+          document.documentElement.classList.toggle('sv-stage-open', self.progress > 0.3);
+        },
+        onLeave: function(){ storyDone(); },
+        onEnterBack: function(){ storyResume(); }
+      }
+    });
+    storyTrigger = tl.scrollTrigger;
+    storyTl = tl;
+
+    /* timeline positions are on a 0-100 scale of the pinned scroll */
+    tl.to(hint, { opacity: 0, duration: 4 }, 0);
+
+    /* Act I — 0-26: the stage alone. Darkness parts, gold light floods the empty set */
+    tl.to(seam, { opacity: 1, scaleX: 3, duration: 8, ease: 'power1.in' }, 0);
+    tl.to(seam, { opacity: 0, duration: 10 }, 16);
+    tl.to('#sv-shade-l', { xPercent: -112, skewX: -3, duration: 26, ease: 'power2.inOut' }, 4);
+    tl.to('#sv-shade-r', { xPercent: 112, skewX: 3, duration: 26, ease: 'power2.inOut' }, 4);
+    tl.to(glow, { scale: 1.05, opacity: 0.95, duration: 24, ease: 'power1.out' }, 6);
+    tl.to(rays, { opacity: 0.4, duration: 18 }, 10);
+    tl.to(vignette, { opacity: 0.35, duration: 22 }, 8);
+    tl.to('#sv-backdrop', { opacity: 1, duration: 18, ease: 'none' }, 8);
+
+    /* the opening line steps aside before the name arrives */
+    tl.to(opening, { opacity: 0, y: -22, duration: 8 }, 20);
+
+    /* Act II — 28-50: SAHASRA VASTRA assembles, filling the whole screen */
+    tl.to(letters, { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1, duration: 20,
+      ease: 'power3.out', stagger: { each: 0.6, from: 'random' } }, 28);
+
+    /* Act III — 52-84: the name takes its place; the rest of the scene animates in */
+    tl.to(brandwrap, { y: 0, scale: 1, duration: 12, ease: 'power2.inOut' }, 52);
+    tl.to(outer, { attr: { transform: 'scale(1)' }, duration: 12, ease: 'back.out(1.4)', stagger: { each: 0.35, from: 0 } }, 58);
+    tl.to(inner, { attr: { transform: 'scale(1)' }, duration: 8, ease: 'back.out(1.3)', stagger: { each: 0.4, from: 0 } }, 66);
+    tl.to('#sv-hub-a', { attr: { transform: 'scale(1)' }, duration: 4, ease: 'back.out(1.6)' }, 74);
+    tl.to('#sv-hub-b', { attr: { transform: 'scale(1)' }, duration: 3, ease: 'back.out(1.6)' }, 76);
+    tl.to(dev, { opacity: 1, y: 0, duration: 6 }, 74);
+    tl.to('#sv-divider', { opacity: 1, scaleX: 1, duration: 5, ease: 'power2.out' }, 76);
+    tl.to(words, { opacity: 1, y: 0, duration: 6, stagger: 1.6, ease: 'power2.out' }, 78);
+
+    /* Act IV — 84-100: everything settles into the resting page */
+    tl.to(hero, { scale: sEnd, y: yEnd, duration: 12, ease: 'power2.inOut' }, 84);
+    tl.to(reveal, { y: revealY, duration: 12, ease: 'power2.inOut' }, 84);
+    tl.to(vignette, { opacity: 0, duration: 10 }, 86);
+    tl.to(rays, { opacity: 0.25, duration: 10 }, 86);
+    tl.to('#sv-plaque', { autoAlpha: 1, y: 0, duration: 6, ease: 'power2.out' }, 86);
+    tl.to('#sv-date', { autoAlpha: 1, y: 0, duration: 5, ease: 'power2.out' }, 90);
+    tl.to(formWrap, { autoAlpha: 1, duration: 5, ease: 'power2.out' }, 92);
+    tl.to({}, { duration: 1 }, 99); /* pad to 100 */
+
+    ScrollTrigger.refresh();
+  }
+
+  /* the story's geometry is measured at init — re-measure when the display fonts land.
+     document.fonts.status lies ("loaded") before the CSS has even requested Cinzel, so
+     listen to loadingdone too, and only rebuild when the metrics actually changed */
+  function fontsSettled(){
+    if(storyActive && storyTrigger && storyTrigger.progress < 0.05 &&
+       Math.abs(brand.offsetWidth - storyBrandW) > 2) rebuildStory();
+  }
+  if(document.fonts){
+    if(document.fonts.ready && document.fonts.ready.then) document.fonts.ready.then(fontsSettled);
+    if(document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', fontsSettled);
+  }
+  (function(){
+    var lastW = window.innerWidth, lastH = window.innerHeight, rsT = null;
+    window.addEventListener('resize', function(){
+      clearTimeout(rsT);
+      rsT = setTimeout(function(){
+        var dw = Math.abs(window.innerWidth - lastW), dh = Math.abs(window.innerHeight - lastH);
+        if(dw < 2 && dh < 120) return; /* ignore mobile URL-bar jitter */
+        lastW = window.innerWidth; lastH = window.innerHeight;
+        if(storyActive) rebuildStory();
+      }, 250);
+    });
+  })();
+
+  /* ---------- pointer parallax on the stage layers ---------- */
+  (function(){
+    var fine = false;
+    try{ fine = window.matchMedia('(pointer:fine)').matches; }catch(e){}
+    if(!fine || reduced || !window.gsap) return;
+    var qs = [
+      { el: glow,        fx: 26, fy: 16 },
+      { el: rays,        fx: 18, fy: 10 },
+      { el: emblem,      fx: 12, fy: 8  },
+      { el: $('sv-dust'), fx: 7, fy: 4  }
+    ].map(function(t){
+      return { x: gsap.quickTo(t.el, 'x', { duration: 0.9, ease: 'power2.out' }),
+               y: gsap.quickTo(t.el, 'y', { duration: 0.9, ease: 'power2.out' }),
+               fx: t.fx, fy: t.fy };
+    });
+    window.addEventListener('mousemove', function(e){
+      var nx = e.clientX / window.innerWidth - 0.5,
+          ny = e.clientY / window.innerHeight - 0.5;
+      qs.forEach(function(q){ q.x(nx * q.fx); q.y(ny * q.fy); });
+    }, { passive: true });
+  })();
+
+  /* ---------- boot ---------- */
+  tick();
+
+  var gsapReady = !!(window.gsap && window.ScrollTrigger);
+  var justPosted = !!formStatus; /* the customer form was submitted (success or error) */
+  /* the reveal IS the page — play it on every visit (reduced motion / no GSAP fall back to the static page) */
+  var canStory = gsapReady && !reduced && !justPosted && Date.now() < TARGET;
+
+  if(Date.now() >= TARGET){
+    enterOpen();
+  }else if(canStory){
+    initStory();
+  }else{
+    /* reduced motion, no GSAP, or a fresh form submission: the finished state is the CSS default */
+    startAmbient();
+    if(justPosted) setTimeout(function(){
+      formWrap.scrollIntoView({ behavior: 'auto', block: 'center' });
+    }, 60);
+  }
+
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  }else{
+    boot();
+  }
+})();
+</script>
+
+{% schema %}
+{
+  "name": "SV Launch",
+  "settings": [
+    { "type": "text", "id": "headline", "label": "Opening line", "default": "Something new is unfolding." },
+    { "type": "text", "id": "tagline", "label": "Tagline", "default": "Little Moments, Beautifully Dressed." },
+    { "type": "text", "id": "date_text", "label": "Line under the clock", "default": "27 September · 3 PM" },
+    { "type": "text", "id": "sticky_text", "label": "Sticky bar text", "default": "Opens 27 Sep · 3 PM" },
+    {
+      "type": "text", "id": "whatsapp_number", "label": "WhatsApp number",
+      "info": "Country code plus number, no spaces. Example: 918547629251",
+      "default": "918547629251"
+    },
+    {
+      "type": "text", "id": "launch_iso", "label": "Countdown target (do not change unless the date moves)",
+      "info": "Format: 2026-09-27T15:00:00+05:30 (India time)",
+      "default": "2026-09-27T15:00:00+05:30"
+    }
+  ],
+  "presets": [ { "name": "SV Launch" } ]
+}
+{% endschema %}

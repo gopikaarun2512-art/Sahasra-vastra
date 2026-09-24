@@ -1,0 +1,91 @@
+{% doc %}
+  A small line figure for an age stage — the size stepper's "which baby
+  is this" cue (the bumchi pattern, drawn in the brand's own line rather
+  than clip-art). Decorative: aria-hidden, currentColor, so the stepper
+  greys the unselected ones with colour alone.
+
+  The stage is chosen from a size string by `sv-baby-stage` logic in the
+  caller; this snippet only draws.
+
+  @param {string} stage - newborn | swaddle | sit | crawl | toddle | toddle2 | twos | walk | kid | big
+  @param {string} [class]
+
+  @example
+  {% render 'sv-baby', stage: 'sit', class: 'sv-step__baby' %}
+{% enddoc %}
+
+{%- comment -%}
+  Stages with a photographed cut-out replace the line figure (owner's
+  direction, Sep 2026: the crawling baby for 6–9 months, the sleeping
+  newborn for 0–3). Transparent WebP in assets, same box as the SVG so
+  the stepper does not shift. A stage without a photo falls through to
+  the line drawing below, so adding one is a single line here.
+{%- endcomment -%}
+{%- liquid
+  assign photo = ''
+  case stage
+    when 'sit'
+      assign photo = 'sv-age-6-9m.webp'
+    when 'newborn'
+      assign photo = 'sv-age-0-3m.webp'
+    when 'twos'
+      assign photo = 'sv-age-2-3y.webp'
+    when 'toddle'
+      assign photo = 'sv-age-12-18m.webp'
+    when 'swaddle'
+      assign photo = 'sv-age-3-6m.webp'
+  endcase
+-%}
+{%- if photo != '' -%}
+  <img {% if class %}class="{{ class }} sv-baby--photo"{% else %}class="sv-baby--photo"{% endif %} src="{{ photo | asset_url }}" alt="" aria-hidden="true" width="44" height="44" loading="lazy" decoding="async">
+{%- else -%}
+<svg {% if class %}class="{{ class }}"{% endif %} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  {%- case stage -%}
+    {%- when 'swaddle' or 'newborn' -%}
+      {%- comment -%} Lying, wrapped, eyes closed. {%- endcomment -%}
+      <circle cx="15" cy="20" r="7"/>
+      <path d="M12.5 20.5q1 1 2 0M16.5 20.5q1 1 2 0"/>
+      <path d="M21 16c9 0 17 4 17 11 0 5-5 8-12 8-7 0-13-3-15-8"/>
+      <path d="M22 24c5 1 9 4 11 9"/>
+      <path d="M36 12l1.5-2M40 15l2-1M38 9l.5-2.5"/>
+    {%- when 'sit' -%}
+      {%- comment -%} Sitting up unaided. {%- endcomment -%}
+      <circle cx="22" cy="12" r="6.5"/>
+      <path d="M22 18.5c-4 3-5 9-4 15"/>
+      <path d="M18 33.5h14c2.5 0 3 3 .5 3.5"/>
+      <path d="M20.5 23l7 4"/>
+      <path d="M19.5 24l-5 5"/>
+    {%- when 'crawl' -%}
+      {%- comment -%} On hands and knees. {%- endcomment -%}
+      <circle cx="11" cy="18" r="6"/>
+      <path d="M16 21c6-2 14-2 20 1.5"/>
+      <path d="M17 22.5l-1 11"/>
+      <path d="M22 23l1 10"/>
+      <path d="M35 23l2 10h5"/>
+    {%- when 'toddle' or 'toddle2' -%}
+      {%- comment -%} First steps, arms out for balance. {%- endcomment -%}
+      <circle cx="24" cy="10" r="6"/>
+      <path d="M24 16v13"/>
+      <path d="M15 20l9-2 9 2"/>
+      <path d="M24 29l-5 11M24 29l5 11"/>
+    {%- when 'walk' or 'twos' -%}
+      {%- comment -%} Walking, mid-stride. {%- endcomment -%}
+      <circle cx="24" cy="8.5" r="5"/>
+      <path d="M24 13.5l-1 14"/>
+      <path d="M17 22l6-6 6 6.5"/>
+      <path d="M23 27.5l-6 13M23 27.5l7 12"/>
+    {%- when 'kid' -%}
+      {%- comment -%} Standing child, one arm waving. {%- endcomment -%}
+      <circle cx="24" cy="8" r="4.8"/>
+      <path d="M24 12.8v16"/>
+      <path d="M17 26l7-9 6-6"/>
+      <path d="M24 28.8l-4 13M24 28.8l4 13"/>
+    {%- else -%}
+      {%- comment -%} Big kid: taller, stepping out. {%- endcomment -%}
+      <circle cx="24" cy="6.5" r="4.3"/>
+      <path d="M24 10.8l.5 17"/>
+      <path d="M17.5 23l7-8 7 7"/>
+      <path d="M24.5 27.8l-5.5 15M24.5 27.8l6.5 14"/>
+  {%- endcase -%}
+</svg>
+{%- endif -%}

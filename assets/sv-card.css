@@ -1,0 +1,135 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   SAHASRA VASTRA · SHELVES + PRODUCT CARDS
+   Shared by the product page shelves (You may also like, Recently
+   viewed) and the Saved page. A plain asset, not a snippet stylesheet:
+   the storefront only bundles a snippet's {% stylesheet %} when it
+   renders, and these cards are mostly built in script.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* ── 20 · SHELVES + PRODUCT CARDS ────────────────────────────────────
+   You may also like · Recently viewed (moved from snippets/sv-card so
+   script-built cards are styled too). */
+/* Shelf + card, shared by every product-page shelf. The row is a
+   native scroll-snap strip; the arrows only scroll it. */
+/* section[data-sv] carries sv-system's 160px section padding at (0,1,1);
+   the shelves must out-rank it or every shelf opens a 160px void. */
+section[data-sv].sv-shelf {
+  padding: var(--d) 0 0;
+}
+
+.sv-shelf__head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--a);
+  margin-bottom: var(--b);
+}
+
+[data-sv] .sv-shelf__h {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.sv-shelf__nav {
+  display: flex;
+  gap: 8px;
+}
+
+.sv-shelf__btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--cream-2);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sv-shelf__btn:hover {
+  border-color: var(--tan);
+}
+
+.sv-shelf__btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+[data-sv] .sv-shelf__row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 3 * var(--a)) / 4);
+  gap: var(--a);
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.sv-shelf__row::-webkit-scrollbar {
+  display: none;
+}
+
+.sv-card {
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+[data-sv] .sv-card__link {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.sv-card__frame {
+  border-radius: var(--r-img);
+  overflow: hidden;
+}
+
+.sv-card__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--slow) var(--e);
+}
+
+.sv-card__link:hover .sv-card__frame img {
+  transform: scale(1.04);
+}
+
+.sv-card__name {
+  margin-top: 6px;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.sv-card__price {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.sv-card__price s {
+  margin-right: 8px;
+  color: var(--grey);
+  font-weight: 400;
+}
+
+@media (max-width: 880px) {
+  [data-sv] .sv-shelf__row {
+    grid-auto-columns: 62%;
+  }
+
+  .sv-shelf__nav {
+    display: none;
+  }
+}
+

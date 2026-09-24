@@ -1,0 +1,1066 @@
+{% doc %}
+  About — the page that says what kind of shop this is.
+
+  Was: `sv-page` rendering the Admin RTE body — an h2 of the brand name
+  followed by five h3s and two bulleted lists, in one 760px column. Every
+  sentence on it was true and well written, and it read like a document
+  rather than a shop that had been thought about.
+
+  ── What the page has to do ───────────────────────────────────────────
+  The copy's real subject is not the family, the town or the fabric. It
+  is SELECTION. This business does not run a factory; it decides. Four
+  sources come in, one shelf goes out, and the whole of the difference
+  between them is a person looking at a garment and asking a question.
+
+  So the page is built around that question rather than around the
+  brand's history:
+
+    mast     the name, and where it comes from. The gold thread from the
+             size guide crosses the page once — the same hand, the same
+             story, and the only decorative image here.
+    question the one emerald moment (sv-system.css §07). "Would we dress
+             our own child in this?" is the page's thesis and everything
+             under it is evidence, so it is set as a pull quote on the
+             dark panel and nothing else competes with it.
+    sources  four, numbered, each under its own hairline. Deliberately
+             NOT four equal cards: they are not four equal things, and a
+             2x2 of cards would claim they were. Export surplus is
+             declared as plainly as our own production runs — an About
+             page that hides where half the stock comes from is the
+             thing this one is written against.
+    ledger   the signature block. What we check, raised on card; what we
+             leave behind, recessed into the ground. The rejection list
+             is the most specific, most trustworthy copy the business
+             has, and on the old page it was a bulleted list two thirds
+             of the way down. Here it is half the composition, and the
+             elevation does the arguing: kept things rise, left things
+             sink.
+    hand     who answers, on the letter card.
+    talk     the hand-off. Number and address from Admin, never typed.
+
+  ── Rules kept ────────────────────────────────────────────────────────
+  Tokens only; every colour, space and face comes from sv-system.css.
+  One emerald panel. One decorative image, used twice as one gesture
+  (drawn in at the top, its thread trailing out at the foot).
+
+  Business values — the WhatsApp number and the support address — read
+  from shop metafields with no `default:` (ARCHITECTURE.md rule 11): a
+  default is a hard-coded business value in disguise and goes on
+  printing the stale one after Admin is corrected. Each hand-off is
+  skipped whole if its metafield is empty rather than rendering a dead
+  link.
+
+  Motion per sv-system.css §08 — transform and opacity only, no scroll
+  listeners, IntersectionObserver alone. The entrance is armed by
+  `sv-motion-gate` as the section's FIRST child so nothing is ever
+  painted visible and then pulled to opacity 0; with script off the
+  hold is never armed and the page is simply a complete, static
+  document.
+{% enddoc %}
+
+{%- liquid
+  # Admin-owned. Never typed here, never defaulted.
+  assign wa_raw = shop.metafields.custom.whatsapp_number.value
+  assign wa = wa_raw | remove: ' ' | remove: '+' | remove: '-'
+  assign mail = shop.metafields.custom.support_email.value
+
+  assign s = section.settings
+
+  # Counted first, so a rail is skipped whole rather than rendering an
+  # empty frame around nothing.
+  assign n_source = 0
+  assign n_check = 0
+  assign n_reject = 0
+  for block in section.blocks
+    case block.type
+      when 'source'
+        assign n_source = n_source | plus: 1
+      when 'check'
+        assign n_check = n_check | plus: 1
+      when 'reject'
+        assign n_reject = n_reject | plus: 1
+    endcase
+  endfor
+-%}
+
+{%- comment -%}
+  The number, grouped for reading, derived from the metafield rather
+  than typed beside it — a second hand-formatted copy is how the two
+  fall out of step. Any shape we do not recognise is printed whole.
+{%- endcomment -%}
+{%- assign wa_disp = '' -%}
+{%- if wa != blank -%}
+  {%- if wa.size == 12 -%}
+    {%- assign cc = wa | slice: 0, 2 -%}
+    {%- assign p1 = wa | slice: 2, 5 -%}
+    {%- assign p2 = wa | slice: 7, 5 -%}
+    {%- assign wa_disp = '+' | append: cc | append: ' ' | append: p1 | append: ' ' | append: p2 -%}
+  {%- else -%}
+    {%- assign wa_disp = '+' | append: wa -%}
+  {%- endif -%}
+{%- endif -%}
+
+<section class="sv-ab" data-sv>
+
+  {%- render 'sv-motion-gate' -%}
+
+  {%- comment -%} ── 00 · The name ──────────────────────────────── {%- endcomment -%}
+  <header class="sv-ab__mast">
+    {%- comment -%}
+      The thread is drawn in from the right edge, needle first. Same
+      asset as the size guide's opening: one hand, one story. Purely
+      decorative, so it carries an empty alt AND aria-hidden, and it
+      never loads eagerly — the h1 is the thing worth painting first.
+    {%- endcomment -%}
+    <img
+      class="sv-ab__thread sv-ab__thread--in"
+      src="{{ 'sv-sg-thread.png' | asset_url }}"
+      alt=""
+      aria-hidden="true"
+      width="900"
+      height="900"
+      loading="lazy"
+      decoding="async">
+
+    <div class="w sv-ab__mast-in">
+      {%- if s.eyebrow != blank -%}
+        <p class="eyebrow" data-sv-motion>{{ s.eyebrow }}</p>
+      {%- endif -%}
+
+      <h1 class="sv-ab__title" data-sv-motion>
+        {%- if s.title_a != blank -%}
+          <span class="sv-ab__ln"><span>{{ s.title_a }}</span></span>
+        {%- endif -%}
+        {%- if s.title_b != blank -%}
+          <span class="sv-ab__ln"><span>{{ s.title_b }}</span></span>
+        {%- endif -%}
+        {%- if s.title_a == blank and s.title_b == blank -%}
+          <span class="sv-ab__ln"><span>{{ page.title }}</span></span>
+        {%- endif -%}
+      </h1>
+
+      {%- if s.lead != blank -%}
+        <p class="sv-ab__lead" data-sv-motion>{{ s.lead }}</p>
+      {%- endif -%}
+
+      {%- comment -%}
+        Three facts, gold-dotted. Not a list of claims — the three
+        things a reader is actually trying to establish in the first
+        ten seconds: where you are, who you sell to, how big you are.
+      {%- endcomment -%}
+      {%- if s.fact_1 != blank or s.fact_2 != blank or s.fact_3 != blank -%}
+        <ul class="sv-ab__facts" data-sv-motion>
+          {%- if s.fact_1 != blank %}<li>{{ s.fact_1 }}</li>{% endif -%}
+          {%- if s.fact_2 != blank %}<li>{{ s.fact_2 }}</li>{% endif -%}
+          {%- if s.fact_3 != blank %}<li>{{ s.fact_3 }}</li>{% endif -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </header>
+
+  {%- comment -%} ── 01 · The question ──────────────────────────────
+    The page's single emerald moment. sv-system.css §07 allows one per
+    page and this is it — the thesis everything below argues for.
+  {%- endcomment -%}
+  {%- if s.q_quote != blank -%}
+    <div class="sv-ab__q panel-dark">
+      <div class="w sv-ab__q-in" data-sv-motion>
+        <img
+          class="sv-ab__roundel"
+          src="{{ 'sv-roundel-ivory.svg' | asset_url }}"
+          alt=""
+          aria-hidden="true"
+          width="54"
+          height="54"
+          loading="lazy">
+
+        {%- if s.q_label != blank -%}
+          <p class="lab sv-ab__q-lab">{{ s.q_label }}</p>
+        {%- endif -%}
+
+        <blockquote class="pull sv-ab__pull">
+          <p>{{ s.q_quote }}</p>
+        </blockquote>
+
+        {%- if s.q_after != blank -%}
+          <p class="sv-ab__q-after">{{ s.q_after }}</p>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── 02 · Where the clothes come from ───────────────
+    Four sources, numbered, each under its own hairline and the even
+    ones dropped half a step — a woven index rather than a 2x2 of
+    equal cards, because they are not four equal things.
+  {%- endcomment -%}
+  {%- if n_source > 0 -%}
+    <div class="sv-ab__sources">
+      <div class="w">
+        <div class="sv-ab__head" data-sv-motion>
+          {%- if s.src_eyebrow != blank -%}
+            <p class="eyebrow">{{ s.src_eyebrow }}</p>
+          {%- endif -%}
+          {%- if s.src_title != blank -%}
+            <h2 class="sv-ab__h2">{{ s.src_title }}</h2>
+          {%- endif -%}
+          {%- if s.src_lead != blank -%}
+            <p class="sv-ab__lead sv-ab__lead--sm">{{ s.src_lead }}</p>
+          {%- endif -%}
+        </div>
+
+        <ol class="sv-ab__srcs">
+          {%- assign i = 0 -%}
+          {%- for block in section.blocks -%}
+            {%- if block.type != 'source' -%}{%- continue -%}{%- endif -%}
+            {%- assign i = i | plus: 1 -%}
+            <li class="sv-ab__src" data-sv-motion {{ block.shopify_attributes }}>
+              <span class="num sv-ab__num" aria-hidden="true">{{ i | prepend: '0' | slice: -2, 2 }}</span>
+              {%- if block.settings.title != blank -%}
+                <h3 class="sv-ab__h3">{{ block.settings.title }}</h3>
+              {%- endif -%}
+              {%- if block.settings.body != blank -%}
+                <p>{{ block.settings.body }}</p>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ol>
+
+        {%- if s.src_note != blank -%}
+          <p class="note sv-ab__note" data-sv-motion>{{ s.src_note }}</p>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── 03 · The ledger ────────────────────────────────
+    Kept things rise, left things sink. The elevation is the argument:
+    one panel is a raised card on the ground's lighter surface, the
+    other is recessed into it. Two lists that would otherwise read as
+    equal halves of a table.
+  {%- endcomment -%}
+  {%- if n_check > 0 or n_reject > 0 -%}
+    <div class="sv-ab__ledger-wrap">
+      <div class="w">
+        <div class="sv-ab__head" data-sv-motion>
+          {%- if s.led_eyebrow != blank -%}
+            <p class="eyebrow">{{ s.led_eyebrow }}</p>
+          {%- endif -%}
+          {%- if s.led_title != blank -%}
+            <h2 class="sv-ab__h2">{{ s.led_title }}</h2>
+          {%- endif -%}
+        </div>
+
+        <div class="sv-ab__ledger">
+          {%- if n_check > 0 -%}
+            <div class="sv-ab__pan sv-ab__pan--keep" data-sv-motion>
+              {%- if s.keep_label != blank -%}
+                <p class="sv-read-lab sv-ab__pan-lab">{{ s.keep_label }}</p>
+              {%- endif -%}
+              <ul class="sv-ab__marks">
+                {%- for block in section.blocks -%}
+                  {%- if block.type != 'check' -%}{%- continue -%}{%- endif -%}
+                  <li {{ block.shopify_attributes }}>
+                    {%- comment -%} Inline, not a snippet: two marks, used
+                      here and nowhere else on the site. {%- endcomment -%}
+                    <svg class="sv-ab__mk sv-ab__mk--yes" viewBox="0 0 22 22" aria-hidden="true" focusable="false">
+                      <circle cx="11" cy="11" r="10" fill="none" stroke="currentColor" stroke-width="1" opacity=".45"/>
+                      <path d="M6.6 11.4 9.6 14.3 15.4 7.9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>{{ block.settings.label }}</span>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
+
+          {%- if n_reject > 0 -%}
+            <div class="sv-ab__pan sv-ab__pan--drop" data-sv-motion>
+              {%- if s.drop_label != blank -%}
+                <p class="sv-read-lab sv-ab__pan-lab">{{ s.drop_label }}</p>
+              {%- endif -%}
+              <ul class="sv-ab__marks">
+                {%- for block in section.blocks -%}
+                  {%- if block.type != 'reject' -%}{%- continue -%}{%- endif -%}
+                  <li {{ block.shopify_attributes }}>
+                    <svg class="sv-ab__mk sv-ab__mk--no" viewBox="0 0 22 22" aria-hidden="true" focusable="false">
+                      <path d="M6.8 6.8 15.2 15.2 M15.2 6.8 6.8 15.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    <span>{{ block.settings.label }}</span>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── 04 · Who answers ───────────────────────────────
+    The letter card from sv-system.css §07, and the thread leaving the
+    frame at the foot — the same gesture that opened the page, closed.
+  {%- endcomment -%}
+  {%- if s.hand_body != blank -%}
+    <div class="sv-ab__hand">
+      <img
+        class="sv-ab__thread sv-ab__thread--out"
+        src="{{ 'sv-sg-thread.png' | asset_url }}"
+        alt=""
+        aria-hidden="true"
+        width="900"
+        height="900"
+        loading="lazy"
+        decoding="async">
+
+      <div class="w">
+        <div class="card card--letter sv-ab__letter" data-sv-motion>
+          {%- if s.hand_label != blank -%}
+            <p class="lab">{{ s.hand_label }}</p>
+          {%- endif -%}
+          <div class="sv-ab__letter-body">{{ s.hand_body }}</div>
+
+          {%- comment -%}
+            The signature renders only when a name is set — a blank
+            field removes the whole block rather than leaving a rule
+            over nothing.
+          {%- endcomment -%}
+          {%- if s.sign_name != blank -%}
+            <div class="sig sv-ab__sig">
+              <strong>{{ s.sign_name }}</strong>
+              {%- if s.sign_role != blank -%}
+                <span class="sv-fine sv-ab__sig-role">{{ s.sign_role }}</span>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── 05 · The hand-off ──────────────────────────────
+    Both routes are plain anchors and both are skipped whole when their
+    metafield is empty. Nothing here works only with script.
+  {%- endcomment -%}
+  {%- if wa != blank or mail != blank -%}
+    <div class="sv-ab__talk">
+      <div class="w sv-ab__talk-in" data-sv-motion>
+        {%- if s.talk_title != blank -%}
+          <h2 class="sv-ab__h2">{{ s.talk_title }}</h2>
+        {%- endif -%}
+        {%- if s.talk_body != blank -%}
+          <p class="sv-ab__lead sv-ab__lead--sm">{{ s.talk_body }}</p>
+        {%- endif -%}
+
+        <div class="sv-ab__routes">
+          {%- if wa != blank -%}
+            <a
+              class="btn sv-ab__cta"
+              href="https://wa.me/{{ wa }}?text={{ s.wa_prefill | default: '' | url_encode }}"
+              rel="noopener"
+              target="_blank">
+              {{ s.wa_label }}
+            </a>
+          {%- endif -%}
+
+          <p class="sv-ab__plain">
+            {%- if mail != blank -%}
+              <a href="mailto:{{ mail }}">{{ mail }}</a>
+            {%- endif -%}
+            {%- if mail != blank and wa_disp != blank %} <span aria-hidden="true">·</span> {% endif -%}
+            {%- if wa_disp != blank -%}
+              <a href="https://wa.me/{{ wa }}" rel="noopener" target="_blank">{{ wa_disp }}</a>
+            {%- endif -%}
+          </p>
+        </div>
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%}
+    Motion driver. Reveals once and unobserves — this is a page read
+    start to finish, not a canvas to scrub, so nothing replays on the
+    way back up. IntersectionObserver only, per the performance rule.
+
+    The hidden state exists only under `.sv-motion-ready`, which the
+    gate at the top of the section adds, so a failed script leaves the
+    page fully readable.
+  {%- endcomment -%}
+  <script>
+    (() => {
+      const root = document.currentScript.closest('.sv-ab');
+      if (!root) return;
+      const targets = root.querySelectorAll('[data-sv-motion]');
+      if (!('IntersectionObserver' in window) ||
+          matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        targets.forEach(el => el.classList.add('sv-vis'));
+        return;
+      }
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('sv-vis');
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+      targets.forEach(el => io.observe(el));
+
+      /* Fail-safe. A tab loaded in the background defers observer
+         callbacks, which would leave whatever is on screen sitting at
+         opacity 0. Anything within the viewport shortly after load is
+         shown outright; the observer still governs the rest. */
+      setTimeout(() => {
+        targets.forEach(el => {
+          const r = el.getBoundingClientRect();
+          if (r.top < innerHeight && r.bottom > 0) el.classList.add('sv-vis');
+        });
+      }, 1200);
+    })();
+  </script>
+</section>
+
+{% stylesheet %}
+  /* Colour, space, face and elevation are tokens only; type comes from
+     sv-system.css primitives (.eyebrow, .lab, .num, .note, .card,
+     .panel-dark, .pull, .btn, serif headings under [data-sv]).
+
+     Specificity note: the §02 reset is `[data-sv] h1, [data-sv] p {...}`
+     at (0,1,1), which outranks a bare class. Anything overriding a
+     margin, a colour or a measure on a heading or a paragraph is
+     therefore written `[data-sv] .sv-ab__x`, never `.sv-ab__x`. */
+
+  [data-sv].sv-ab {
+    /* clip, not hidden: `hidden` would make this a scroll container.
+       The thread bleeds past both edges and is trimmed here. */
+    overflow: clip;
+    padding: 0 0 var(--f);
+    background:
+      radial-gradient(720px 480px at 88% 2%, rgba(198, 161, 91, 0.13), transparent 70%),
+      radial-gradient(760px 560px at 4% 72%, rgba(20, 82, 74, 0.05), transparent 72%),
+      var(--cream);
+  }
+
+  /* ── the thread ───────────────────────────────────────────────────────
+     One asset, two placements, read as one gesture: drawn in at the top
+     needle-first, trailing out at the foot. multiply melts the PNG's
+     white fringe into the ivory ground — the same treatment the size
+     guide gives its tape. */
+  .sv-ab__thread {
+    position: absolute;
+    z-index: 0;
+    height: auto;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .sv-ab__thread--in {
+    top: -6%;
+    right: -14%;
+    width: min(640px, 58vw);
+    opacity: 0.55;
+    transform: rotate(14deg);
+  }
+
+  .sv-ab__thread--out {
+    bottom: -18%;
+    left: -16%;
+    width: min(520px, 48vw);
+    opacity: 0.4;
+    transform: rotate(-162deg);
+  }
+
+  /* ── 00 · masthead ──────────────────────────────────────────────────── */
+  .sv-ab__mast {
+    position: relative;
+    padding: var(--f) 0 var(--d);
+  }
+
+  .sv-ab__mast-in {
+    position: relative;
+    z-index: 1;
+    max-width: 980px;
+  }
+
+  [data-sv] .sv-ab__title {
+    margin-top: var(--b);
+    color: var(--emerald);
+    /* One step under the system h1: this sits above a lead and three
+       facts, and at 5.4rem it took the whole first screen alone. */
+    font-size: clamp(2.6rem, 6vw, 4.6rem);
+  }
+
+  /* line reveal — by LINE only, per §08. The block is excluded from the
+     generic fade below so the two entrances never double up. */
+  .sv-ab__ln {
+    display: block;
+    overflow: hidden;
+  }
+
+  .sv-ab__ln > span {
+    display: block;
+  }
+
+  [data-sv] .sv-ab__lead {
+    margin-top: var(--b);
+    max-width: 62ch;
+    font-size: clamp(1.08rem, 1.35vw, 1.24rem);
+    font-weight: 300;
+    line-height: 1.66;
+    color: var(--ink);
+  }
+
+  [data-sv] .sv-ab__lead--sm {
+    font-size: clamp(1.02rem, 1.1vw, 1.1rem);
+    max-width: 58ch;
+  }
+
+  /* three facts, gold-dotted.
+     Scoped: the §02 reset is `[data-sv] ul { margin: 0 }` at (0,1,1) and
+     a bare class loses to it — the rule and its air would collapse onto
+     the lead's last line. Every margin on a heading, paragraph or list
+     in this file is written the same way for the same reason. */
+  [data-sv] .sv-ab__facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px var(--a);
+    margin-top: var(--c);
+    padding-top: var(--b);
+    border-top: 1px solid rgba(198, 161, 91, 0.4);
+  }
+
+  .sv-ab__facts li {
+    display: flex;
+    align-items: center;
+    gap: var(--a);
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--grey);
+  }
+
+  /* Every item carries the dot and the first one's is then removed, so
+     that the stacked phone layout below — where each fact is its own
+     line — can simply put the first one back rather than inventing a
+     second marker. */
+  .sv-ab__facts li::before {
+    content: '';
+    flex: none;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--tan);
+  }
+
+  .sv-ab__facts li:first-child::before {
+    display: none;
+  }
+
+  /* ── 01 · the question ──────────────────────────────────────────────── */
+  .sv-ab__q {
+    position: relative;
+    z-index: 1;
+    margin-top: var(--d);
+    padding: var(--f) 0;
+    text-align: center;
+  }
+
+  .sv-ab__q-in {
+    display: grid;
+    justify-items: center;
+    /* .w is a grid container here; without this its items size to
+       max-content and the quote stops wrapping. */
+    min-width: 0;
+  }
+
+  .sv-ab__roundel {
+    width: 54px;
+    height: 54px;
+    opacity: 0.85;
+  }
+
+  [data-sv] .sv-ab__q-lab {
+    margin-top: var(--c);
+    color: rgba(251, 247, 239, 0.62);
+  }
+
+  .sv-ab__pull {
+    margin: var(--a) 0 0;
+    max-width: 100%;
+  }
+
+  [data-sv] .sv-ab__pull p {
+    color: var(--cream);
+  }
+
+  [data-sv] .sv-ab__q-after {
+    margin-top: var(--c);
+    max-width: 48ch;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: rgba(251, 247, 239, 0.74);
+  }
+
+  /* ── section heads, shared ──────────────────────────────────────────── */
+  .sv-ab__sources,
+  .sv-ab__ledger-wrap {
+    position: relative;
+    z-index: 1;
+    padding: var(--f) 0 0;
+  }
+
+  .sv-ab__head {
+    max-width: 62ch;
+    margin-bottom: var(--d);
+  }
+
+  [data-sv] .sv-ab__h2 {
+    margin-top: var(--a);
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+    color: var(--emerald);
+  }
+
+  [data-sv] .sv-ab__h3 {
+    margin-top: 6px;
+    font-size: clamp(1.15rem, 1.7vw, 1.38rem);
+    color: var(--emerald);
+  }
+
+  /* ── 02 · sources ───────────────────────────────────────────────────── */
+  .sv-ab__srcs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--d) var(--f);
+  }
+
+  /* the weave — evens drop half a step, so four items read as a run
+     rather than as a 2x2 table of equal things */
+  .sv-ab__src:nth-child(even) {
+    margin-top: var(--c);
+  }
+
+  .sv-ab__src {
+    min-width: 0;
+    padding-top: var(--b);
+    border-top: 1px solid rgba(198, 161, 91, 0.45);
+  }
+
+  .sv-ab__num {
+    display: block;
+    font-size: clamp(2rem, 3.4vw, 2.8rem);
+    line-height: 1;
+  }
+
+  [data-sv] .sv-ab__src p {
+    margin-top: var(--a);
+    max-width: 44ch;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--grey);
+  }
+
+  [data-sv] .sv-ab__note {
+    margin-top: var(--d);
+  }
+
+  /* ── 03 · the ledger ────────────────────────────────────────────────── */
+  .sv-ab__ledger {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--b);
+    align-items: start;
+  }
+
+  .sv-ab__pan {
+    min-width: 0;
+    padding: var(--c);
+    border-radius: var(--r-card);
+  }
+
+  /* kept things rise */
+  .sv-ab__pan--keep {
+    background: var(--card);
+    box-shadow: var(--sh-s);
+  }
+
+  /* left things sink — recessed, no shadow, and set a step down the
+     page so the pair is never read as two equal halves */
+  .sv-ab__pan--drop {
+    margin-top: var(--b);
+    background: var(--cream-2);
+    border: 1px solid rgba(198, 161, 91, 0.28);
+  }
+
+  .sv-ab__pan-lab {
+    font-family: var(--sans);
+    text-transform: uppercase;
+    color: var(--emerald);
+  }
+
+  .sv-ab__pan--drop .sv-ab__pan-lab {
+    color: var(--grey);
+  }
+
+  [data-sv] .sv-ab__marks {
+    display: grid;
+    gap: var(--a);
+    margin-top: var(--c);
+  }
+
+  .sv-ab__marks li {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: var(--a);
+    align-items: start;
+    font-size: clamp(1rem, 1.1vw, 1.08rem);
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  .sv-ab__mk {
+    width: 22px;
+    height: 22px;
+    /* optical: align the mark to the first line's x-height, not its box */
+    margin-top: 2px;
+  }
+
+  .sv-ab__mk--yes {
+    color: var(--emerald);
+  }
+
+  .sv-ab__mk--no {
+    color: var(--tan);
+  }
+
+  .sv-ab__pan--drop .sv-ab__marks li {
+    color: var(--grey);
+  }
+
+  /* ── 04 · who answers ───────────────────────────────────────────────── */
+  .sv-ab__hand {
+    position: relative;
+    z-index: 1;
+    padding: var(--f) 0 0;
+  }
+
+  .sv-ab__letter {
+    position: relative;
+    z-index: 1;
+  }
+
+  .sv-ab__letter-body {
+    margin-top: var(--b);
+  }
+
+  [data-sv] .sv-ab__letter-body p {
+    font-size: clamp(1.02rem, 1.1vw, 1.1rem);
+    font-weight: 400;
+    line-height: 1.75;
+    color: var(--ink);
+  }
+
+  [data-sv] .sv-ab__letter-body p + p {
+    margin-top: var(--a);
+  }
+
+  .sv-ab__sig-role {
+    display: block;
+    margin-top: 4px;
+    color: var(--grey);
+  }
+
+  /* ── 05 · the hand-off ──────────────────────────────────────────────── */
+  .sv-ab__talk {
+    position: relative;
+    z-index: 1;
+    padding: var(--f) 0 0;
+  }
+
+  /* No measure here: this element is also `.w`, and capping it would
+     centre the close on its own axis instead of leaving it on the page
+     gutter with every other section head. The measure belongs to the
+     copy inside it, which already carries one. */
+
+  .sv-ab__routes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--b);
+    margin-top: var(--c);
+  }
+
+  .sv-ab__plain {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    color: var(--grey);
+  }
+
+  .sv-ab__plain a {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-color: var(--tan);
+  }
+
+  .sv-ab__plain a:hover {
+    color: var(--emerald-d);
+  }
+
+  /* ── motion ─────────────────────────────────────────────────────────── */
+  /* The hold exists only once the gate has armed it, so a visitor whose
+     script never runs sees a complete page rather than a blank one. */
+  .sv-ab.sv-motion-ready [data-sv-motion] {
+    opacity: 0;
+    transform: translateY(var(--rise));
+    transition:
+      opacity 0.85s var(--entrance),
+      transform 0.85s var(--entrance);
+  }
+
+  .sv-ab.sv-motion-ready [data-sv-motion].sv-vis {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The title is held by its line masks instead — it must not also fade
+     and rise, or the two entrances double up. */
+  .sv-ab.sv-motion-ready .sv-ab__title,
+  .sv-ab.sv-motion-ready .sv-ab__title.sv-vis {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .sv-ab.sv-motion-ready .sv-ab__ln > span {
+    transform: translateY(108%);
+    transition: transform 0.95s var(--e);
+  }
+
+  .sv-ab.sv-motion-ready .sv-ab__title.sv-vis .sv-ab__ln > span {
+    transform: none;
+  }
+
+  .sv-ab.sv-motion-ready .sv-ab__title.sv-vis .sv-ab__ln:nth-child(2) > span {
+    transition-delay: 0.09s;
+  }
+
+  /* ── narrow ─────────────────────────────────────────────────────────── */
+  @media (max-width: 880px) {
+    [data-sv].sv-ab {
+      padding-bottom: var(--d);
+    }
+
+    .sv-ab__mast {
+      padding: var(--d) 0 var(--c);
+    }
+
+    .sv-ab__q {
+      margin-top: var(--c);
+      padding: var(--d) 0;
+    }
+
+    .sv-ab__sources,
+    .sv-ab__ledger-wrap,
+    .sv-ab__hand,
+    .sv-ab__talk {
+      padding-top: var(--d);
+    }
+
+    .sv-ab__head {
+      margin-bottom: var(--c);
+    }
+
+    /* The two title lines are each their own block, so a line that no
+       longer fits wraps INSIDE its mask and the reveal reads as three
+       ragged lines rather than two. The floor comes down until each
+       written line is one drawn line again. */
+    [data-sv] .sv-ab__title {
+      font-size: clamp(1.9rem, 7.6vw, 2.9rem);
+    }
+
+    /* Stacked, one fact per line, each with its dot — a wrapped row of
+       dotted facts reads as a bullet list that lost its first bullet. */
+    [data-sv] .sv-ab__facts {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .sv-ab__facts li:first-child::before {
+      display: block;
+    }
+
+    /* One column. The weave and the ledger's step are desktop
+       compositions; stacked, they would only read as stray gaps. */
+    .sv-ab__srcs,
+    .sv-ab__ledger {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--c);
+    }
+
+    .sv-ab__src:nth-child(even),
+    .sv-ab__pan--drop {
+      margin-top: 0;
+    }
+
+    .sv-ab__pan {
+      padding: var(--b);
+    }
+
+    /* The thread is a desktop composition: at phone width it crosses
+       the copy rather than framing it. */
+    .sv-ab__thread {
+      display: none;
+    }
+  }
+
+  /* Reduced motion is handled globally in sv-system.css §10, but the
+     line masks are this section's own and have to be released here. */
+  @media (prefers-reduced-motion: reduce) {
+    .sv-ab.sv-motion-ready [data-sv-motion],
+    .sv-ab.sv-motion-ready .sv-ab__ln > span {
+      opacity: 1;
+      transform: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "SV About",
+  "tag": "section",
+  "class": "sv-ab-mount",
+  "settings": [
+    { "type": "header", "content": "Masthead" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Our story" },
+    {
+      "type": "text",
+      "id": "title_a",
+      "label": "Title, first line",
+      "info": "Both lines blank falls back to the page title.",
+      "default": "Named after a child"
+    },
+    { "type": "text", "id": "title_b", "label": "Title, second line", "default": "in our own family." },
+    {
+      "type": "textarea",
+      "id": "lead",
+      "label": "Lead",
+      "default": "Sahasra Vastra is a small family business in Thiruvananthapuram, Kerala. We bring together everyday and occasion clothing for children from newborn to eight years, gathered from makers and suppliers across India and beyond."
+    },
+    {
+      "type": "paragraph",
+      "content": "Three facts, gold-dotted under the lead. Leave one blank to drop it."
+    },
+    { "type": "text", "id": "fact_1", "label": "Fact 1", "default": "Thiruvananthapuram, Kerala" },
+    { "type": "text", "id": "fact_2", "label": "Fact 2", "default": "Newborn to 8 years" },
+    { "type": "text", "id": "fact_3", "label": "Fact 3", "default": "Run by one family" },
+
+    { "type": "header", "content": "The question" },
+    {
+      "type": "paragraph",
+      "content": "The page's single emerald panel. It only works while there is exactly one of it — clear the quote to remove the panel rather than adding a second dark moment elsewhere."
+    },
+    { "type": "text", "id": "q_label", "label": "Label", "default": "Before any piece reaches our shelf" },
+    {
+      "type": "text",
+      "id": "q_quote",
+      "label": "The question",
+      "default": "Would we dress our own child in this?"
+    },
+    {
+      "type": "textarea",
+      "id": "q_after",
+      "label": "Line under the question",
+      "default": "The brand carries the name of a child in our own family. That is why we are careful, and that one question is the whole of it."
+    },
+
+    { "type": "header", "content": "Where our clothes come from" },
+    { "type": "text", "id": "src_eyebrow", "label": "Eyebrow", "default": "Where our clothes come from" },
+    { "type": "text", "id": "src_title", "label": "Title", "default": "We don't run a factory." },
+    {
+      "type": "textarea",
+      "id": "src_lead",
+      "label": "Lead",
+      "default": "We spend our time finding good children's clothing wherever it is made. Our pieces come from four places."
+    },
+    {
+      "type": "textarea",
+      "id": "src_note",
+      "label": "Note under the four",
+      "default": "Many of our pieces come in small lots, so a design may be available in only a few sizes. Once it is gone, it may not come back."
+    },
+
+    { "type": "header", "content": "Hand-picked" },
+    { "type": "text", "id": "led_eyebrow", "label": "Eyebrow", "default": "Hand-picked, one piece at a time" },
+    {
+      "type": "text",
+      "id": "led_title",
+      "label": "Title",
+      "default": "We look at every piece before it goes on the website."
+    },
+    { "type": "text", "id": "keep_label", "label": "Kept column label", "default": "What we check" },
+    { "type": "text", "id": "drop_label", "label": "Rejected column label", "default": "What we leave behind" },
+
+    { "type": "header", "content": "Who answers" },
+    { "type": "text", "id": "hand_label", "label": "Label", "default": "A small business, run by hand" },
+    {
+      "type": "richtext",
+      "id": "hand_body",
+      "label": "Body",
+      "default": "<p>Our family runs everything here: finding the pieces, checking each one, and packing every parcel. When you message us, you are talking to the people who packed your order.</p><p>We answer within a day.</p>"
+    },
+    {
+      "type": "text",
+      "id": "sign_name",
+      "label": "Signature name",
+      "info": "Leave blank to remove the signature entirely."
+    },
+    { "type": "text", "id": "sign_role", "label": "Signature role" },
+
+    { "type": "header", "content": "The hand-off" },
+    {
+      "type": "paragraph",
+      "content": "The number and the address come from the shop metafields custom.whatsapp_number and custom.support_email. Neither is typed here: a second copy is how the two fall out of step. A route with no metafield is not rendered."
+    },
+    { "type": "text", "id": "talk_title", "label": "Title", "default": "Talk to us" },
+    {
+      "type": "textarea",
+      "id": "talk_body",
+      "label": "Body",
+      "default": "Questions about sizing, fabric, or an order in transit are all welcome. The people who packed your parcel are the people who answer."
+    },
+    { "type": "text", "id": "wa_label", "label": "WhatsApp button label", "default": "Message us on WhatsApp" },
+    {
+      "type": "text",
+      "id": "wa_prefill",
+      "label": "WhatsApp opening message",
+      "default": "Hi Sahasra Vastra, I have a question."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "source",
+      "name": "Source",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Title" },
+        { "type": "textarea", "id": "body", "label": "Body" }
+      ]
+    },
+    {
+      "type": "check",
+      "name": "What we check",
+      "settings": [{ "type": "text", "id": "label", "label": "Line" }]
+    },
+    {
+      "type": "reject",
+      "name": "What we leave behind",
+      "settings": [{ "type": "text", "id": "label", "label": "Line" }]
+    }
+  ]
+}
+{% endschema %}
