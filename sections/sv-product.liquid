@@ -660,6 +660,7 @@
                         data-sv-size
                         data-variant-id="{{ v.id }}"
                         data-available="{{ v.available }}"
+                        data-stock="{% if v.inventory_management == 'shopify' and v.inventory_policy == 'deny' %}{{ v.inventory_quantity | at_least: 0 }}{% endif %}"
                         data-price="{{ v.price | money }}"
                         data-compare="{% if v.compare_at_price > v.price %}{{ v.compare_at_price | money }}{% endif %}"
                         data-title="{{ v.title | escape }}"
@@ -713,6 +714,16 @@
                   name="quantity"
                   value="1"
                   min="1"
+                  {%- comment -%}
+                    Stock cap for the size selected on load: the browser
+                    enforces it without JS, and sv-product.js reads
+                    data-stock when there is no size stepper (one-size
+                    designs). Blank means Shopify is not limiting stock.
+                  {%- endcomment -%}
+                  {%- if variant.inventory_management == 'shopify' and variant.inventory_policy == 'deny' and variant.inventory_quantity > 0 %}
+                    max="{{ variant.inventory_quantity }}"
+                    data-stock="{{ variant.inventory_quantity }}"
+                  {%- endif %}
                   step="1"
                   inputmode="numeric"
                   data-sv-qty-input
