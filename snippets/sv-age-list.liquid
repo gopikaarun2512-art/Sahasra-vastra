@@ -1,0 +1,37 @@
+{% doc %}
+  The age bands, in menu order, as "tag::label" pairs joined by "||".
+  Read from the same place sv-age-prompt reads them — the main menu's
+  third level, every link whose last URL segment starts `age-` — so the
+  finder, the shelf sidebar and the age dialog can never name a band
+  differently. Duplicates (a band listed under two ages) print once.
+
+    {%- capture raw -%}{% render 'sv-age-list' %}{%- endcapture -%}
+    {%- assign bands = raw | strip | split: '||' -%}
+
+  @param {string} [menu] - Menu handle, default main-menu
+{% enddoc %}
+
+{%- liquid
+  assign nav = linklists[menu] | default: linklists['main-menu']
+  assign seen = '|'
+  assign out = ''
+  for link in nav.links
+    for band in link.links
+      for chip in band.links
+        assign parts = chip.url | split: '/'
+        assign tag = parts.last
+        assign head = tag | slice: 0, 4
+        if head != 'age-'
+          continue
+        endif
+        assign probe = '|' | append: tag | append: '|'
+        if seen contains probe
+          continue
+        endif
+        assign seen = seen | append: tag | append: '|'
+        assign out = out | append: tag | append: '::' | append: chip.title | append: '||'
+      endfor
+    endfor
+  endfor
+  echo out
+-%}

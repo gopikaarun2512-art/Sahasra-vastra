@@ -1,0 +1,18 @@
+{
+  "sections": {
+    "categories": {
+      "type": "sv-shop-by-category",
+      "settings": {
+        "eyebrow": "Products",
+        "heading": "Every category, in your child’s size",
+        "sub": "Pick a category, tell us their age, and we’ll show only what’s made to fit.",
+        "shape": "square",
+        "columns": 6,
+        "columns_mobile": 3,
+        "cta_label": "",
+        "auto_open": true
+      }
+    }
+  },
+  "order": ["categories"]
+}

@@ -1,0 +1,318 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   SAHASRA VASTRA · PRODUCTS FINDER POPUP
+   Same card, backdrop and chip language as the age dialog (sv-age.css),
+   wider, because step two is a grid of category icons. Tokens only.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.sv-finderdlg {
+  width: min(760px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--sh-l);
+  overflow: hidden;
+}
+
+.sv-finderdlg::backdrop {
+  background: rgba(26, 26, 26, 0.5);
+}
+
+.sv-finderdlg[open] {
+  animation: sv-finder-in var(--std) var(--e);
+}
+
+@keyframes sv-finder-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+.sv-finderdlg__panel {
+  position: relative;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: var(--c) var(--b) var(--b);
+}
+
+.sv-finderdlg__x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--grey);
+  cursor: pointer;
+}
+
+.sv-finderdlg__x:hover { background: var(--cream-2); color: var(--ink); }
+.sv-finderdlg__x svg { width: 20px; height: 20px; }
+
+.sv-finderdlg__loading {
+  margin: var(--c) 0;
+  text-align: center;
+  color: var(--grey);
+}
+
+.sv-finderdlg__loading a { color: var(--emerald); }
+
+/* ── steps ─────────────────────────────────────────────────────────── */
+.sv-finder__step { text-align: center; }
+.sv-finder__step[hidden] { display: none; }
+
+[data-sv] .sv-finder__kicker { margin: 0 0 6px; }
+
+[data-sv] .sv-finder__h {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.5rem, 3.2vw, 2rem);
+  font-weight: 500;
+  line-height: 1.15;
+  outline: none;
+}
+
+[data-sv] .sv-finder__sub {
+  max-width: none;
+  margin: 8px 0 var(--b);
+  color: var(--grey);
+  font-size: 0.92rem;
+}
+
+/* ── girls · boys (littlesmile / sweetlime) ────────────────────────── */
+.sv-finder__gender { margin: 0 0 var(--a); }
+
+.sv-finder__seg {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--cream-2);
+}
+
+.sv-finder__segbtn {
+  min-width: 84px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background var(--micro) var(--e), color var(--micro) var(--e);
+}
+
+.sv-finder__segbtn.is-on {
+  background: var(--emerald);
+  color: var(--cream);
+}
+
+/* ── age chips ─────────────────────────────────────────────────────── */
+.sv-finder__ages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 10px;
+}
+
+.sv-finder__age {
+  display: grid;
+  gap: 2px;
+  padding: 14px 10px;
+  border: 1px solid var(--cream-2);
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color var(--micro) var(--e), background var(--micro) var(--e), color var(--micro) var(--e);
+}
+
+.sv-finder__age:hover:not([disabled]) { border-color: var(--tan); }
+
+.sv-finder__age.is-on {
+  border-color: var(--emerald);
+  box-shadow: inset 0 0 0 1px var(--emerald);
+}
+
+.sv-finder__age[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sv-finder__agenote {
+  min-height: 1em;
+  color: var(--grey);
+  font-size: 0.72rem;
+}
+
+.sv-finder__skip {
+  margin-top: var(--a);
+  padding: 8px;
+  border: 0;
+  background: none;
+  color: var(--emerald);
+  font-size: 0.88rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── back link ─────────────────────────────────────────────────────── */
+.sv-finder__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 6px 10px 6px 4px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--emerald);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.sv-finder__back:hover { background: var(--cream-2); }
+.sv-finder__back svg { width: 18px; height: 18px; }
+
+/* ── category icons (the lemoon grid) ──────────────────────────────── */
+[data-sv] .sv-finder__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: var(--a);
+  margin: var(--b) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sv-finder__cell[hidden] { display: none; }
+
+.sv-finder__tile {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 0 6px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sv-finder__icon {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--cream-2);
+  border-radius: var(--r-img);
+  background: var(--cream-2);
+  overflow: hidden;
+  transition: border-color var(--micro) var(--e), transform var(--std) var(--e);
+}
+
+.sv-finder__tile:hover .sv-finder__icon {
+  border-color: var(--tan);
+  transform: translateY(-2px);
+}
+
+.sv-finder__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sv-finder__name { font-size: 0.95rem; }
+
+.sv-finder__count {
+  margin-top: -4px;
+  color: var(--grey);
+  font-size: 0.75rem;
+}
+
+[data-sv] .sv-finder__empty {
+  margin: var(--b) auto 0;
+  color: var(--grey);
+}
+
+/* ── sub-category cards (the pikabookidz cards) ────────────────────── */
+[data-sv] .sv-finder__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--a);
+  margin: var(--b) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sv-finder__cards[hidden],
+.sv-finder__cards li[hidden] { display: none; }
+
+.sv-finder__card {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--sh-s);
+  color: var(--ink);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow var(--std) var(--e), transform var(--std) var(--e);
+}
+
+.sv-finder__card:hover {
+  box-shadow: var(--sh);
+  transform: translateY(-2px);
+}
+
+.sv-finder__cardimg {
+  display: block;
+  aspect-ratio: 1;
+  background: var(--cream-2);
+}
+
+.sv-finder__cardname {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 3.4em;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.sv-finder__cardname::after {
+  content: '→';
+  color: var(--emerald);
+}
+
+.sv-finder__card--all { background: var(--cream); }
+
+.sv-caticon--empty {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--cream-2);
+}
+
+@media (max-width: 749px) {
+  .sv-finderdlg__panel { padding: var(--c) var(--a) var(--a); }
+  .sv-finder__ages { grid-template-columns: repeat(3, 1fr); }
+  [data-sv] .sv-finder__grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  [data-sv] .sv-finder__cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .sv-finder__name { font-size: 0.82rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sv-finderdlg[open] { animation: none; }
+  .sv-finder__tile:hover .sv-finder__icon,
+  .sv-finder__card:hover { transform: none; }
+}

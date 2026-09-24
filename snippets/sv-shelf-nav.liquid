@@ -1,0 +1,325 @@
+{% doc %}
+  The shelf sidebar — lunabee's left column: Category with counts, then
+  Girls · Boys, then Age. Rendered at the top of Horizon's vertical
+  filter panel (blocks/filters.liquid), above Shopify's own filters, and
+  again in the phone filter drawer.
+
+  Everything keeps the shopper's answer: the age (and girls/boys) they
+  are looking at is carried into every category link, so moving from
+  Rompers in 6–9 m to Co-ord sets lands on Co-ord sets in 6–9 m — the
+  count beside each category is the count in THAT age, and a category
+  with nothing in it is left out rather than linked to an empty shelf.
+
+  Filtering is Shopify's tag URL: /collections/<handle>/<age-tag>, with
+  `+gender-girl` added for girls. Unisex designs carry both gender tags.
+
+  @param {string} [id] - Suffix for heading ids (desktop / drawer)
+{% enddoc %}
+
+{%- liquid
+  assign active_age = ''
+  assign active_age_label = ''
+  assign active_gender = ''
+  for t in current_tags
+    assign head = t | slice: 0, 4
+    if head == 'age-'
+      assign active_age = t
+    elsif t == 'gender-girl' or t == 'gender-boy'
+      assign active_gender = t
+    endif
+  endfor
+
+  capture bands_raw
+    render 'sv-age-list'
+  endcapture
+  assign bands = bands_raw | strip | split: '||'
+  assign band_tags = ''
+  for b in bands
+    assign bp = b | split: '::'
+    assign band_tags = band_tags | append: bp[0] | append: ' '
+    if bp[0] == active_age
+      assign active_age_label = bp[1]
+    endif
+  endfor
+
+  capture cats_raw
+    render 'sv-cat-list'
+  endcapture
+  assign cats = cats_raw | strip | split: '||'
+
+  # The tail every category link carries: the current age and gender.
+  assign keep = active_age
+  if active_gender != ''
+    if keep != ''
+      assign keep = keep | append: '+' | append: active_gender
+    else
+      assign keep = active_gender
+    endif
+  endif
+  assign tail = ''
+  if keep != ''
+    assign tail = '/' | append: keep
+  endif
+
+  assign has_gender = false
+  if collection.all_tags contains 'gender-girl' or collection.all_tags contains 'gender-boy'
+    assign has_gender = true
+  endif
+-%}
+
+<nav class="sv-shelfnav" data-sv aria-label="Browse">
+  {%- if cats.size > 0 -%}
+    <div class="sv-shelfnav__group">
+      <h4 class="sv-shelfnav__h" id="sv-shelfnav-cat-{{ id }}">
+        Category
+        {%- if active_age_label != '' %} <span class="sv-shelfnav__for">· {{ active_age_label }}</span>{% endif -%}
+      </h4>
+      <ul class="sv-shelfnav__cats" role="list" aria-labelledby="sv-shelfnav-cat-{{ id }}">
+        {%- for c in cats -%}
+          {%- liquid
+            assign cp = c | split: '::'
+            assign cp_h = cp[0]
+          assign col = collections[cp_h]
+            if col == blank or col.id == blank
+              continue
+            endif
+            capture counts
+              render 'sv-cat-counts', collection: col, tags: band_tags, gender: active_gender
+            endcapture
+            assign n = 0
+            assign key = 'all:'
+            if active_age != ''
+              assign key = active_age | append: ':'
+            endif
+            assign parts = counts | strip | split: ','
+            for p in parts
+              assign pk = p | split: ':' | first | append: ':'
+              if pk == key
+                assign n = p | split: ':' | last | plus: 0
+              endif
+            endfor
+            assign is_here = false
+            if col.handle == collection.handle
+              assign is_here = true
+            endif
+            capture subs_raw
+              render 'sv-cat-list', parent: col.handle
+            endcapture
+            assign subs = subs_raw | strip | split: '||'
+            assign in_sub = false
+            for s in subs
+              assign sh = s | split: '::' | first
+              if sh == collection.handle
+                assign in_sub = true
+              endif
+            endfor
+            if n == 0 and is_here == false and in_sub == false
+              continue
+            endif
+          -%}
+          <li>
+            <a class="sv-shelfnav__cat{% if is_here %} is-on{% endif %}" href="{{ col.url }}{{ tail }}" {% if is_here %}aria-current="page"{% endif %}>
+              <span>{{ cp[1] }}</span>
+              <span class="sv-shelfnav__n">{{ n }}</span>
+            </a>
+            {%- if subs.size > 0 -%}{%- if is_here or in_sub -%}
+              <ul class="sv-shelfnav__subs" role="list">
+                {%- for s in subs -%}
+                  {%- assign sp = s | split: '::' -%}
+                  {%- assign sp_h = sp[0]
+          assign sc = collections[sp_h] -%}
+                  {%- if sc == blank or sc.id == blank -%}{%- continue -%}{%- endif -%}
+                  <li>
+                    <a class="sv-shelfnav__sub{% if sc.handle == collection.handle %} is-on{% endif %}" href="{{ sc.url }}{{ tail }}" {% if sc.handle == collection.handle %}aria-current="page"{% endif %}>{{ sp[1] }}</a>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            {%- endif -%}{%- endif -%}
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+
+  {%- if has_gender -%}
+    {%- liquid
+      assign age_tail = ''
+      if active_age != ''
+        assign age_tail = '/' | append: active_age
+      endif
+      assign plus_age = ''
+      if active_age != ''
+        assign plus_age = active_age | append: '+'
+      endif
+    -%}
+    <div class="sv-shelfnav__group">
+      <h4 class="sv-shelfnav__h">Shopping for</h4>
+      <div class="sv-shelfnav__seg">
+        <a class="sv-shelfnav__segbtn{% if active_gender == '' %} is-on{% endif %}" href="{{ collection.url }}{{ age_tail }}">All</a>
+        <a class="sv-shelfnav__segbtn{% if active_gender == 'gender-girl' %} is-on{% endif %}" href="{{ collection.url }}/{{ plus_age }}gender-girl">Girls</a>
+        <a class="sv-shelfnav__segbtn{% if active_gender == 'gender-boy' %} is-on{% endif %}" href="{{ collection.url }}/{{ plus_age }}gender-boy">Boys</a>
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- if bands.size > 0 -%}
+    {%- liquid
+      assign g_tail = ''
+      assign g_plus = ''
+      if active_gender != ''
+        assign g_tail = '/' | append: active_gender
+        assign g_plus = '+' | append: active_gender
+      endif
+    -%}
+    <div class="sv-shelfnav__group">
+      <h4 class="sv-shelfnav__h">Age</h4>
+      <ul class="sv-shelfnav__ages" role="list">
+        <li>
+          <a class="sv-shelfnav__age{% if active_age == '' %} is-on{% endif %}" href="{{ collection.url }}{{ g_tail }}">All ages</a>
+        </li>
+        {%- for b in bands -%}
+          {%- assign bp = b | split: '::' -%}
+          {%- if bp[0] == blank -%}{%- continue -%}{%- endif -%}
+          <li>
+            {%- if collection.all_tags contains bp[0] -%}
+              <a class="sv-shelfnav__age{% if bp[0] == active_age %} is-on{% endif %}" href="{{ collection.url }}/{{ bp[0] }}{{ g_plus }}" {% if bp[0] == active_age %}aria-current="true"{% endif %}>{{ bp[1] }}</a>
+            {%- else -%}
+              <span class="sv-shelfnav__age is-none" title="Not made in {{ bp[1] | escape }} yet">{{ bp[1] }}</span>
+            {%- endif -%}
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+</nav>
+
+<style>
+  .sv-shelfnav {
+    display: grid;
+    gap: var(--b, 28px);
+    padding: 0 0 var(--b, 28px);
+    margin: 0 0 var(--a, 16px);
+    border-bottom: 1px solid var(--cream-2, #F2EDE1);
+    font-size: 0.95rem;
+  }
+
+  .sv-shelfnav__h {
+    margin: 0 0 12px;
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .sv-shelfnav__for {
+    color: var(--grey);
+    font-size: 0.95rem;
+  }
+
+  .sv-shelfnav__cats,
+  .sv-shelfnav__subs,
+  .sv-shelfnav__ages {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sv-shelfnav__cat {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .sv-shelfnav__cat:hover span:first-child,
+  .sv-shelfnav__sub:hover {
+    color: var(--emerald);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sv-shelfnav__cat.is-on {
+    color: var(--emerald);
+    font-weight: 600;
+  }
+
+  .sv-shelfnav__n {
+    color: var(--grey);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sv-shelfnav__subs {
+    margin: 0 0 6px 12px;
+    padding-left: 12px;
+    border-left: 1px solid var(--cream-2, #F2EDE1);
+  }
+
+  .sv-shelfnav__sub {
+    display: block;
+    padding: 5px 0;
+    color: var(--grey);
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .sv-shelfnav__sub.is-on {
+    color: var(--emerald);
+    font-weight: 600;
+  }
+
+  .sv-shelfnav__seg {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--cream-2, #F2EDE1);
+  }
+
+  .sv-shelfnav__segbtn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    color: var(--ink);
+    font-size: 0.88rem;
+    text-decoration: none;
+  }
+
+  .sv-shelfnav__segbtn.is-on {
+    background: var(--emerald);
+    color: var(--cream);
+  }
+
+  .sv-shelfnav__ages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sv-shelfnav__age {
+    display: inline-block;
+    padding: 8px 10px;
+    border: 1px solid var(--cream-2, #F2EDE1);
+    border-radius: 4px;
+    color: var(--ink);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  a.sv-shelfnav__age:hover {
+    border-color: var(--tan);
+  }
+
+  .sv-shelfnav__age.is-on {
+    border-color: var(--emerald);
+    background: var(--emerald);
+    color: var(--cream);
+  }
+
+  .sv-shelfnav__age.is-none {
+    color: var(--grey);
+    border-style: dashed;
+    opacity: 0.6;
+  }
+</style>

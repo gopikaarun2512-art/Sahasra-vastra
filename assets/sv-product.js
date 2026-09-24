@@ -51,7 +51,9 @@
     const addButton = root.querySelector('[data-sv-add]');
     const addLabel = root.querySelector('[data-sv-add-label]');
     const priceEl = root.querySelector('[data-sv-price]');
-    const mrpEl = root.querySelector('[data-sv-mrp]');
+    /* The MRP line now lives in its own section below the shelves
+       (sv-product-record), outside this root — look for it page-wide. */
+    const mrpEl = root.querySelector('[data-sv-mrp]') || document.querySelector('[data-sv-mrp]');
     const waLink = root.querySelector('[data-sv-wa]');
     const errorEl = root.querySelector('[data-sv-error]');
     const bar = root.querySelector('[data-sv-bar]');
@@ -309,6 +311,21 @@
       chart.addEventListener('click', (e) => { if (e.target === chart) chart.close(); });
     }
 
+    /* The Size guide is a closed <details> in the column now. Any link
+       to it — the sizing note under the gallery — opens it before the
+       browser scrolls there, so the jump lands on the table, not on a
+       shut bar. */
+    const measure = root.querySelector('[data-sv-measure]');
+    if (measure) {
+      const openMeasure = () => {
+        measure.open = true;
+      };
+      root.querySelectorAll(`a[href="#${CSS.escape(measure.id)}"]`).forEach((a) =>
+        a.addEventListener('click', openMeasure)
+      );
+      if (window.location.hash === `#${measure.id}`) openMeasure();
+    }
+
     setupGallery(root);
     setupShare(root);
     setupSave(root);
@@ -373,8 +390,21 @@
       track.scrollTo({ left: slides[next].offsetLeft - track.offsetLeft, behavior: 'smooth' });
     };
 
+    /* A product video plays only while its slide is the one on screen,
+       and never under reduced motion (its controls are still there). */
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const playOnly = (i) => {
+      slides.forEach((slide, n) => {
+        const video = slide.querySelector('video');
+        if (!video) return;
+        if (n === i && !still) video.play().catch(() => {});
+        else video.pause();
+      });
+    };
+
     const mark = (i) => {
       current = i;
+      playOnly(i);
       thumbs.forEach((t, n) => {
         const on = n === i;
         t.classList.toggle('is-on', on);

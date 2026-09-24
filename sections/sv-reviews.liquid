@@ -1,16 +1,46 @@
 {%- comment -%}
-  Customer reviews — a host for a reviews app's theme block (Judge.me,
-  Loox and the like all ship an "@app" block). The theme holds no review
-  data of its own and never invents any: with no app block added, this
-  section renders nothing — ARCHITECTURE §27.2, no heading, no empty
-  state, no placeholder stars.
+  Customer reviews — the momandzoey block: the average and how the stars
+  split, "Write a review", then the reviews themselves with their photos.
 
-  Setup: install the reviews app → Online Store → Customize → Product
-  page → this section → Add block → the app's "Reviews widget".
+  ── Where reviews come from ───────────────────────────────────────────
+  Real reviews only, never invented (ARCHITECTURE §27.2 still holds).
+  Two sources, in this order:
+
+  1. A reviews app's theme block (Judge.me, Loox…) added to this section
+     in the theme editor. If one is present, it is the whole section —
+     the app owns collection, moderation and display.
+  2. Otherwise the store's own: `sv_review` metaobject (shown in Admin as "Product review") entries
+     (Admin → Content → Metaobjects → Product review), each with the
+     product, name, rating, title, review, optional photo, place and
+     date. Only Active entries show — leave a new one as Draft until it
+     is checked.
+
+  "Write a review" posts through Shopify's contact form, so a parent's
+  review arrives as an email to the store with the product named in it;
+  it becomes public only when someone enters it as a metaobject. Nothing
+  is published unseen, and no app is needed to start.
+
+  With no reviews yet the section says so plainly and offers the form —
+  it never shows placeholder stars or sample reviews.
 {%- endcomment -%}
 
+{%- liquid
+  capture stats
+    render 'sv-review-stats', product: product
+  endcapture
+  assign st = stats | strip | split: ','
+  assign count = st[0] | plus: 0
+  assign sum = st[1] | plus: 0
+  assign avg = 0
+  if count > 0
+    assign avg = sum | times: 1.0 | divided_by: count
+  endif
+  assign per_page = section.settings.per_page | default: 5
+  assign form_id = 'sv-review-form-' | append: section.id
+-%}
+
 {%- if section.blocks.size > 0 -%}
-  <section class="sv-reviews" data-sv>
+  <section class="sv-reviews" id="reviews" data-sv>
     <div class="w">
       {%- if section.settings.heading != blank -%}
         <h2 class="sv-reviews__h">{{ section.settings.heading }}</h2>
@@ -20,6 +50,161 @@
       {%- endfor -%}
     </div>
   </section>
+{%- elsif count > 0 or section.settings.show_empty -%}
+  <section class="sv-reviews" id="reviews" data-sv data-sv-reviews>
+    <div class="w">
+      {%- if section.settings.heading != blank -%}
+        <h2 class="sv-reviews__h">{{ section.settings.heading }}</h2>
+      {%- endif -%}
+
+      <div class="sv-reviews__top">
+        {%- if count > 0 -%}
+          <div class="sv-reviews__score">
+            <p class="sv-reviews__avg">{{ avg | round: 1 }}</p>
+            {%- render 'sv-stars', rating: avg, class: 'sv-stars--lg' -%}
+            <p class="sv-reviews__based">Based on {{ count }} review{% if count != 1 %}s{% endif %}</p>
+          </div>
+
+          <ul class="sv-reviews__dist" role="list" aria-label="How the ratings split">
+            {%- for i in (1..5) -%}
+              {%- liquid
+                assign stars = 6 | minus: i
+                assign idx = i | plus: 1
+                assign n = st[idx] | plus: 0
+                assign w = n | times: 100.0 | divided_by: count
+              -%}
+              <li class="sv-reviews__bar">
+                <span class="sv-reviews__barlab">{{ stars }} ★</span>
+                <span class="sv-reviews__track" aria-hidden="true"><span style="width: {{ w }}%"></span></span>
+                <span class="sv-reviews__barn">{{ n }}<span class="sv-visually-hidden"> reviews with {{ stars }} stars</span></span>
+              </li>
+            {%- endfor -%}
+          </ul>
+        {%- else -%}
+          <div class="sv-reviews__score sv-reviews__score--empty">
+            <p class="sv-reviews__none">{{ section.settings.empty_text | default: 'No reviews yet.' }}</p>
+            <p class="sv-reviews__based">{{ section.settings.empty_sub | default: 'Bought this for your little one? Tell other parents how it fits.' }}</p>
+          </div>
+        {%- endif -%}
+
+        <div class="sv-reviews__cta">
+          <button type="button" class="btn sv-reviews__write" data-sv-review-open aria-expanded="false" aria-controls="{{ form_id }}">Write a review</button>
+        </div>
+      </div>
+
+      {%- comment -%} ── The form: Shopify's contact form, emailed to the store. {%- endcomment -%}
+      {%- form 'contact', id: form_id, class: 'sv-reviews__form' -%}
+        {%- if form.posted_successfully? -%}
+          <p class="sv-reviews__thanks" role="status" data-sv-review-posted>
+            Thank you — your review has reached us. We read every one and publish it here shortly.
+          </p>
+        {%- else -%}
+          {%- if form.errors -%}
+            <p class="sv-reviews__err" role="alert">{{ form.errors | default_errors }}</p>
+          {%- endif -%}
+          <input type="hidden" name="contact[Review for]" value="{{ product.title | escape }}">
+          <input type="hidden" name="contact[Product link]" value="{{ shop.url }}{{ product.url }}">
+          <fieldset class="sv-reviews__rate">
+            <legend>Your rating</legend>
+            <div class="sv-reviews__starpick">
+              {%- for i in (1..5) -%}
+                {%- assign v = 6 | minus: i -%}
+                <input type="radio" id="{{ form_id }}-r{{ v }}" name="contact[Rating]" value="{{ v }} out of 5" required>
+                <label for="{{ form_id }}-r{{ v }}" title="{{ v }} star{% if v > 1 %}s{% endif %}"><span class="sv-visually-hidden">{{ v }} star{% if v > 1 %}s{% endif %}</span>★</label>
+              {%- endfor -%}
+            </div>
+          </fieldset>
+          <div class="sv-reviews__fields">
+            <label class="sv-reviews__field">
+              <span>Title</span>
+              <input type="text" name="contact[Review title]" maxlength="120" placeholder="e.g. Soft, and the size was right">
+            </label>
+            <label class="sv-reviews__field sv-reviews__field--wide">
+              <span>Your review</span>
+              <textarea name="contact[body]" rows="5" required placeholder="How did it fit? Which size did you order, and for what age?"></textarea>
+            </label>
+            <label class="sv-reviews__field">
+              <span>Name (shown with the review)</span>
+              <input type="text" name="contact[name]" autocomplete="name" required>
+            </label>
+            <label class="sv-reviews__field">
+              <span>Email (never shown)</span>
+              <input type="email" name="contact[email]" autocomplete="email" required>
+            </label>
+          </div>
+          <p class="sv-reviews__note sv-fine">
+            Have a photo of it being worn? Reply to our confirmation email or send it on WhatsApp and we’ll add it to your review.
+          </p>
+          <button type="submit" class="btn sv-reviews__submit">Send review</button>
+        {%- endif -%}
+      {%- endform -%}
+
+      {%- if count > 0 -%}
+        <ul class="sv-reviews__list" role="list" data-sv-review-list data-per-page="{{ per_page }}">
+          {%- assign shown = 0 -%}
+          {%- for r in shop.metaobjects.sv_review.values -%}
+            {%- if r.product.value.id != product.id -%}{%- continue -%}{%- endif -%}
+            {%- assign stars = r.rating.value.rating | plus: 0 -%}
+            {%- if stars <= 0 -%}{%- continue -%}{%- endif -%}
+            {%- assign shown = shown | plus: 1 -%}
+            <li class="sv-review" {% if shown > per_page %}hidden data-sv-review-more{% endif %}>
+              <div class="sv-review__head">
+                {%- render 'sv-stars', rating: stars -%}
+                {%- if r.review_date.value != blank -%}
+                  <time class="sv-review__date sv-fine" datetime="{{ r.review_date.value | date: '%Y-%m-%d' }}">{{ r.review_date.value | date: '%d %b %Y' }}</time>
+                {%- endif -%}
+              </div>
+              <p class="sv-review__who">
+                <strong>{{ r.author.value | default: 'A parent' }}</strong>
+                {%- if r.location.value != blank %} <span class="sv-review__where">· {{ r.location.value }}</span>{% endif -%}
+                {%- if r.verified.value %} <span class="sv-review__ok">Verified buyer</span>{% endif -%}
+              </p>
+              {%- if r.title.value != blank -%}<p class="sv-review__title">{{ r.title.value }}</p>{%- endif -%}
+              {%- if r.body.value != blank -%}<p class="sv-review__body">{{ r.body.value | newline_to_br }}</p>{%- endif -%}
+              {%- if r.photo.value != blank -%}
+                <a class="sv-review__photo" href="{{ r.photo.value | image_url: width: 1600 }}" target="_blank" rel="noopener">
+                  {{ r.photo.value | image_url: width: 400 | image_tag: widths: '200, 400', sizes: '120px', loading: 'lazy', alt: r.photo.value.alt | default: 'Customer photo' | escape }}
+                </a>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+        {%- if shown > per_page -%}
+          <p class="sv-reviews__morewrap">
+            <button type="button" class="btn btn--ghost" data-sv-review-showmore>Show more reviews</button>
+          </p>
+        {%- endif -%}
+      {%- endif -%}
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const band = document.currentScript.previousElementSibling;
+      if (!band || band.dataset.svBound) return;
+      band.dataset.svBound = '1';
+      const open = band.querySelector('[data-sv-review-open]');
+      const form = band.querySelector('.sv-reviews__form');
+      if (open && form) {
+        /* Closed until asked for — unless it has just been posted or
+           came back with an error, which the reader needs to see. */
+        const keepOpen = form.querySelector('[data-sv-review-posted], .sv-reviews__err');
+        form.hidden = !keepOpen;
+        open.setAttribute('aria-expanded', String(!form.hidden));
+        if (keepOpen) form.scrollIntoView({ block: 'center' });
+        open.addEventListener('click', () => {
+          form.hidden = !form.hidden;
+          open.setAttribute('aria-expanded', String(!form.hidden));
+          if (!form.hidden) form.querySelector('input:not([type=hidden]), textarea')?.focus();
+        });
+      }
+      const more = band.querySelector('[data-sv-review-showmore]');
+      more?.addEventListener('click', () => {
+        band.querySelectorAll('[data-sv-review-more]').forEach((li) => { li.hidden = false; });
+        more.closest('p').remove();
+      });
+    })();
+  </script>
 {%- endif -%}
 
 {% stylesheet %}
@@ -34,6 +219,289 @@
     font-size: clamp(1.8rem, 3.4vw, 2.6rem);
     font-weight: 500;
   }
+
+  .sv-stars {
+    position: relative;
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
+    letter-spacing: 2px;
+    color: var(--cream-2);
+    white-space: nowrap;
+  }
+
+  .sv-stars__row--on {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--sv-stars);
+    overflow: hidden;
+    color: var(--tan);
+  }
+
+  .sv-stars--lg {
+    font-size: 1.4rem;
+  }
+
+  .sv-reviews__top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--c);
+    padding: var(--b);
+    border-radius: var(--r-card);
+    background: var(--card);
+    box-shadow: var(--sh-s);
+  }
+
+  .sv-reviews__score {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    min-width: 160px;
+    text-align: center;
+  }
+
+  .sv-reviews__score--empty {
+    justify-items: start;
+    text-align: left;
+    grid-column: 1 / 3;
+  }
+
+  [data-sv] .sv-reviews__avg {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 3rem;
+    line-height: 1;
+  }
+
+  [data-sv] .sv-reviews__none {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1.5rem;
+  }
+
+  [data-sv] .sv-reviews__based {
+    margin: 0;
+    color: var(--grey);
+    font-size: 0.9rem;
+  }
+
+  [data-sv] .sv-reviews__dist {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sv-reviews__bar {
+    display: grid;
+    grid-template-columns: 3em minmax(0, 1fr) 2.5em;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+  }
+
+  .sv-reviews__track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--cream-2);
+    overflow: hidden;
+  }
+
+  .sv-reviews__track span {
+    display: block;
+    height: 100%;
+    background: var(--tan);
+  }
+
+  .sv-reviews__barn {
+    color: var(--grey);
+    text-align: right;
+  }
+
+  .sv-reviews__form {
+    max-width: 760px;
+    margin: var(--b) auto 0;
+    padding: var(--b);
+    border-radius: var(--r-card);
+    background: var(--cream-2);
+  }
+
+  .sv-reviews__form[hidden] {
+    display: none;
+  }
+
+  .sv-reviews__rate {
+    margin: 0 0 var(--a);
+    padding: 0;
+    border: 0;
+  }
+
+  .sv-reviews__rate legend {
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  /* Five radios drawn as stars. Row-reversed so "this star and every one
+     before it" is a sibling selector. */
+  .sv-reviews__starpick {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    gap: 4px;
+  }
+
+  .sv-reviews__starpick input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sv-reviews__starpick label {
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--card);
+    -webkit-text-stroke: 1px var(--tan);
+    cursor: pointer;
+  }
+
+  .sv-reviews__starpick input:checked ~ label,
+  .sv-reviews__starpick label:hover,
+  .sv-reviews__starpick label:hover ~ label {
+    color: var(--tan);
+  }
+
+  .sv-reviews__starpick input:focus-visible + label {
+    outline: 2px solid var(--emerald);
+    outline-offset: 2px;
+  }
+
+  .sv-reviews__fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--a);
+  }
+
+  .sv-reviews__field {
+    display: grid;
+    gap: 6px;
+    font-size: 0.88rem;
+  }
+
+  .sv-reviews__field--wide {
+    grid-column: 1 / -1;
+  }
+
+  .sv-reviews__field input,
+  .sv-reviews__field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid rgba(26, 26, 26, 0.15);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--ink);
+    font-size: 1rem;
+  }
+
+  [data-sv] .sv-reviews__note {
+    margin: var(--a) 0;
+  }
+
+  [data-sv] .sv-reviews__thanks,
+  [data-sv] .sv-reviews__err {
+    margin: 0;
+  }
+
+  .sv-reviews__err {
+    color: #9b2c2c;
+  }
+
+  [data-sv] .sv-reviews__list {
+    display: grid;
+    gap: 0;
+    max-width: 900px;
+    margin: var(--b) auto 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sv-review {
+    padding: var(--b) 0;
+    border-bottom: 1px solid var(--cream-2);
+  }
+
+  .sv-review[hidden] {
+    display: none;
+  }
+
+  .sv-review__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--a);
+  }
+
+  [data-sv] .sv-review__who,
+  [data-sv] .sv-review__title,
+  [data-sv] .sv-review__body {
+    margin: 8px 0 0;
+  }
+
+  .sv-review__where {
+    color: var(--grey);
+  }
+
+  .sv-review__ok {
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--cream-2);
+    color: var(--emerald);
+    font-size: 0.72rem;
+  }
+
+  [data-sv] .sv-review__title {
+    font-weight: 600;
+  }
+
+  .sv-review__photo {
+    display: inline-block;
+    width: 120px;
+    margin-top: 12px;
+    border-radius: var(--r-img);
+    overflow: hidden;
+  }
+
+  .sv-review__photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sv-reviews__morewrap {
+    margin: var(--b) 0 0;
+    text-align: center;
+  }
+
+  @media (max-width: 749px) {
+    .sv-reviews__top {
+      grid-template-columns: 1fr;
+      gap: var(--b);
+      padding: var(--a);
+    }
+
+    .sv-reviews__score--empty {
+      grid-column: auto;
+    }
+
+    .sv-reviews__cta .btn {
+      width: 100%;
+    }
+
+    .sv-reviews__fields {
+      grid-template-columns: 1fr;
+    }
+  }
 {% endstylesheet %}
 
 {% schema %}
@@ -41,7 +509,12 @@
   "name": "SV Reviews",
   "tag": "div",
   "settings": [
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Customer reviews" }
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Customer reviews" },
+    { "type": "range", "id": "per_page", "label": "Reviews shown before 'Show more'", "min": 3, "max": 20, "step": 1, "default": 5 },
+    { "type": "checkbox", "id": "show_empty", "label": "Show the section before a product has reviews", "info": "Shows 'No reviews yet' with the Write a review form — never sample reviews.", "default": true },
+    { "type": "text", "id": "empty_text", "label": "No reviews heading", "default": "No reviews yet." },
+    { "type": "text", "id": "empty_sub", "label": "No reviews line", "default": "Bought this for your little one? Tell other parents how it fits." },
+    { "type": "paragraph", "content": "Reviews are 'Product review' entries in Admin → Content → Metaobjects (only Active ones show). 'Write a review' emails the review to the store's contact address. To use a reviews app instead, add its block here." }
   ],
   "blocks": [{ "type": "@app" }],
   "presets": [{ "name": "SV Reviews" }]

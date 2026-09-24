@@ -2043,3 +2043,121 @@ section[data-sv].sv-pdp-facts {
     text-align: left;
   }
 }
+
+/* ── 21 · REARRANGED PAGE (Sep 2026, owner's direction) ───────────────
+   Details and the size guide are accordions in the decision column, the
+   shelves follow the photographs, and the set + filed record moved to
+   sections/sv-product-record below the reviews. */
+[data-sv].sv-pdp--record {
+  padding: 0 0 var(--d);
+}
+
+.sv-pdp--record .sv-pdp__ledger {
+  margin-top: var(--d);
+}
+
+.sv-pdp__acc {
+  max-width: none;
+}
+
+.sv-pdp__acc .sv-acc__item > summary {
+  padding: 16px 20px;
+}
+
+.sv-pdp__acc .sv-acc__body {
+  padding: 0 20px 18px;
+}
+
+.sv-pdp__acc .sv-pdp__tablewrap {
+  max-width: none;
+  overflow-x: auto;
+  pointer-events: auto;
+}
+
+.sv-pdp__acc .sv-pdp__chartfig {
+  margin-top: var(--a);
+}
+
+.sv-pdp__measure:focus {
+  outline: none;
+}
+
+/* Product videos in the carousel. */
+.sv-gal__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--cream-2);
+  border: 0;
+}
+
+.sv-gal__slide--video .im {
+  cursor: auto;
+}
+
+.sv-gal__thumb {
+  position: relative;
+}
+
+.sv-gal__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.sv-gal__play svg {
+  width: 26px;
+  height: 26px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(26, 26, 26, 0.55);
+  color: var(--cream);
+}
+
+@media (max-width: 880px) {
+  [data-sv].sv-pdp--record {
+    padding-bottom: var(--c);
+  }
+
+  .sv-pdp--record .sv-pdp__ledger {
+    margin-top: var(--c);
+  }
+}
+
+/* Star line under the title, and the stars themselves (also styled in
+   sections/sv-reviews; repeated here because the title renders first). */
+.sv-stars {
+  position: relative;
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 2px;
+  color: var(--cream-2);
+  white-space: nowrap;
+}
+
+.sv-stars__row--on {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--sv-stars);
+  overflow: hidden;
+  color: var(--tan);
+}
+
+.sv-pdp__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -12px;
+  color: var(--grey);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.sv-pdp__rating:hover span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

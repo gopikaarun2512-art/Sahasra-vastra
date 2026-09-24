@@ -62,18 +62,13 @@
   assign colour_group = mf.colour_group.value
   assign pack_size = mf.pack_size.value
   assign ai_imagery = mf.ai_imagery_used.value
-  assign country = mf.country_of_origin.value
-  assign net_quantity = mf.net_quantity.value
-  assign manufacturer = mf.manufacturer.value
   assign chest_cm = mf.chest_cm.value
   assign length_cm = mf.length_cm.value
   assign measure_note = mf.garment_measurements.value
-  assign set_items = mf.complete_set.value
   assign size_chart = mf.size_chart.value
 
   assign whatsapp = shop.metafields.custom.whatsapp_number.value
   assign dispatch = shop.metafields.custom.dispatch_promise.value
-  assign support_email = shop.metafields.custom.support_email.value
 
   # Per-unit price. DATA-MODEL §3: pack_size drives it, and it is must-know
   # (HANDOFF rule 6), so it sits beside the price and never in a panel.
@@ -114,6 +109,50 @@
   {{ product | structured_data }}
 </script>
 
+{%- comment -%}
+    Each cell's body is built FIRST and the cell is only rendered if
+    it came out with something in it.
+
+    §6.8 asks for the three labels in the same order on every product,
+    and the first build read that as "always render all three". On a
+    product with no fabric and no care text that produced a bare
+    FABRIC heading with nothing under it — which ARCHITECTURE rule 11
+    forbids outright: an absent field contributes nothing, no label,
+    no dash, no placeholder. A label over empty space tells a
+    customer nothing and reads as a broken page. Same order, yes;
+    same count, no.
+  {%- endcomment -%}
+  {%- capture cell_fabric -%}
+    {%- capture fabric_line -%}
+      {%- if fabric != blank -%}{{ fabric }}~{%- endif -%}
+      {%- if gsm != blank -%}{{ gsm }} GSM~{%- endif -%}
+      {%- if azo -%}azo-free declared~{%- endif -%}
+    {%- endcapture -%}
+    {%- assign fabric_parts = fabric_line | strip | split: '~' -%}
+    {%- for part in fabric_parts -%}
+      {%- unless forloop.first %} &middot; {% endunless -%}{{ part | strip }}
+    {%- endfor -%}
+  {%- endcapture -%}
+
+  {%- capture cell_fit -%}
+    {%- if fit_note != blank -%}{{ fit_note }}{%- endif -%}
+    {%- if product.variants.size > 1 -%}
+      {%- if fit_note != blank %} &middot; {% endif -%}
+      complete run, {{ product.variants.first.title }} to {{ product.variants.last.title }}
+    {%- endif -%}
+  {%- endcapture -%}
+
+  {%- capture cell_care -%}{{ care_first }}{%- endcapture -%}
+
+  {%- liquid
+    # An expander exists only where its source field does, so the
+    # expander rail can be empty on a product that has none.
+    assign has_expanders = false
+    if gsm != blank or azo or care != blank or shrinkage != blank or colourfastness != blank
+      assign has_expanders = true
+    endif
+  -%}
+
 <section class="sv-pdp" data-sv data-sv-pdp>
   <div class="w sv-pdp__w">
     {%- comment -%}
@@ -153,10 +192,13 @@
                     type="button"
                     class="sv-gal__thumb{% if forloop.first %} is-on{% endif %}"
                     data-sv-gal-thumb="{{ forloop.index0 }}"
-                    aria-label="Show image {{ forloop.index }} of {{ product.media.size }}"
+                    aria-label="Show {% if media.media_type == 'video' or media.media_type == 'external_video' %}video{% else %}image{% endif %} {{ forloop.index }} of {{ product.media.size }}"
                     {% if forloop.first %}aria-current="true"{% endif %}
                   >
                     {{ media.preview_image | image_url: width: 180 | image_tag: loading: 'lazy', alt: '', sizes: '90px', widths: '90, 180' }}
+                    {%- if media.media_type == 'video' or media.media_type == 'external_video' -%}
+                      <span class="sv-gal__play" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M8 5.5v13l11-6.5z"/></svg></span>
+                    {%- endif -%}
                   </button>
                 </li>
               {%- endfor -%}
@@ -164,7 +206,7 @@
           {%- endif -%}
 
           <div class="sv-gal__stage">
-            <ul class="sv-gal__track" role="list" data-sv-gal-track tabindex="0" aria-label="{{ product.title | escape }} images">
+            <ul class="sv-gal__track" role="list" data-sv-gal-track tabindex="0" aria-label="{{ product.title | escape }} images and videos">
               {%- for media in product.media -%}
                 {%- liquid
                   assign img = media.preview_image
@@ -176,6 +218,40 @@
                     assign frame_priority = 'auto'
                   endif
                 -%}
+                {%- comment -%}
+                  Product videos play IN the carousel, in their place in the
+                  media order Admin sets — a slide like any photograph, so a
+                  swipe, a thumb and the arrows reach it the same way. Muted,
+                  looping and inline; sv-product.js plays it only while its
+                  slide is the one on screen. A YouTube/Vimeo video added to
+                  the product plays in its own player. Hover zoom skips both:
+                  the zoom reads an <img>, and a video frame has none.
+                {%- endcomment -%}
+                {%- case media.media_type -%}
+                  {%- when 'video' -%}
+                    <li class="sv-gal__slide sv-gal__slide--video" data-sv-gal-slide>
+                      <div class="im r-product">
+                        {{
+                          media
+                          | video_tag:
+                            image_size: '1400x',
+                            muted: true,
+                            loop: true,
+                            playsinline: true,
+                            controls: true,
+                            preload: 'metadata',
+                            class: 'sv-gal__video',
+                            alt: media.alt | default: product.title | escape
+                        }}
+                      </div>
+                    </li>
+                  {%- when 'external_video' -%}
+                    <li class="sv-gal__slide sv-gal__slide--video" data-sv-gal-slide>
+                      <div class="im r-product">
+                        {{ media | external_video_url: rel: 0, playsinline: 1 | external_video_tag: class: 'sv-gal__video', loading: 'lazy' }}
+                      </div>
+                    </li>
+                  {%- else -%}
                 <li class="sv-gal__slide" data-sv-gal-slide data-zoom="{{ img | image_url: width: 2400 }}">
                   <div class="im r-product">
                     {{
@@ -190,6 +266,7 @@
                     }}
                   </div>
                 </li>
+                {%- endcase -%}
               {%- endfor -%}
             </ul>
 
@@ -331,6 +408,22 @@
               {% render 'sv-icon', name: 'share' %}
             </button>
           </div>
+
+          {%- comment -%}
+            Stars under the title (momandzoey), from the same published
+            reviews the reviews section shows, linking down to them.
+            Nothing at all until a product has a review.
+          {%- endcomment -%}
+          {%- capture review_stats -%}{% render 'sv-review-stats', product: product %}{%- endcapture -%}
+          {%- assign rs = review_stats | strip | split: ',' -%}
+          {%- assign rs_count = rs[0] | plus: 0 -%}
+          {%- if rs_count > 0 -%}
+            {%- assign rs_avg = rs[1] | times: 1.0 | divided_by: rs_count -%}
+            <a class="sv-pdp__rating" href="#reviews">
+              {%- render 'sv-stars', rating: rs_avg -%}
+              <span>{{ rs_avg | round: 1 }} &middot; {{ rs_count }} review{% if rs_count != 1 %}s{% endif %}</span>
+            </a>
+          {%- endif -%}
 
           {%- comment -%}
             Share menu. One panel, opened from the title icon and from the
@@ -713,90 +806,114 @@
             </li>
           </ul>
 
+          {%- comment -%}
+            ── Details · Size guide · Fabric · Fit · Care (Sep 2026) ──
+            Expandable, in the decision column, the sweetlime/momandzoey
+            way (owner's direction): the product's own details sit beside
+            the buy button instead of in a document under it, which is
+            what lets "You may also like" and "Recently viewed" follow
+            straight on under the photographs. Nothing was dropped in the
+            move — the description, the measurement table (selected row
+            still lit), the size chart, fabric, fit and care are all here.
 
-        </div>
-      </div>
-    </div>
+            Details opens by default so the column never lands on a stack
+            of closed bars. The Size guide opens itself when the sizing
+            note's "this garment's measurements" link is followed.
+          {%- endcomment -%}
+          <div class="sv-acc sv-pdp__acc">
 
-    {%- comment -%} ══ THE LEDGER ════════════════════════════════════ {%- endcomment -%}
-    <div class="sv-pdp__ledger">
-
-
-      {%- comment -%}
-        ── 02 · Fabric · Fit · Care ───────────────────────────────
-        Three labels, same order, every product (§6.8 element 10). They
-        stand open as columns; only the explanations fold.
-
-        Every part of this band is built before any of it is rendered, so
-        that a product carrying none of these fields emits no heading, no
-        numeral and no empty grid — HANDOFF rule 5. The whole band is one
-        of the things that "renders nothing rather than rendering empty".
-      {%- endcomment -%}
-
-      {%- comment -%}
-          Each cell's body is built FIRST and the cell is only rendered if
-          it came out with something in it.
-
-          §6.8 asks for the three labels in the same order on every product,
-          and the first build read that as "always render all three". On a
-          product with no fabric and no care text that produced a bare
-          FABRIC heading with nothing under it — which ARCHITECTURE rule 11
-          forbids outright: an absent field contributes nothing, no label,
-          no dash, no placeholder. A label over empty space tells a
-          customer nothing and reads as a broken page. Same order, yes;
-          same count, no.
-        {%- endcomment -%}
-        {%- capture cell_fabric -%}
-          {%- capture fabric_line -%}
-            {%- if fabric != blank -%}{{ fabric }}~{%- endif -%}
-            {%- if gsm != blank -%}{{ gsm }} GSM~{%- endif -%}
-            {%- if azo -%}azo-free declared~{%- endif -%}
-          {%- endcapture -%}
-          {%- assign fabric_parts = fabric_line | strip | split: '~' -%}
-          {%- for part in fabric_parts -%}
-            {%- unless forloop.first %} &middot; {% endunless -%}{{ part | strip }}
-          {%- endfor -%}
-        {%- endcapture -%}
-
-        {%- capture cell_fit -%}
-          {%- if fit_note != blank -%}{{ fit_note }}{%- endif -%}
-          {%- if product.variants.size > 1 -%}
-            {%- if fit_note != blank %} &middot; {% endif -%}
-            complete run, {{ product.variants.first.title }} to {{ product.variants.last.title }}
-          {%- endif -%}
-        {%- endcapture -%}
-
-        {%- capture cell_care -%}{{ care_first }}{%- endcapture -%}
-
-        {%- liquid
-          # An expander exists only where its source field does, so the
-          # expander rail can be empty on a product that has none.
-          assign has_expanders = false
-          if gsm != blank or azo or care != blank or shrinkage != blank or colourfastness != blank
-            assign has_expanders = true
-          endif
-        -%}
-
-      {%- comment -%}
-        ── Details, as accordions (Sep 2026, owner's direction) ─────
-        Description · Fabric · Fit · Care guide, each a <details> that
-        renders only when its field has content (HANDOFF rule 5). The
-        description opens by default so the page never lands on four
-        closed bars. Must-know facts are NOT in here: size, sizing note,
-        delivery, returns and the measurement table all stand open above.
-      {%- endcomment -%}
-      {%- if product.description != blank or cell_fabric != blank or cell_fit != blank or care != blank or has_expanders -%}
-      <section class="sv-pdp__band sv-pdp__band--acc">
-        <span class="num" aria-hidden="true"></span>
-        <h2 class="sv-pdp__h2">The details</h2>
-        <div class="sv-acc">
           {%- if product.description != blank -%}
             <details class="sv-acc__item" open>
-              <summary>Description</summary>
+              <summary>Details</summary>
               <div class="sv-acc__body sv-pdp__rte">{{ product.description }}</div>
             </details>
           {%- endif -%}
 
+
+            <details class="sv-acc__item sv-pdp__measure" id="sv-pdp-measure-{{ section.id }}" tabindex="-1" data-sv-measure>
+              <summary>Size guide</summary>
+              <div class="sv-acc__body">
+
+
+                {%- if has_measurements -%}
+                  <div class="sv-pdp__tablewrap">
+                    <table class="sv-pdp__table">
+                      <caption class="sv-visually-hidden">Chest and length in centimetres for each size of {{ product.title }}</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Size</th>
+                          <th scope="col">Chest (cm)</th>
+                          <th scope="col">Length (cm)</th>
+                          <th scope="col">Availability</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {%- for v in product.variants -%}
+                          {%- liquid
+                            assign chest_val = chest_cm[v.title]
+                            assign length_val = length_cm[v.title]
+                          -%}
+                          <tr
+                            data-sv-row="{{ v.id }}"
+                            {% if v.id == variant.id %}class="is-on"{% endif %}
+                          >
+                            <th scope="row">{{ v.title }}</th>
+                            <td>{% if chest_val %}{{ chest_val | times: 2 }}{% else %}&mdash;{% endif %}</td>
+                            <td>{% if length_val %}{{ length_val }}{% else %}&mdash;{% endif %}</td>
+                            <td>{% if v.available %}In stock{% else %}Sold out{% endif %}</td>
+                          </tr>
+                        {%- endfor -%}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="sv-pdp__caption sv-fine">
+                    Measurements are of the garment laid flat, measured across and
+                    doubled &mdash; not of the body &mdash; and may vary by 1&ndash;2 cm
+                    between styles. An em dash means we have not measured that size yet
+                    and would rather say so than estimate.
+                  </p>
+                {%- elsif measure_note != blank -%}
+                  {%- comment -%}
+                    Fallback. The per-size json is not populated yet, so the
+                    free-text note renders verbatim rather than being parsed into
+                    a table — DATA-MODEL §3.0.1 is explicit that a text blob must
+                    not drive the chart, because it breaks silently the moment
+                    someone types it differently.
+                  {%- endcomment -%}
+                  <div class="note sv-pdp__note">{{ measure_note | newline_to_br }}</div>
+                  <p class="sv-pdp__caption sv-fine">
+                    Measurements are of the garment laid flat, not of the body, and may
+                    vary by 1&ndash;2 cm between styles.
+                  </p>
+                {%- elsif size_chart == blank -%}
+                  <p class="sv-pdp__caption sv-fine">
+                    We have not published measurements for this design yet. Send us your
+                    child&rsquo;s chest and height on WhatsApp and we will tell you which
+                    size to order.
+                  </p>
+                {%- endif -%}
+
+                {%- comment -%}
+                  The product's size chart (custom.size_chart, an image set per
+                  product in Admin). Shown here in the band, and the same image
+                  opens full-size from the "Size chart" link by the size stepper.
+                {%- endcomment -%}
+                {%- if size_chart != blank -%}
+                  <button type="button" class="sv-pdp__chartfig" data-sv-chart-open aria-label="Open the size chart full size">
+                    {{
+                      size_chart
+                      | image_url: width: 1200
+                      | image_tag:
+                        widths: '480, 720, 960, 1200',
+                        sizes: '(max-width: 880px) 92vw, 560px',
+                        loading: 'lazy',
+                        alt: size_chart.alt | default: 'Size chart' | escape
+                    }}
+                  </button>
+                {%- endif -%}
+      
+              </div>
+            </details>
           {%- if cell_fabric != blank or gsm != blank or azo or shrinkage != blank or colourfastness != blank -%}
             <details class="sv-acc__item">
               <summary>Fabric</summary>
@@ -841,182 +958,13 @@
               <div class="sv-acc__body"><p>{{ care | newline_to_br }}</p></div>
             </details>
           {%- endif -%}
-        </div>
-      </section>
-      {%- endif -%}
-
-      {%- comment -%}
-        ── The numbers (after the details — owner's order, Sep 2026) ────────────────────────────────────────
-        The page's whole argument. Rendered from the json metafields
-        keyed by the product's own size strings; a missing key shows an
-        em dash, NEVER a guess (HANDOFF rule 5).
-
-        chest_cm stores the across measurement, armpit to armpit, and
-        the theme doubles it for display — DATA-MODEL §4 states this
-        explicitly, so the doubling lives here and the notebook figure
-        goes into Admin unchanged.
-      {%- endcomment -%}
-      <section class="sv-pdp__band" id="sv-pdp-measure-{{ section.id }}" tabindex="-1">
-        <span class="num" aria-hidden="true"></span>
-        <h2 class="sv-pdp__h2">
-          {%- if has_measurements or measure_note != blank or size_chart == blank -%}This garment&rsquo;s measurements{%- else -%}Size guide{%- endif -%}
-        </h2>
-
-        {%- if has_measurements -%}
-          <div class="sv-pdp__tablewrap">
-            <table class="sv-pdp__table">
-              <caption class="sv-visually-hidden">Chest and length in centimetres for each size of {{ product.title }}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Size</th>
-                  <th scope="col">Chest (cm)</th>
-                  <th scope="col">Length (cm)</th>
-                  <th scope="col">Availability</th>
-                </tr>
-              </thead>
-              <tbody>
-                {%- for v in product.variants -%}
-                  {%- liquid
-                    assign chest_val = chest_cm[v.title]
-                    assign length_val = length_cm[v.title]
-                  -%}
-                  <tr
-                    data-sv-row="{{ v.id }}"
-                    {% if v.id == variant.id %}class="is-on"{% endif %}
-                  >
-                    <th scope="row">{{ v.title }}</th>
-                    <td>{% if chest_val %}{{ chest_val | times: 2 }}{% else %}&mdash;{% endif %}</td>
-                    <td>{% if length_val %}{{ length_val }}{% else %}&mdash;{% endif %}</td>
-                    <td>{% if v.available %}In stock{% else %}Sold out{% endif %}</td>
-                  </tr>
-                {%- endfor -%}
-              </tbody>
-            </table>
-          </div>
-          <p class="sv-pdp__caption sv-fine">
-            Measurements are of the garment laid flat, measured across and
-            doubled &mdash; not of the body &mdash; and may vary by 1&ndash;2 cm
-            between styles. An em dash means we have not measured that size yet
-            and would rather say so than estimate.
-          </p>
-        {%- elsif measure_note != blank -%}
-          {%- comment -%}
-            Fallback. The per-size json is not populated yet, so the
-            free-text note renders verbatim rather than being parsed into
-            a table — DATA-MODEL §3.0.1 is explicit that a text blob must
-            not drive the chart, because it breaks silently the moment
-            someone types it differently.
-          {%- endcomment -%}
-          <div class="note sv-pdp__note">{{ measure_note | newline_to_br }}</div>
-          <p class="sv-pdp__caption sv-fine">
-            Measurements are of the garment laid flat, not of the body, and may
-            vary by 1&ndash;2 cm between styles.
-          </p>
-        {%- elsif size_chart == blank -%}
-          <p class="sv-pdp__caption sv-fine">
-            We have not published measurements for this design yet. Send us your
-            child&rsquo;s chest and height on WhatsApp and we will tell you which
-            size to order.
-          </p>
-        {%- endif -%}
-
-        {%- comment -%}
-          The product's size chart (custom.size_chart, an image set per
-          product in Admin). Shown here in the band, and the same image
-          opens full-size from the "Size chart" link by the size stepper.
-        {%- endcomment -%}
-        {%- if size_chart != blank -%}
-          <button type="button" class="sv-pdp__chartfig" data-sv-chart-open aria-label="Open the size chart full size">
-            {{
-              size_chart
-              | image_url: width: 1200
-              | image_tag:
-                widths: '480, 720, 960, 1200',
-                sizes: '(max-width: 880px) 92vw, 560px',
-                loading: 'lazy',
-                alt: size_chart.alt | default: 'Size chart' | escape
-            }}
-          </button>
-        {%- endif -%}
-      </section>
-
-      {%- comment -%}
-        ── Complete the set ────────────────────────────────────────
-        §6.8 element 14 specifies a checkbox cross-sell. Rendered here as
-        linked cards instead, deliberately: a checkbox adds a garment to
-        the bag without a size being chosen, and this is the one page
-        whose stated job is to stop exactly that. Each card carries its
-        own size run so the choice is informed before the jump.
-        Renders nothing when the metafield is empty.
-      {%- endcomment -%}
-      {%- if set_items.size > 0 -%}
-        <section class="sv-pdp__band">
-          <span class="num" aria-hidden="true"></span>
-          <h2 class="sv-pdp__h2">Completes the set</h2>
-          <p class="sv-pdp__lead">Add and save on the same parcel.</p>
-          <ul class="sv-pdp__set" role="list">
-            {%- for item in set_items -%}
-              {%- if item.handle == blank -%}{%- continue -%}{%- endif -%}
-              <li class="sv-pdp__setitem">
-                <a class="sv-pdp__setlink" href="{{ item.url }}">
-                  <div class="im r-product">
-                    {%- if item.featured_media -%}
-                      {{
-                        item.featured_media.preview_image
-                        | image_url: width: 600
-                        | image_tag:
-                          widths: '200, 300, 450, 600',
-                          sizes: '(max-width: 760px) 44vw, 220px',
-                          loading: 'lazy',
-                          alt: item.title | escape
-                      }}
-                    {%- endif -%}
                   </div>
-                  <span class="sv-pdp__setname">{{ item.title }}</span>
-                  <span class="sv-pdp__setprice">{{ item.price | money }}</span>
-                </a>
-                {%- render 'sv-size-run', product: item -%}
-              </li>
-            {%- endfor -%}
-          </ul>
-        </section>
-      {%- endif -%}
 
-      {%- comment -%}
-        ── The filed record ────────────────────────────────────────
-        Legal Metrology (§6.8 element 11). Every value from a metafield;
-        the MRP from the variant itself. Set small and filed rather than
-        hidden, because it is a statutory disclosure and a closed panel
-        is not a disclosure.
-      {%- endcomment -%}
-      <aside class="sv-pdp__filed" aria-label="Product and manufacturer information">
-        <div class="sv-pdp__filedhead">
-          <span class="lab lab--grey">On record</span>
-          {%- if design_code != blank -%}
-            <span class="sv-pdp__filedref sv-fine sv-fine--caps">{{ design_code }}</span>
-          {%- endif -%}
+
         </div>
-
-        <dl class="sv-pdp__legal sv-fine">
-          {%- if manufacturer != blank -%}
-            <div><dt>Manufactured and packed by</dt><dd>{{ manufacturer | newline_to_br }}</dd></div>
-          {%- endif -%}
-          {%- if country != blank -%}
-            <div><dt>Country of origin</dt><dd>{{ country }}</dd></div>
-          {%- endif -%}
-          {%- if product.type != blank -%}
-            <div><dt>Common name</dt><dd>{{ product.type }}</dd></div>
-          {%- endif -%}
-          {%- if net_quantity != blank -%}
-            <div><dt>Net quantity</dt><dd>{{ net_quantity }}</dd></div>
-          {%- endif -%}
-          <div><dt>MRP</dt><dd data-sv-mrp>{{ variant.price | money }} inclusive of all taxes</dd></div>
-          {%- if support_email != blank -%}
-            <div><dt>Customer care</dt><dd><a href="mailto:{{ support_email }}">{{ support_email }}</a></dd></div>
-          {%- endif -%}
-        </dl>
-      </aside>
+      </div>
     </div>
+
   </div>
 
   {%- comment -%}

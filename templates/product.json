@@ -89,14 +89,19 @@
         "zone_remote"
       ],
       "settings": {}
+    },
+    "record": {
+      "type": "sv-product-record",
+      "settings": {}
     }
   },
   "order": [
     "main",
     "recommendations",
-    "reels",
-    "reviews",
     "recent",
+    "reviews",
+    "reels",
+    "record",
     "facts"
   ]
 }

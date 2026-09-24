@@ -258,5 +258,13 @@
     {%- unless template.name == 'product' -%}
       {% render 'sv-age-prompt' %}
     {%- endunless -%}
+
+    {%- comment -%}
+      The Products popup (age → categories → shelf). An empty frame on
+      every page, filled from sections/sv-finder on first open, so the
+      menu's "Products" and every "Shop by category" tile open the same
+      question wherever the shopper is.
+    {%- endcomment -%}
+    {% render 'sv-finder-shell' %}
   </body>
 </html>
