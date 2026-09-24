@@ -269,6 +269,7 @@
     const trigger = t.closest('[data-sv-finder]');
     if (trigger) {
       e.preventDefault();
+      trigger.closest('details[open]')?.removeAttribute('open');
       open(trigger.dataset.svFinderCat || '');
       return;
     }

@@ -97,7 +97,7 @@
               text-roll splits it across two spans and the duplicated span
               carries aria-hidden.
             {%- endcomment -%}
-            <a class="sv-header__link" href="{{ link.url }}" aria-label="{{ link.title | escape }}" {% if link.current %}aria-current="page"{% endif %}>
+            <a class="sv-header__link" href="{{ link.url }}"{% assign sv_lt = link.title | downcase | strip %}{% if sv_lt == 'products' %} data-sv-finder{% endif %} aria-label="{{ link.title | escape }}" {% if link.current %}aria-current="page"{% endif %}>
               <span class="roll">
                 <span>{{ link.title }}</span>
                 <span aria-hidden="true">{{ link.title }}</span>
@@ -165,7 +165,7 @@
           <ul class="sv-header__sheet-list">
             {%- for link in menu.links -%}
               <li>
-                <a class="act sv-header__sheet-link" href="{{ link.url }}">{{ link.title }}</a>
+                <a class="act sv-header__sheet-link" href="{{ link.url }}"{% assign sv_lt = link.title | downcase | strip %}{% if sv_lt == 'products' %} data-sv-finder{% endif %}>{{ link.title }}</a>
                 {%- if link.links.size > 0 -%}
                   <ul class="sv-header__sheet-sub">
                     {%- for child in link.links -%}
